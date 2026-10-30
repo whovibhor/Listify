@@ -10,7 +10,7 @@ function SessionCheckFailed({ onRetry }: { onRetry: () => void }) {
     <div className="grid min-h-svh place-items-center p-4">
       <ErrorState
         className="w-full max-w-md"
-        title="Can't reach WorkPulse"
+        title="Can't reach Listify"
         message="We couldn't check your session. Check your connection and try again."
         onRetry={onRetry}
       />

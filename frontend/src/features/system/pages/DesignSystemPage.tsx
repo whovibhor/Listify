@@ -41,7 +41,7 @@ export function DesignSystemPage() {
         <h2 className="text-lg font-semibold">Color tokens</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {swatches.map((name) => (
-            <div key={name} className="overflow-hidden rounded-lg border bg-card shadow-card">
+            <div key={name} className="overflow-hidden rounded-lg bg-card shadow-card">
               <div className="h-12" style={{ background: `var(--${name})` }} />
               <p className="px-2 py-1.5 font-mono text-xs">{name}</p>
             </div>

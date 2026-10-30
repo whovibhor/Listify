@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import Integer, String, text
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
+from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.db.base import MYSQL_TABLE_ARGS, Base, UtcDateTime, utc_now
 
@@ -51,6 +52,8 @@ def hit(db: Session, rule: RateLimit, identity: str) -> None:
     The upsert is a single atomic statement, so concurrent requests cannot both slip under the
     limit. It commits immediately so attempts are counted even when the request later fails.
     """
+    if not get_settings().rate_limits_enabled:
+        return
     now = utc_now()
     window_floor = now - rule.window
     key = _bucket_key(rule, identity)

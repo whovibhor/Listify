@@ -1,6 +1,6 @@
-# WorkPulse — Feature Status
+# Listify — Feature Status
 
-**Last updated:** 2026-10-29 · **Current phase:** Phase 3 (Organizations) — next up
+**Last updated:** 2026-10-30 · **Current phase:** Phase 4 (Roles & permissions) — next up
 
 This is the single list of what is **done** and what is **pending**, feature by feature. It is updated every time a feature is completed or changed. A feature is marked ✅ only after it works end-to-end (UI → API → MySQL) and its tests have been run and passed. Detailed plans live in [`implementation-roadmap.md`](implementation-roadmap.md).
 
@@ -15,8 +15,8 @@ Legend: ✅ done · 🟡 partly done · ⏳ pending · ⏸ deferred (later relea
 | Accounts & sign-in | ✅ Done |
 | Personal workspace (tasks, views, tags, subtasks, history) | ✅ Done |
 | Personal analytics & home page | ✅ Done |
-| Organizations, departments, membership | ⏳ Pending (Phase 3) |
-| Roles & permissions | ⏳ Pending (Phase 4) |
+| Organizations, departments, membership | ✅ Done |
+| Roles & permissions | 🟡 Partly done (roles and permission checks work; changing roles, suspend/remove/transfer pending in Phase 4) |
 | Department work boards (team tasks) | ⏳ Pending (Phase 5) |
 | Comments, update requests, attachments, inbox | ⏳ Pending (Phase 6) |
 | Team & organization dashboards | ⏳ Pending (Phase 7) |
@@ -62,27 +62,38 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 | Personal analytics (7/30/90 days): completed, on-time rate, overdue, open, completed-per-day chart (+ table), by priority/status | computed from `tasks` |
 | Home: today's numbers, today's tasks, quick add, system status | reads `tasks` |
 
+### Organizations, departments & membership
+| Feature | Stored in |
+|---|---|
+| Create an organization (you become Owner) with profile, website, location, timezone | `organizations`, `organization_memberships`, `membership_roles` |
+| Organization settings: profile, searchable by name, require task review | `organizations` |
+| Departments: create, edit, archive/restore, open or closed to join requests | `departments` |
+| Workspace switcher: Personal + your active organizations, with role-based navigation | reads `organization_memberships`, `membership_roles` |
+| Find an organization by name (only ones that opted in) | reads `organizations` |
+| Request to join with a department, job title and note; cancel a request; see its status | `membership_requests` |
+| Review requests: approve, decline with a reason, change department or role before approving | `membership_requests`, `organization_memberships`, `department_memberships`, `membership_roles` |
+| Invitations: by email or one-time link, with role, department and 7-day expiry; revoke | `organization_invitations` |
+| Accept an invitation from its link | `organization_invitations`, `organization_memberships`, `department_memberships`, `membership_roles` |
+| Members directory: search, filter by department (admins see everyone, others their departments) | reads `organization_memberships`, `department_memberships` |
+| Activity log of administrative actions (read-only) | `audit_logs` |
+| Five predefined roles and 20 permissions, checked on the server | `roles`, `permissions`, `role_permissions` |
+
 ### Quality (applies to everything above)
-- Responsive: phone (375px), tablet (768px), desktop (1280px) — automatically checked for overflow, screenshots reviewed.
-- Accessibility: automated WCAG 2.2 AA scans (axe) on sign-in, task pages and the task panel; keyboard and screen-reader labels.
-- Privacy: other users get "not found" for your tasks, tags and sessions (tested on every endpoint).
+- Responsive: all 15 pages checked at phone (375px), tablet (768px) and desktop (1280px) for overflow; screenshots reviewed.
+- Accessibility: automated WCAG 2.2 AA scans (axe) on sign-in, task pages, the task panel and all organization pages; keyboard and screen-reader labels.
+- Privacy: other users get "not found" for your tasks, tags and sessions. Outsiders and pending applicants get "not found" for everything in an organization. Organizations can never see personal tasks. All tested.
 
 ---
 
 ## ⏳ Pending
 
-### Phase 3 — Organizations, departments & membership *(next)*
-- ⏳ Create an organization (you become Owner), profile, timezone
-- ⏳ Departments: create, edit, archive; choose which accept join requests
-- ⏳ Workspace switcher with your organizations
-- ⏳ Invite by email / link; optional "searchable by name"
-- ⏳ Request to join + choose a department → Pending until approved
-- ⏳ Approve / reject / amend requests; members list; audit log
-
-### Phase 4 — Roles & permissions
-- ⏳ Owner, Admin, Department Manager, Team Lead, Member roles
-- ⏳ Change roles; suspend, reactivate, remove, transfer members (with impact preview)
-- ⏳ Navigation limited to what your role allows; every rule enforced by the server
+### Phase 4 — Roles & permissions *(next)*
+- ✅ Owner, Admin, Department Manager, Team Lead, Member roles, enforced by the server
+- ✅ Navigation limited to what your role allows
+- ⏳ Change a member's role after they've joined
+- ⏳ Suspend, reactivate, remove and transfer members (with impact preview)
+- ⏳ Add a member to more departments after joining
+- ⏳ Transfer ownership of an organization
 
 ### Phase 5 — Department work boards
 - ⏳ Kanban (drag and drop), List and Calendar views per department
@@ -118,6 +129,7 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 ## Change log
 | Date | Change |
 |---|---|
+| 2026-10-30 | Phase 3 (organizations, departments, membership) completed. Product renamed to **Listify** (new checklist logo, cookies and internal names updated). Borders removed from all cards; cards now separate by shadow on a tinted background. |
 | 2026-10-29 | Theme preference moved from browser-only to the database (`user_preferences`); My Day, My Tasks and Upcoming redesigned; responsive fixes (Home overflow on phones, full-width task panel on phones, priority icons, day-strip fade); "Done today" on My Day. |
 | 2026-10-29 | Phase 2 (personal workspace) completed. |
 | 2026-10-29 | Phase 1 (accounts & sign-in) completed. |

@@ -24,7 +24,7 @@ export function DayStrip({ days, selected, onSelect }: DayStripProps) {
       role="listbox"
       aria-label="Choose a day"
       aria-orientation="horizontal"
-      className="-mx-4 flex snap-x snap-mandatory [scrollbar-width:thin] gap-2 overflow-x-auto mask-r-from-90% px-4 pb-2 sm:mx-0 sm:px-0"
+      className="-mx-4 flex snap-x snap-mandatory [scrollbar-width:thin] gap-2 overflow-x-auto mask-r-from-90% px-4 py-2 sm:mx-0 sm:px-1"
     >
       {days.map((day) => {
         const isSelected = day.key === selected
@@ -37,12 +37,12 @@ export function DayStrip({ days, selected, onSelect }: DayStripProps) {
             aria-label={`${format(day.date, 'EEEE d MMMM')}: ${day.count} task${day.count === 1 ? '' : 's'} due`}
             onClick={() => onSelect(day.key)}
             className={cn(
-              'flex w-16 shrink-0 snap-start flex-col items-center gap-0.5 rounded-xl border px-2 py-2.5 outline-none',
-              'transition-[background-color,border-color,box-shadow,transform] duration-(--duration-fast)',
+              'flex w-16 shrink-0 snap-start flex-col items-center gap-0.5 rounded-xl px-2 py-2.5 outline-none',
+              'transition-[background-color,box-shadow,transform] duration-(--duration-fast)',
               'focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.97]',
               isSelected
-                ? 'border-primary bg-primary text-primary-foreground shadow-raised'
-                : 'bg-card hover:border-primary/40 hover:shadow-card',
+                ? 'bg-primary text-primary-foreground shadow-raised'
+                : 'bg-card shadow-card hover:shadow-raised',
               !isSelected && isWeekend(day.date) && 'bg-muted/60',
             )}
           >

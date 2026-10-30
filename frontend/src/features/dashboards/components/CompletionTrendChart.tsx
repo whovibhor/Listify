@@ -15,7 +15,7 @@ function TrendTooltip({ active, payload }: TooltipPayload) {
   const point = payload?.[0]?.payload
   if (!active || !point) return null
   return (
-    <div className="rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-overlay">
+    <div className="rounded-lg bg-popover px-3 py-2 text-xs text-popover-foreground shadow-overlay">
       <p className="mb-1 font-medium">{format(parseISO(point.date), 'EEE d MMM')}</p>
       <p>
         <span className="mr-1.5 inline-block size-2 rounded-xs bg-chart-1 align-middle" />
@@ -54,7 +54,7 @@ export function CompletionTrendChart({ trend }: { trend: PersonalDashboard['tren
         </Button>
       </div>
       {showTable ? (
-        <div className="max-h-72 overflow-y-auto rounded-lg border">
+        <div className="max-h-72 overflow-y-auto rounded-lg bg-muted/30">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-muted text-left text-xs text-muted-foreground">
               <tr>

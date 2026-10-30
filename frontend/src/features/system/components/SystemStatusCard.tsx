@@ -20,7 +20,7 @@ function StatusRow({
 }) {
   const ok = state === 'ok'
   return (
-    <li className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2.5">
+    <li className="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-2.5">
       <Icon aria-hidden className="size-4 text-muted-foreground" />
       <span className="flex-1 text-sm font-medium">{label}</span>
       {detail ? <span className="text-xs text-muted-foreground tabular-nums">{detail}</span> : null}

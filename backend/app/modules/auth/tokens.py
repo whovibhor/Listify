@@ -2,8 +2,8 @@ import hashlib
 import hmac
 import secrets
 
-SESSION_COOKIE = "wp_session"
-CSRF_COOKIE = "wp_csrf"
+SESSION_COOKIE = "listify_session"
+CSRF_COOKIE = "listify_csrf"
 CSRF_HEADER = "X-CSRF-Token"
 
 

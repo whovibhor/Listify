@@ -39,6 +39,8 @@ export default defineConfig({
         FRONTEND_ORIGINS: `http://localhost:${WEB_PORT}`,
         FRONTEND_BASE_URL: `http://localhost:${WEB_PORT}`,
         LOG_LEVEL: 'WARNING',
+        // Many registrations from one IP; the limits themselves are covered by backend tests.
+        RATE_LIMITS_ENABLED: 'false',
       },
       reuseExistingServer: false,
       timeout: 60_000,

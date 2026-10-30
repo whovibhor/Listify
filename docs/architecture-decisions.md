@@ -1,4 +1,4 @@
-# WorkPulse — Architecture Decision Records
+# Listify — Architecture Decision Records
 
 Format: each ADR states context, decision and consequences. Status is **Accepted** unless noted. "Owner-confirmed" means the product owner explicitly chose it on 2026-10-29.
 
@@ -24,7 +24,7 @@ Format: each ADR states context, decision and consequences. Status is **Accepted
 ## ADR-004 Authentication: server-side sessions in HttpOnly cookies
 
 - **Context:** First-party SPA + API. PRD §11.1 requires secure HttpOnly cookies and CSRF protection.
-- **Decision:** Opaque random session ID (256-bit, `secrets.token_urlsafe`) in cookie `wp_session`; the database stores only its SHA-256 hash in a `sessions` table with `user_id`, `created_at`, `last_seen_at`, `expires_at`, `revoked_at`, `ip`, `user_agent`. Cookie flags: `HttpOnly`, `SameSite=Lax`, `Secure` in production, `Path=/`. Idle timeout 12 h, absolute 7 d. Session ID is rotated on login and on password change; all sessions revoked on password reset. Logout revokes the row.
+- **Decision:** Opaque random session ID (256-bit, `secrets.token_urlsafe`) in cookie `listify_session`; the database stores only its SHA-256 hash in a `sessions` table with `user_id`, `created_at`, `last_seen_at`, `expires_at`, `revoked_at`, `ip`, `user_agent`. Cookie flags: `HttpOnly`, `SameSite=Lax`, `Secure` in production, `Path=/`. Idle timeout 12 h, absolute 7 d. Session ID is rotated on login and on password change; all sessions revoked on password reset. Logout revokes the row.
 - **Why not JWT:** revocation (FR-AUTH-02 "logout invalidates the session") and access-revocation predictability (O7) are simpler with server state.
 - **Consequences:** One indexed lookup per request; acceptable at MVP scale.
 
@@ -34,7 +34,7 @@ Format: each ADR states context, decision and consequences. Status is **Accepted
 
 ## ADR-006 CSRF and CORS
 
-- **Decision:** Double-submit CSRF token: on session creation the API sets a non-HttpOnly `wp_csrf` cookie; the SPA echoes it in the `X-CSRF-Token` header for every unsafe method (POST/PUT/PATCH/DELETE). The server compares it with a value bound to the session (HMAC of session ID). Visitors without a session get a random token from `GET /auth/csrf` (the API client fetches it automatically before the first unsafe request). With a session, that endpoint re-derives the bound token, so a lost cookie heals itself; the client retries once on `csrf_failed`. Implemented as a dependency on the whole `/api/v1` router (`csrf_protect`). Combined with `SameSite=Lax`. CORS allows only the configured `FRONTEND_ORIGINS`, `allow_credentials=True`, no wildcard. In local dev the Vite dev server proxies `/api` to the backend, so the browser sees a single origin.
+- **Decision:** Double-submit CSRF token: on session creation the API sets a non-HttpOnly `listify_csrf` cookie; the SPA echoes it in the `X-CSRF-Token` header for every unsafe method (POST/PUT/PATCH/DELETE). The server compares it with a value bound to the session (HMAC of session ID). Visitors without a session get a random token from `GET /auth/csrf` (the API client fetches it automatically before the first unsafe request). With a session, that endpoint re-derives the bound token, so a lost cookie heals itself; the client retries once on `csrf_failed`. Implemented as a dependency on the whole `/api/v1` router (`csrf_protect`). Combined with `SameSite=Lax`. CORS allows only the configured `FRONTEND_ORIGINS`, `allow_credentials=True`, no wildcard. In local dev the Vite dev server proxies `/api` to the backend, so the browser sees a single origin.
 
 ## ADR-007 Password hashing: Argon2id via `argon2-cffi`
 
@@ -177,3 +177,17 @@ All boundaries use the user's profile timezone (ADR-019); "now" is the request t
 The API returns these sentences in `definitions`, and the UI shows them beside each number, so code and copy share one source.
 
 **Deadlines:** clients send local `due_date` + optional `due_time`; the server converts with the user's timezone. All-day deadlines are stored as 23:59:59.999999 local time, so a task becomes overdue only after its day ends. Responses carry UTC instants plus `due_all_day`, and the SPA formats them in the profile timezone (not the browser's) using `@date-fns/tz`.
+
+## ADR-023 Product name: Listify
+
+- **Decision:** the product is **Listify** (owner, 2026-10-30). The BRD and PRD use the earlier working name "WorkPulse"; those two source files keep their names. Everything else was renamed, including cookies (`listify_session`, `listify_csrf`), so anyone signed in before the rename signs in once more.
+
+## ADR-024 Borderless cards
+
+- **Decision:** cards have no borders (owner, 2026-10-30). Separation comes from `--shadow-card` on a tinted page background; rows nested inside a card use a tinted fill instead of their own surface. Hover and selection use shadow or tint. Form fields and outline buttons keep their outlines, because those signal that a control is interactive, and sidebar/header dividers stay as layout lines.
+
+## ADR-025 Organization authorization in practice (Phase 3)
+
+- **Decision:** every org route takes `OrgCtx`, built from the URL and an active membership (ADR-010). Roles and permissions are read from the database; `permissions/catalog.py` mirrors the seed and a test fails if they drift. Department-scoped roles add to the base Member role and apply only to their department.
+- **Department visibility:** administrators see all departments; other members see only their own (BR-006), so a department's existence isn't disclosed to the rest of the organization.
+- **Direct invitations bypass the discoverable check** because an administrator chose that person. Join requests require a discoverable organization.

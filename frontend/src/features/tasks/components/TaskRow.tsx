@@ -17,10 +17,12 @@ interface TaskRowProps {
   timezone: string
   onOpen: (id: number) => void
   selected?: boolean
+  /** Inside another card: a tinted fill replaces the row's own card surface and shadow. */
+  nested?: boolean
 }
 
 export const TaskRow = forwardRef<HTMLLIElement, TaskRowProps>(function TaskRow(
-  { task, timezone, onOpen, selected },
+  { task, timezone, onOpen, selected, nested },
   ref,
 ) {
   const toggle = useToggleComplete()
@@ -46,9 +48,9 @@ export const TaskRow = forwardRef<HTMLLIElement, TaskRowProps>(function TaskRow(
       exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
       transition={transitions.base}
       className={cn(
-        'group relative flex items-start gap-3 rounded-lg border bg-card px-3 py-2.5 shadow-card transition-[border-color,box-shadow] duration-(--duration-fast)',
-        'hover:border-primary/30 hover:shadow-raised',
-        selected && 'border-primary/50 ring-2 ring-primary/15',
+        'group relative flex items-start gap-3 rounded-lg px-3 py-2.5 transition-[background-color,box-shadow] duration-(--duration-fast)',
+        nested ? 'bg-muted/60 hover:bg-accent/60' : 'bg-card shadow-card hover:shadow-raised',
+        selected && 'bg-accent!',
       )}
     >
       {/* Above the row-wide click target of the title button. */}

@@ -27,7 +27,7 @@ function SidebarContents({
 }) {
   return (
     <div className="flex flex-col gap-5">
-      <WorkspaceSwitcher />
+      <WorkspaceSwitcher onNavigate={onNavigate} />
       <SidebarNav instanceId={instanceId} onNavigate={onNavigate} />
     </div>
   )

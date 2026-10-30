@@ -22,8 +22,8 @@ function localDate(offsetDays: number) {
 }
 
 /** Creates realistic data through the real API (same session cookie + CSRF as the SPA). */
-async function seedTasks(page: Page) {
-  const csrf = (await page.context().cookies()).find((c) => c.name === 'wp_csrf')?.value ?? ''
+async function seedData(page: Page) {
+  const csrf = (await page.context().cookies()).find((c) => c.name === 'listify_csrf')?.value ?? ''
   const post = async (path: string, data: object) => {
     const response = await page.request.post(`/api/v1${path}`, {
       data,
@@ -62,11 +62,25 @@ async function seedTasks(page: Page) {
   await post('/me/tasks', { title: 'Read “Deep Work”' })
   const done = await post('/me/tasks', { title: 'Morning run', due_date: localDate(0) })
   await post(`/tasks/${done.id}/complete`, {})
+  const organization = await post('/organizations', {
+    name: 'Northwind Trading Company International',
+    description: 'Long-established importer of speciality foods and household goods.',
+    is_discoverable: true,
+    departments: [
+      { name: 'Engineering' },
+      { name: 'Customer Success and Support' },
+      { name: 'Sales' },
+    ],
+  })
+  await post(`/organizations/${organization.id}/invitations`, {
+    email: 'a.very.long.email.address.for.testing@example-company.com',
+  })
+  return organization.id as number
 }
 
-test('every personal page fits phone, tablet and desktop widths', async ({ page }, testInfo) => {
+test('every page fits phone, tablet and desktop widths', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'viewports are set explicitly in this test')
-  test.setTimeout(120_000)
+  test.setTimeout(240_000)
 
   await page.goto('/register')
   await page.getByLabel('Full name').fill('Mary Jackson')
@@ -75,11 +89,23 @@ test('every personal page fits phone, tablet and desktop widths', async ({ page 
   await page.getByRole('checkbox').check()
   await page.getByRole('button', { name: 'Create account' }).click()
   await expect(page.getByRole('heading', { name: 'Welcome, Mary!' })).toBeVisible()
-  await seedTasks(page)
+  const orgId = await seedData(page)
+  const pages = [
+    ...PAGES,
+    { path: '/organizations/new', heading: 'Create an organization', name: 'org-new' },
+    { path: '/organizations/join', heading: 'Join an organization', name: 'org-join' },
+    { path: `/org/${orgId}`, heading: /Northwind/, name: 'org-overview' },
+    { path: `/org/${orgId}/departments`, heading: 'Departments', name: 'org-departments' },
+    { path: `/org/${orgId}/members`, heading: 'Members', name: 'org-members' },
+    { path: `/org/${orgId}/requests`, heading: 'Join requests', name: 'org-requests' },
+    { path: `/org/${orgId}/invitations`, heading: 'Invitations', name: 'org-invitations' },
+    { path: `/org/${orgId}/activity`, heading: 'Activity log', name: 'org-activity' },
+    { path: `/org/${orgId}/settings`, heading: 'Settings', name: 'org-settings' },
+  ]
 
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
-    for (const target of PAGES) {
+    for (const target of pages) {
       await page.goto(target.path)
       await expect(page.getByRole('heading', { level: 1, name: target.heading })).toBeVisible()
       await page.waitForLoadState('networkidle')

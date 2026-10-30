@@ -1,4 +1,4 @@
-# WorkPulse — Implementation Roadmap
+# Listify — Implementation Roadmap
 
 Dependency-aware sequence derived from PRD §15–16 and the owner's build instructions. Each phase ends with: backend tests, frontend tests, production build, browser walkthrough, authorization/isolation checks, docs update and a phase report in `development-log.md`.
 
@@ -13,8 +13,8 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 | 0 | Foundation | ✅ Complete | 2026-10-29 |
 | 1 | Accounts & sign-in | ✅ Complete | 2026-10-29 |
 | 2 | Personal workspace | ✅ Complete | 2026-10-29 |
-| 3 | Organizations, departments & membership | 🚧 Next | — |
-| 4 | Roles & permissions | ⏳ Planned | — |
+| 3 | Organizations, departments & membership | ✅ Complete | 2026-10-30 |
+| 4 | Roles & permissions | 🚧 Next | — |
 | 5 | Department Work Boards | ⏳ Planned | — |
 | 6 | Collaboration (comments, update requests, attachments, inbox) | ⏳ Planned | — |
 | 7 | Dashboards & reporting | ⏳ Planned | — |
@@ -53,20 +53,22 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 - [x] Home page: today's numbers, today's tasks, quick-add
 - Not included (by plan): recurring tasks (P2), estimated/actual effort fields are stored and in the API but not yet shown in the UI
 
-### Phase 3 — Organizations, departments & membership
-- [ ] Create an organization (you become Owner) with profile and timezone
-- [ ] Create, edit and archive departments; choose which are open for join requests
-- [ ] Workspace switcher lists Personal + your organizations
-- [ ] Invite by email/link; optional "searchable by name" setting
-- [ ] Request to join an organization and pick a department → Pending until approved
-- [ ] Admins approve, reject or amend (department/role) requests
-- [ ] Members list; audit log of membership changes
+### Phase 3 — Organizations, departments & membership ✅
+- [x] Create an organization (you become Owner) with profile and timezone
+- [x] Create, edit and archive departments; choose which are open for join requests
+- [x] Workspace switcher lists Personal + your organizations
+- [x] Invite by email/link; optional "searchable by name" setting
+- [x] Request to join an organization and pick a department → Pending until approved
+- [x] Admins approve, reject or amend (department/role) requests
+- [x] Members list; audit log of membership changes
+- Note: invitation emails use the development mailer (written to the backend log) until SMTP arrives in Phase 8. People see the outcome of their request on the Join page; in-app notifications arrive in Phase 6.
 
 ### Phase 4 — Roles & permissions
-- [ ] Predefined roles: Owner, Admin, Department Manager, Team Lead, Member
-- [ ] Change a member's role (with confirmation); department-scoped roles
+- [x] Predefined roles: Owner, Admin, Department Manager, Team Lead, Member (delivered early, needed by Phase 3)
+- [x] Navigation shows only what your role allows; the API enforces every rule (delivered early)
+- [ ] Change a member's role (with confirmation); department-scoped roles after joining
 - [ ] Suspend, reactivate, remove and transfer members with an impact preview
-- [ ] Navigation shows only what your role allows; the API enforces every rule
+- [ ] Add members to additional departments; transfer ownership
 
 ### Phase 5 — Department Work Boards
 - [ ] Department board in Kanban (drag-and-drop), List and Calendar views
@@ -147,7 +149,7 @@ Why this order: tasks core (M2) is built once in personal scope, then extended w
 - **Permissions:** owner-only via `can_view_task` policy (personal branch).
 - **Tests:** CRUD; validation; transition matrix (ADR-015); reopen clears `completed_at`; subtask completion rule; view filters with tz boundaries (UTC+05:30 and UTC−08:00 fixtures); overdue excludes no-deadline and terminal; metrics fixtures; user B gets 404 on user A's task across every endpoint; pagination limits.
 
-## M3 — Organizations, departments, membership
+## M3 — Organizations, departments, membership *(complete)*
 
 - **User sees:** Create Organization wizard (name, slug, timezone, optional profile; then departments; then join policy/discoverability). Workspace switcher lists Personal + active orgs. Join Organization (search discoverable orgs or open invite link → choose open department → job title/note → Pending screen). Admin: Members, Requests (approve/reject/amend dept/role), Departments (create/edit/archive, "open for join requests"), Invitations, Organization Settings.
 - **Backend:** `modules/organizations`, `departments`, `memberships`, `audit_logs`; seed system roles/permissions (data migration). Tables: `organizations`, `departments`, `organization_memberships`, `department_memberships`, `roles`, `permissions`, `role_permissions`, `membership_roles`, `membership_requests`, `organization_invitations`, `audit_logs`.

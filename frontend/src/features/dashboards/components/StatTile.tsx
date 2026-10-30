@@ -38,7 +38,7 @@ export function StatTile({
     </>
   )
   const base =
-    'relative block rounded-xl border bg-card p-4 shadow-card transition-[box-shadow,border-color] duration-(--duration-fast)'
+    'relative block rounded-xl bg-card p-4 shadow-card transition-shadow duration-(--duration-fast)'
 
   return (
     <div className="relative">
@@ -47,7 +47,7 @@ export function StatTile({
           to={to}
           className={cn(
             base,
-            'outline-none hover:border-primary/30 hover:shadow-raised focus-visible:ring-3 focus-visible:ring-ring/50',
+            'outline-none hover:shadow-raised focus-visible:ring-3 focus-visible:ring-ring/50',
           )}
         >
           {body}

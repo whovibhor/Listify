@@ -172,7 +172,7 @@ function TaskEditor({
 
       <div className="flex-1 space-y-6 overflow-y-auto p-4">
         {readOnly ? (
-          <p className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning-foreground dark:text-warning">
+          <p className="rounded-lg bg-warning/15 px-3 py-2 text-sm text-warning-foreground dark:text-warning">
             This task is archived and read-only. Restore it to make changes.
           </p>
         ) : null}

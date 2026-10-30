@@ -1,4 +1,4 @@
-# WorkPulse — Testing Strategy
+# Listify — Testing Strategy
 
 Derived from PRD §14 and the definition of done. Never report a test as passing unless it was executed.
 
@@ -8,7 +8,7 @@ Derived from PRD §14 and the definition of done. Never report a test as passing
 |---|---|---|
 | Backend unit | Pytest | transitions, due-date/timezone logic, permission resolution, metric formulas, config validation |
 | Backend API | Pytest + Starlette TestClient (httpx2) | each endpoint: success, validation failure, unauthenticated, forbidden, **cross-tenant 404** |
-| Backend DB integration | Pytest marker `db`, MySQL `workpulse_test` | transactions, constraints, migrations upgrade/downgrade |
+| Backend DB integration | Pytest marker `db`, MySQL `listify_test` | transactions, constraints, migrations upgrade/downgrade |
 | Frontend unit/component | Vitest + React Testing Library + user-event (jsdom) | API client, hooks, components, routing, forms |
 | End-to-end | Playwright + @axe-core/playwright (`frontend/e2e`) | Desktop Chrome and Pixel 7 projects. Isolated backend (:8001) on `listify_test`, reset in global setup. Phase 1: full auth journey + axe scans of the auth pages. Later: workspace switching, task flows, membership approval. |
 | Security | API tests + M9 review | IDOR/guessed IDs, stale memberships, CSRF, XSS, upload validation, rate limits, privilege escalation |

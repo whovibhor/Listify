@@ -33,13 +33,13 @@ const choices: Choice[] = [
     icon: Building2Icon,
     title: 'Create an organization',
     description: 'Set up departments and invite your team.',
-    availableIn: 'Phase 3',
+    to: '/organizations/new',
   },
   {
     icon: UsersRoundIcon,
     title: 'Join an organization',
     description: 'Request access to your team’s workspace.',
-    availableIn: 'Phase 3',
+    to: '/organizations/join',
   },
 ]
 
@@ -73,7 +73,7 @@ export function WelcomePage() {
             </>
           )
           const base =
-            'flex h-full flex-col gap-3 rounded-xl border bg-card p-4 text-left shadow-card transition-[box-shadow,transform,border-color] duration-(--duration-base)'
+            'flex h-full flex-col gap-3 rounded-xl bg-card p-4 text-left shadow-card transition-[box-shadow,transform] duration-(--duration-base)'
           return (
             <motion.li
               key={choice.title}
@@ -86,7 +86,7 @@ export function WelcomePage() {
                   to={choice.to}
                   className={cn(
                     base,
-                    'outline-none hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-raised focus-visible:ring-3 focus-visible:ring-ring/50',
+                    'outline-none hover:-translate-y-0.5 hover:shadow-raised focus-visible:ring-3 focus-visible:ring-ring/50',
                   )}
                 >
                   {content}

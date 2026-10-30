@@ -4,7 +4,7 @@ export type Theme = 'light' | 'dark' | 'system'
 export type ResolvedTheme = 'light' | 'dark'
 
 // Keep in sync with the inline script in index.html that applies the theme before first paint.
-export const THEME_STORAGE_KEY = 'workpulse-theme'
+export const THEME_STORAGE_KEY = 'listify-theme'
 
 export interface ThemeContextValue {
   theme: Theme

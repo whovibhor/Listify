@@ -65,7 +65,7 @@ export function LoginPage() {
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        New to WorkPulse?{' '}
+        New to Listify?{' '}
         <Link
           to={{ pathname: '/register', search: params.toString() }}
           className="font-medium text-primary underline-offset-4 hover:underline"

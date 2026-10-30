@@ -1,10 +1,10 @@
-# WorkPulse — Requirements Analysis
+# Listify — Requirements Analysis
 
 Sources: `docs/WorkPulse_BRD_v1.docx` (BRD v1.0, 29 Oct 2026) and `docs/WorkPulse_PRD_v1.docx` (PRD v1.0, 29 Oct 2026). Both were read in full. Section references below use the documents' own numbering (e.g. BRD §11, PRD §5.6.4).
 
 ## 1. Product summary
 
-WorkPulse is a responsive web application combining **private personal task management** with **structured organization collaboration**. One global account (BR-001) gives a user a Personal Workspace plus any number of Organization Workspaces. Organizations contain departments, memberships, roles, department Work Boards, tasks, update requests, notifications and dashboards.
+Listify is a responsive web application combining **private personal task management** with **structured organization collaboration**. One global account (BR-001) gives a user a Personal Workspace plus any number of Organization Workspaces. Organizations contain departments, memberships, roles, department Work Boards, tasks, update requests, notifications and dashboards.
 
 The defining product constraints are:
 
@@ -189,7 +189,7 @@ Based on PRD §8 (logical model). Full design will be written in `docs/database-
 | A19 | Platform Super Admin UI (PRD §4) | Role modeled; admin UI deferred past MVP | Default |
 | A20 | Retention, deletion, export policies (NFR-10) | **Open** — must be defined before production | No |
 | A21 | Pricing / plan limits | **Open** — do not build | No |
-| A22 | Final product name | "WorkPulse" working name | No |
+| A22 | Final product name | **Listify**, chosen by the owner on 2026-10-30. The BRD and PRD use the earlier working name "WorkPulse". | Yes |
 
 ### 10.3 Features in one document only
 

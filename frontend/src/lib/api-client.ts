@@ -31,7 +31,7 @@ export class ApiError extends Error {
   }
 }
 
-const CSRF_COOKIE = 'wp_csrf'
+const CSRF_COOKIE = 'listify_csrf'
 const CSRF_HEADER = 'X-CSRF-Token'
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 

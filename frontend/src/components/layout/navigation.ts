@@ -15,6 +15,10 @@ export interface NavItem {
   icon: LucideIcon
   /** Roadmap phase that delivers the page; shown as a "Soon" hint until it ships. */
   plannedMilestone?: string
+  /** Match the exact path only (for section roots). */
+  end?: boolean
+  /** Count shown beside the label, e.g. pending requests. */
+  badge?: number
 }
 
 export interface NavSection {

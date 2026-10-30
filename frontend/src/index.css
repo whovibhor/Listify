@@ -6,7 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * WorkPulse design tokens.
+ * Listify design tokens.
  * Raw values live on :root / .dark; @theme inline maps them to Tailwind utilities
  * (bg-primary, text-status-blocked, shadow-card, duration-base, ...).
  * Brand: restrained violet. Text/background pairs target WCAG 2.2 AA (>= 4.5:1).
@@ -79,7 +79,9 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  --shadow-card: 0 1px 2px 0 oklch(0.25 0.03 290 / 0.06), 0 1px 3px 0 oklch(0.25 0.03 290 / 0.05);
+  /* Cards have no borders: this shadow plus the tinted page background separates them. */
+  --shadow-card:
+    0 1px 2px 0 oklch(0.25 0.03 290 / 0.07), 0 2px 8px -2px oklch(0.25 0.03 290 / 0.08);
   --shadow-raised:
     0 4px 12px -2px oklch(0.25 0.03 290 / 0.1), 0 2px 4px -2px oklch(0.25 0.03 290 / 0.06);
   --shadow-overlay: 0 16px 40px -8px oklch(0.2 0.03 290 / 0.22);
@@ -96,7 +98,7 @@
   --duration-base: 200ms;
   --duration-slow: 320ms;
 
-  --background: oklch(0.988 0.003 286);
+  --background: oklch(0.972 0.006 286);
   --foreground: oklch(0.21 0.02 286);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.21 0.02 286);

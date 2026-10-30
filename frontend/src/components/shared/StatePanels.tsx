@@ -17,7 +17,7 @@ export function EmptyState({ icon: Icon, title, description, action, className }
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-12 text-center',
+        'flex flex-col items-center justify-center gap-3 rounded-xl bg-card px-6 py-12 text-center shadow-card',
         className,
       )}
     >
@@ -49,10 +49,7 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className={cn(
-        'flex flex-col items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4',
-        className,
-      )}
+      className={cn('flex flex-col items-start gap-3 rounded-xl bg-destructive/8 p-4', className)}
     >
       <div className="flex items-start gap-2">
         <CircleAlertIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-destructive" />

@@ -28,8 +28,8 @@ def test_production_accepts_secure_configuration() -> None:
         app_env="production",
         session_secret="x" * 48,
         db_password="not-empty",
-        frontend_origins=["https://app.workpulse.example"],
-        frontend_base_url="https://app.workpulse.example",
+        frontend_origins=["https://app.listify.example"],
+        frontend_base_url="https://app.listify.example",
         mail_backend="smtp",
     )
     assert settings.is_production
@@ -43,18 +43,20 @@ def test_production_rejects_console_mailer_and_insecure_cookies() -> None:
             app_env="production",
             session_secret="x" * 48,
             db_password="not-empty",
-            frontend_origins=["https://app.workpulse.example"],
-            frontend_base_url="https://app.workpulse.example",
+            frontend_origins=["https://app.listify.example"],
+            frontend_base_url="https://app.listify.example",
             mail_backend="console",
             cookie_secure=False,
+            rate_limits_enabled=False,
         )
     message = str(exc_info.value)
     assert "MAIL_BACKEND" in message
     assert "COOKIE_SECURE" in message
+    assert "RATE_LIMITS_ENABLED" in message
 
 
 def test_database_url_never_renders_password_by_default() -> None:
-    settings = Settings(_env_file=None, db_password="s3cr3t!@#", db_name="workpulse")
+    settings = Settings(_env_file=None, db_password="s3cr3t!@#", db_name="listify")
 
     url = settings.database_url()
 
@@ -65,6 +67,6 @@ def test_database_url_never_renders_password_by_default() -> None:
 
 
 def test_database_url_uses_test_db_name_when_requested() -> None:
-    settings = Settings(_env_file=None, db_name="workpulse", db_test_name="workpulse_test")
-    assert settings.database_url(test=True).database == "workpulse_test"
-    assert settings.database_url().database == "workpulse"
+    settings = Settings(_env_file=None, db_name="listify", db_test_name="listify_test")
+    assert settings.database_url(test=True).database == "listify_test"
+    assert settings.database_url().database == "listify"

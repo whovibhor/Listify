@@ -76,7 +76,7 @@ export function FormAlert({ message }: { message: string | null }) {
       role="alert"
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+      className="rounded-lg bg-destructive/8 px-3 py-2 text-sm text-destructive"
     >
       {message}
     </motion.p>

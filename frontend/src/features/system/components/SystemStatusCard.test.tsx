@@ -6,7 +6,7 @@ import { jsonResponse, renderWithProviders } from '@/test/render'
 
 const healthy = {
   status: 'ok',
-  service: 'WorkPulse API',
+  service: 'Listify API',
   version: '0.1.0',
   environment: 'development',
   checks: { database: { status: 'ok', latency_ms: 2.4 } },

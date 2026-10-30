@@ -65,7 +65,7 @@ export function MyDayPage() {
       {/* Hero: date, greeting, progress and quick add in one place. */}
       <section
         aria-labelledby="my-day-title"
-        className="relative overflow-hidden rounded-3xl border bg-linear-to-br from-accent via-card to-card p-5 shadow-card sm:p-7"
+        className="relative overflow-hidden rounded-3xl bg-linear-to-br from-accent via-card to-card p-5 shadow-card sm:p-7"
       >
         <div
           aria-hidden
@@ -111,7 +111,7 @@ export function MyDayPage() {
           onRetry={() => void remaining.refetch()}
         />
       ) : remainingTotal === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed px-6 py-10 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-2xl bg-card px-6 py-10 text-center shadow-card">
           <span className="grid size-12 place-items-center rounded-full bg-success/10 text-success">
             {doneTotal > 0 ? (
               <PartyPopperIcon aria-hidden className="size-6" />

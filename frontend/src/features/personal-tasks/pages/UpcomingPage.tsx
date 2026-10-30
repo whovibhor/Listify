@@ -82,8 +82,8 @@ export function UpcomingPage() {
               key={day.key}
               id={`day-${day.key}`}
               className={cn(
-                'scroll-mt-20 rounded-2xl border bg-card/60 p-3 shadow-card transition-[border-color,box-shadow] duration-(--duration-base) sm:grid sm:grid-cols-[4.5rem_1fr] sm:gap-4 sm:p-4',
-                day.key === selected && 'border-primary/50 ring-2 ring-primary/15',
+                'scroll-mt-20 rounded-2xl bg-card p-3 shadow-card transition-[background-color,box-shadow] duration-(--duration-base) sm:grid sm:grid-cols-[4.5rem_1fr] sm:gap-4 sm:p-4',
+                day.key === selected && 'shadow-raised',
               )}
             >
               <h2 className="mb-2 flex items-baseline gap-2 sm:mb-0 sm:flex-col sm:items-center sm:gap-0 sm:pt-1 sm:text-center">
@@ -102,6 +102,7 @@ export function UpcomingPage() {
                 </span>
               </h2>
               <TaskRows
+                nested
                 tasks={day.tasks}
                 timezone={timezone}
                 onOpen={openTask}

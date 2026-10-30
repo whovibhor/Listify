@@ -7,6 +7,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { allNavItems } from '@/components/layout/navigation'
 import { AuthLayout } from '@/features/auth/components/AuthLayout'
 import { GuestOnly, RequireAuth } from '@/features/auth/components/RouteGuards'
+import { OrganizationLayout } from '@/features/organizations/components/OrganizationLayout'
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
@@ -53,6 +54,81 @@ const personalRoutes: RouteObject[] = [
       Component: (await import('@/features/dashboards/pages/PersonalAnalyticsPage'))
         .PersonalAnalyticsPage,
     }),
+  },
+]
+
+const organizationRoutes: RouteObject[] = [
+  {
+    path: '/organizations/new',
+    lazy: async () => ({
+      Component: (await import('@/features/organizations/pages/CreateOrganizationPage'))
+        .CreateOrganizationPage,
+    }),
+  },
+  {
+    path: '/organizations/join',
+    lazy: async () => ({
+      Component: (await import('@/features/organizations/pages/JoinOrganizationPage'))
+        .JoinOrganizationPage,
+    }),
+  },
+  {
+    path: '/invite/:token',
+    lazy: async () => ({
+      Component: (await import('@/features/organizations/pages/InvitationPage')).InvitationPage,
+    }),
+  },
+  {
+    path: '/org/:organizationId',
+    element: <OrganizationLayout />,
+    children: [
+      {
+        index: true,
+        lazy: async () => ({
+          Component: (await import('@/features/organizations/pages/OrganizationOverviewPage'))
+            .OrganizationOverviewPage,
+        }),
+      },
+      {
+        path: 'departments',
+        lazy: async () => ({
+          Component: (await import('@/features/organizations/pages/DepartmentsPage'))
+            .DepartmentsPage,
+        }),
+      },
+      {
+        path: 'members',
+        lazy: async () => ({
+          Component: (await import('@/features/organizations/pages/MembersPage')).MembersPage,
+        }),
+      },
+      {
+        path: 'requests',
+        lazy: async () => ({
+          Component: (await import('@/features/organizations/pages/RequestsPage')).RequestsPage,
+        }),
+      },
+      {
+        path: 'invitations',
+        lazy: async () => ({
+          Component: (await import('@/features/organizations/pages/InvitationsPage'))
+            .InvitationsPage,
+        }),
+      },
+      {
+        path: 'activity',
+        lazy: async () => ({
+          Component: (await import('@/features/organizations/pages/AuditLogPage')).AuditLogPage,
+        }),
+      },
+      {
+        path: 'settings',
+        lazy: async () => ({
+          Component: (await import('@/features/organizations/pages/OrganizationSettingsPage'))
+            .OrganizationSettingsPage,
+        }),
+      },
+    ],
   },
 ]
 
@@ -106,6 +182,7 @@ export const routes: RouteObject[] = [
                 ],
               },
               ...personalRoutes,
+              ...organizationRoutes,
               ...plannedRoutes,
               ...devRoutes,
               { path: '*', element: <NotFoundPage /> },

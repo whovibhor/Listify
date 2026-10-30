@@ -18,15 +18,15 @@ class Settings(BaseSettings):
         env_file=BACKEND_DIR / ".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    app_name: str = "WorkPulse API"
+    app_name: str = "Listify API"
     app_env: Literal["development", "test", "production"] = "development"
     app_version: str = "0.1.0"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
     db_host: str = "127.0.0.1"
     db_port: int = 3306
-    db_name: str = "workpulse"
-    db_user: str = "workpulse_app"
+    db_name: str = "listify"
+    db_user: str = "listify_app"
     db_password: SecretStr = SecretStr("")
     db_test_name: str | None = None
 
@@ -40,11 +40,13 @@ class Settings(BaseSettings):
     # None → Secure cookies only in production. Override for HTTPS staging.
     cookie_secure: bool | None = None
     password_reset_ttl_minutes: int = Field(default=60, ge=5, le=24 * 60)
+    # Off only for the isolated E2E server, which registers many users from one IP.
+    rate_limits_enabled: bool = True
 
     # Public URL of the SPA, used to build links in emails.
     frontend_base_url: str = "http://localhost:5173"
     mail_backend: Literal["console", "smtp"] = "console"
-    mail_from: str = "WorkPulse <no-reply@workpulse.local>"
+    mail_from: str = "Listify <no-reply@listify.local>"
 
     @field_validator("frontend_origins", mode="before")
     @classmethod
@@ -71,6 +73,8 @@ class Settings(BaseSettings):
             problems.append("MAIL_BACKEND=console would write password-reset links to logs")
         if self.cookie_secure is False:
             problems.append("COOKIE_SECURE cannot be false in production")
+        if not self.rate_limits_enabled:
+            problems.append("RATE_LIMITS_ENABLED cannot be false in production")
         if problems:
             raise ValueError("Invalid production configuration: " + "; ".join(problems))
         return self

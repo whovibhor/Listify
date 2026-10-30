@@ -14,7 +14,7 @@ export const testUser: User = {
 
 export const healthyResponse = {
   status: 'ok',
-  service: 'WorkPulse API',
+  service: 'Listify API',
   version: '0.1.0',
   environment: 'test',
   checks: { database: { status: 'ok', latency_ms: 1 } },
@@ -90,6 +90,7 @@ export function signedInRoutes(extra: Record<string, Handler | unknown> = {}) {
     'GET /me/dashboard': emptyDashboard,
     'GET /me/tasks': emptyPage(),
     'GET /me/tags': [],
+    'GET /me/organizations': [],
     ...extra,
   }
 }

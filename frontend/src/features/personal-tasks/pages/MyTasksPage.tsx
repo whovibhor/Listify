@@ -88,8 +88,8 @@ function SummaryChip({
     <Link
       to={to}
       className={cn(
-        'flex min-w-0 items-center gap-3 rounded-xl border bg-card px-3 py-2.5 shadow-card outline-none',
-        'transition-[border-color,box-shadow] duration-(--duration-fast) hover:border-primary/30 hover:shadow-raised focus-visible:ring-3 focus-visible:ring-ring/50',
+        'flex min-w-0 items-center gap-3 rounded-xl bg-card px-3 py-2.5 shadow-card outline-none',
+        'transition-shadow duration-(--duration-fast) hover:shadow-raised focus-visible:ring-3 focus-visible:ring-ring/50',
       )}
     >
       <span

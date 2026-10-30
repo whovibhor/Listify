@@ -1,4 +1,43 @@
-# WorkPulse — Development Log
+# Listify — Development Log
+
+## 2026-10-30 — Phase 3 complete: organizations, departments & membership; rename; borderless cards
+
+### Requested by the owner
+Start the servers; no borders on cards; explain how to start from the terminal; rename the site to Listify; start Phase 3.
+
+### Changes
+- **Rename:** WorkPulse → Listify across code, docs, cookies, logger names and package names (39 files), plus a new checklist logo and favicon. The BRD/PRD file names are unchanged.
+- **Borderless cards:** removed from every card surface, including the shadcn Card; section side bars removed; nested task rows use a tinted fill; page background deepened and card shadow strengthened so cards still separate.
+- **Phase 3 backend:** `modules/organizations`, `memberships`, `permissions`, `audit_logs`; migration `fa2cb7581b65` (11 tables plus seeded roles and permissions).
+- **Phase 3 frontend:** workspace switcher, permission-based navigation, Create and Join pages, invitation page, and Overview, Departments, Members, Join requests, Invitations, Activity log and Settings pages.
+
+### Tests executed (all actually run)
+| Suite | Result |
+|---|---|
+| Backend pytest (real MySQL) | **133 passed** (37 new) |
+| Frontend Vitest | **62 passed** (11 new) |
+| Playwright E2E | **15 passed, 1 skipped by design** (responsive runs once with explicit viewports). New: two-user join-and-approve journey, private-org invitation journey, axe scans of 9 organization pages, responsive check of 15 pages at 3 widths |
+| Ruff, ESLint, Prettier, `tsc -b`, `vite build` | passed; no warnings |
+| `npm audit --omit=dev` | 0 vulnerabilities |
+| Migrations | upgrade → downgrade → upgrade on `listify` and `listify_test`; `alembic check` clean |
+| Visual review | screenshots of My Day, organization overview, departments and members (desktop/phone) |
+
+### Defects found and fixed during the phase
+- Approve/reject responses returned an empty department name.
+- Test cleanup would have wiped the seeded roles and permissions; they're now excluded in both reset paths.
+- E2E hit the real registration rate limit (10/hour per IP). Added `RATE_LIMITS_ENABLED`, off only for the isolated E2E server; production startup refuses it.
+- Downgrade dropped indexes needed by foreign keys (same MySQL rule as earlier phases).
+
+### Known limitations
+- Invitation emails go to the backend log until SMTP arrives (Phase 8). The one-time link shown to the admin works today.
+- The outcome of a join request appears on the Join page; in-app notifications arrive in Phase 6.
+- Changing roles and suspending, removing or transferring members arrive in Phase 4. Tests set suspended/removed status directly to prove access stops at once.
+- Organization logos wait for file storage (Phase 6).
+- Tasks inside organizations arrive in Phase 5. Archiving a department doesn't affect tasks yet, because none exist.
+- CI still not executed (no GitHub remote); nothing committed.
+
+### Next
+**Phase 4 — Roles & permissions.**
 
 ## 2026-10-29 — Persistence audit, page redesign, responsive pass
 

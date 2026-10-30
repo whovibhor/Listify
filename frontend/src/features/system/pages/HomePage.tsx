@@ -23,7 +23,7 @@ import { pageEnter } from '@/lib/motion'
 function TodayPreview({ timezone }: { timezone: string }) {
   const { data, isPending } = useTasks({ view: 'my_day', page_size: 5 })
   return (
-    <section aria-labelledby="today-heading" className="rounded-xl border bg-card p-4 shadow-card">
+    <section aria-labelledby="today-heading" className="rounded-xl bg-card p-4 shadow-card">
       <div className="mb-3 flex items-center justify-between">
         <h2 id="today-heading" className="flex items-center gap-2 font-semibold">
           <SunIcon aria-hidden className="size-4 text-primary" />
@@ -76,7 +76,7 @@ export function HomePage() {
   return (
     <motion.div {...pageEnter} className="space-y-6">
       <PageHeader
-        title={firstName ? `Hi, ${firstName}` : 'Welcome to WorkPulse'}
+        title={firstName ? `Hi, ${firstName}` : 'Welcome to Listify'}
         description="Here's where your personal work stands."
       />
       <QuickAddTask
@@ -120,7 +120,7 @@ export function HomePage() {
           {dashboard ? (
             <Link
               to="/personal/tasks"
-              className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-card transition-shadow hover:shadow-raised"
+              className="flex items-center gap-3 rounded-xl bg-card p-4 shadow-card transition-shadow hover:shadow-raised"
             >
               <ListTodoIcon aria-hidden className="size-5 text-primary" />
               <span className="flex-1 text-sm">

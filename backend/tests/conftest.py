@@ -71,7 +71,9 @@ def db_sessionmaker(test_engine: Engine) -> Iterator[sessionmaker[Session]]:
         tables = connection.execute(
             text(
                 "SELECT table_name FROM information_schema.tables "
-                "WHERE table_schema = DATABASE() AND table_name <> 'alembic_version'"
+                "WHERE table_schema = DATABASE() AND table_name NOT IN "
+                # Migration-seeded reference data stays; only user data is cleared.
+                "('alembic_version', 'roles', 'permissions', 'role_permissions')"
             )
         ).scalars()
         connection.execute(text("SET FOREIGN_KEY_CHECKS = 0"))

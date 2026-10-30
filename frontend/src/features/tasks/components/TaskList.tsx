@@ -46,8 +46,9 @@ export function TaskListSkeleton({ rows = 4 }: { rows?: number }) {
 export function TaskRows({
   tasks,
   className,
+  nested,
   ...props
-}: { tasks: Task[]; className?: string } & Pick<
+}: { tasks: Task[]; className?: string; nested?: boolean } & Pick<
   TaskListProps,
   'timezone' | 'onOpen' | 'selectedId'
 >) {
@@ -61,6 +62,7 @@ export function TaskRows({
             timezone={props.timezone}
             onOpen={props.onOpen}
             selected={props.selectedId === task.id}
+            nested={nested}
           />
         ))}
       </AnimatePresence>

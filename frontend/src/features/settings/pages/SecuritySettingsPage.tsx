@@ -119,7 +119,7 @@ function SessionRow({ session }: { session: UserSession }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, height: 0 }}
       transition={transitions.base}
-      className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2.5"
+      className="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-2.5"
     >
       <MonitorSmartphoneIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
@@ -143,7 +143,7 @@ function SessionRow({ session }: { session: UserSession }) {
             <AlertDialogHeader>
               <AlertDialogTitle>Sign out {device}?</AlertDialogTitle>
               <AlertDialogDescription>
-                That device will need to sign in again to use WorkPulse.
+                That device will need to sign in again to use Listify.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

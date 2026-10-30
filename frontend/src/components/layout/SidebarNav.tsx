@@ -1,7 +1,7 @@
 import { motion } from 'motion/react'
 import { NavLink } from 'react-router'
 
-import { personalNavigation } from '@/components/layout/navigation'
+import { useWorkspaceNavigation } from '@/components/layout/use-workspace-navigation'
 import { transitions } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
@@ -12,9 +12,11 @@ interface SidebarNavProps {
 }
 
 export function SidebarNav({ instanceId, onNavigate }: SidebarNavProps) {
+  const sections = useWorkspaceNavigation()
+
   return (
     <nav aria-label="Main" className="flex flex-col gap-5">
-      {personalNavigation.map((section, index) => (
+      {sections.map((section, index) => (
         <div key={section.label ?? index} className="flex flex-col gap-0.5">
           {section.label ? (
             <h2 className="px-2.5 pb-1 text-[0.7rem] font-semibold tracking-wider text-muted-foreground uppercase">
@@ -26,7 +28,7 @@ export function SidebarNav({ instanceId, onNavigate }: SidebarNavProps) {
               <li key={item.to}>
                 <NavLink
                   to={item.to}
-                  end={item.to === '/'}
+                  end={item.end ?? item.to === '/'}
                   onClick={onNavigate}
                   className={({ isActive }) =>
                     cn(
@@ -53,6 +55,12 @@ export function SidebarNav({ instanceId, onNavigate }: SidebarNavProps) {
                       {item.plannedMilestone ? (
                         <span className="relative rounded-sm bg-muted px-1 py-px text-[0.65rem] font-medium text-muted-foreground">
                           Soon
+                        </span>
+                      ) : null}
+                      {item.badge ? (
+                        <span className="relative min-w-5 rounded-full bg-primary px-1.5 text-center text-[0.7rem] font-semibold text-primary-foreground tabular-nums">
+                          <span className="sr-only">Pending: </span>
+                          {item.badge}
                         </span>
                       ) : null}
                     </>

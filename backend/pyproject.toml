@@ -1,7 +1,7 @@
 [project]
-name = "workpulse-backend"
+name = "listify-backend"
 version = "0.1.0"
-description = "WorkPulse API — FastAPI modular monolith"
+description = "Listify API — FastAPI modular monolith"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.162,<1.0",

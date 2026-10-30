@@ -1,6 +1,6 @@
-# WorkPulse — Database Design
+# Listify — Database Design
 
-Status: **Phase 2 schema + user preferences applied** (head revision `004bd59b961b`). Databases: `listify` (development) and `listify_test` (automated tests and E2E).
+Status: **Phase 3 schema applied** (head revision `fa2cb7581b65`). Databases: `listify` (development) and `listify_test` (automated tests and E2E).
 
 ## Server and conventions
 
@@ -12,7 +12,7 @@ Status: **Phase 2 schema + user preferences applied** (head revision `004bd59b96
 - Primary keys: `BIGINT UNSIGNED AUTO_INCREMENT` internally. Public identifiers exposed in URLs will be decided in M1 (proposal: keep integer IDs, rely on object-level authorization returning 404; revisit if enumeration becomes a concern).
 - Constraint naming convention is defined in `app/db/base.py` so Alembic diffs stay stable.
 - Every migration must have a working `downgrade()`; destructive changes need a data-migration note in this file.
-- Tests run against `workpulse_test`, never the development database.
+- Tests run against `listify_test`, never the development database.
 
 ## Phase 1 tables
 
@@ -42,6 +42,20 @@ Enums are stored as VARCHAR + CHECK (not native `ENUM`) so later phases can add 
 |---|---|---|---|
 | `user_preferences` | `user_id` PK/FK, `theme` (light\|dark\|system, VARCHAR+CHECK), `updated_at` | PK = `user_id` (one row per user) | CASCADE from users. Created on first save; absent row = defaults (`system`). Typed columns (not key/value) so the database validates values; notification preferences join this table in Phase 8. |
 
+## Phase 3 tables (revision `fa2cb7581b65`)
+
+| Table | Key columns | Keys & constraints | Notes |
+|---|---|---|---|
+| `organizations` | `name`, `slug`, `description`, `website`, `location`, `timezone`, `is_discoverable`, `review_required`, `status`, `created_by` | `slug` unique | Never hard-deleted; RESTRICT everywhere. |
+| `departments` | `organization_id`, `name`, `description`, `status`, `open_for_join_requests` | unique (`organization_id`, `name`); unique (`organization_id`, `id`) | The second unique key is the target of composite foreign keys. |
+| `organization_memberships` | `organization_id`, `user_id`, `status`, `primary_department_id`, `job_title`, `joined_at` | unique (`organization_id`, `user_id`); composite FK to `departments` | Only `active` grants access. |
+| `department_memberships` | `organization_id`, `department_id`, `user_id`, `joined_at` | unique (`department_id`, `user_id`); composite FK | A row can't point at another organization's department. |
+| `roles`, `permissions`, `role_permissions` | seeded by the migration | `key` unique | Reference data: not cleared by test resets. `tests` compare it with `permissions/catalog.py`. |
+| `membership_roles` | `membership_id`, `role_id`, `department_id`, `assigned_by` | unique (`membership_id`, `role_id`, `department_id`) | `department_id` set = role applies in that department only. |
+| `membership_requests` | `organization_id`, `user_id`, `requested_department_id`, `job_title`, `note`, `status`, `pending_user_id`, review fields | composite FK; unique (`organization_id`, `pending_user_id`) | `pending_user_id` is a stored generated column (`user_id` while pending, else NULL): MySQL has no partial unique index, so this makes "one pending request per person" a database guarantee. |
+| `organization_invitations` | `organization_id`, `email`, `token_hash`, `role_id`, `department_id`, `expires_at`, `accepted_at`, `accepted_by`, `revoked_at` | `token_hash` unique; composite FK | Only the SHA-256 of the token is stored. |
+| `audit_logs` | `organization_id`, `actor_id`, `action`, `target_type`, `target_id`, `details`, `created_at` | index (`organization_id`, `created_at`) | Append-only: the API has no update or delete. |
+
 **Persistence rule:** every piece of user-entered data lives in MySQL. The browser keeps only a cached copy of the theme (to avoid a flash on load; the account value wins) and URL state for filters. See `feature-status.md` for the table behind each feature.
 
 ## Planned entities
@@ -52,7 +66,7 @@ The logical model follows PRD §8 with the additions listed in `requirements-ana
 |---|---|
 | M1 ✅ | users, user_sessions, password_reset_tokens, rate_limit_buckets (`user_preferences` moved to M8 with notification preferences) |
 | M2 ✅ | tasks, tags, task_tags, task_activity_logs |
-| M3 | organizations, departments, organization_memberships, department_memberships, roles, permissions, role_permissions, membership_roles, membership_requests, organization_invitations, audit_logs |
+| M3 ✅ | organizations, departments, organization_memberships, department_memberships, roles, permissions, role_permissions, membership_roles, membership_requests, organization_invitations, audit_logs |
 | M5 | task_collaborators, task_visibility_grants |
 | M6 | task_comments, task_attachments, task_update_requests, notifications |
 
