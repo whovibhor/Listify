@@ -15,11 +15,14 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 | 2 | Personal workspace | ✅ Complete | 2026-10-29 |
 | 3 | Organizations, departments & membership | ✅ Complete | 2026-10-30 |
 | 4 | Roles & permissions | ✅ Complete | 2026-10-30 |
-| 5 | Department Work Boards | 🚧 Next | — |
-| 6 | Collaboration (comments, update requests, attachments, inbox) | ⏳ Planned | — |
+| 5 | Department Work Boards | ✅ Complete | 2026-10-30 |
+| 6 | Collaboration (comments, update requests, attachments, inbox) | 🚧 Next | — |
 | 7 | Dashboards & reporting | ⏳ Planned | — |
 | 8 | Reminders & scheduled notifications | ⏳ Planned | — |
 | 9 | Production readiness | ⏳ Planned | — |
+| Future | Sign-in with Google and other providers | ⏳ Planned | — |
+
+Security status: [`security-audit.md`](security-audit.md). 16 of 28 findings are fixed. Sign-in stays unchanged until the Future row, and the MySQL account stays unchanged until Phase 9, by the owner's decision.
 
 ## What you get in each phase (feature checklist)
 
@@ -71,16 +74,18 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 - [x] Add members to additional departments; transfer ownership
 - Note: the impact preview covers departments, roles, departments left without a manager and waiting join requests. Task and update-request counts join it in Phases 5 and 6, when those records exist. Telling people about changes to their access arrives with notifications in Phase 6.
 
-### Phase 5 — Department Work Boards
-- [ ] Department board in Kanban (drag-and-drop), List and Calendar views
-- [ ] Create organization tasks with assignee, collaborators, visibility, tags
-- [ ] Filters: assignee, creator, priority, status, due date, tags, overdue (kept in the URL)
-- [ ] Organization "My Work" and "Team Tasks" views; search
-- [ ] Visibility rules: Private / Department / Selected users / Organization
-- [ ] Impact preview counts open assigned tasks; suspended or removed assignees' tasks are flagged for reassignment
-- [ ] Task permissions added to the role × permission matrix test
+### Phase 5 — Department Work Boards ✅
+- [x] Department board in Kanban (drag-and-drop), List and Calendar views
+- [x] Create organization tasks with assignee, collaborators, visibility, tags
+- [x] Filters: assignee, creator, priority, status, due date, tags, overdue (kept in the URL)
+- [x] Organization "My Work" and "Team Tasks" views; search
+- [x] Visibility rules: Private / Department / Selected users / Organization
+- [x] Impact preview counts open assigned tasks; suspended or removed assignees' tasks are flagged for reassignment
+- [x] Task permissions added to the role × permission matrix test
+- Note: being told about an assignment needs the notifications table, so it moves to Phase 6 with the inbox. The List view is a plain sortable table; TanStack Table wasn't needed.
 
 ### Phase 6 — Collaboration
+- [ ] Notify people when they're assigned or added to a task, and when their access changes
 - [ ] Comments (edit/delete your own) and full activity timeline on tasks
 - [ ] Request a progress update; recipient responds from the Inbox
 - [ ] File attachments with access checks on every download
@@ -98,7 +103,15 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 - [ ] Notification preferences; optional email delivery
 - [ ] Background worker (Redis + Celery) with duplicate-safe jobs
 
+### Future — Sign-in with Google and other providers
+- [ ] Login with Google using OpenID Connect, stored in a `user_identities` table (ADR-005)
+- [ ] Other providers after that
+- [ ] Safe account linking: link only verified emails, or remove the old password and sign out every session when linking
+- [ ] Decide whether password sign-in stays. If it does, add email confirmation, exact-match email lookups, fairer login limits and stronger password checks (audit S-02, S-03, S-06, S-14, S-16)
+
 ### Phase 9 — Production readiness
+- [ ] Dedicated MySQL account with a password, local-only binding, and refuse root in production (audit S-04)
+- [ ] Frontend security headers, HTTPS and `__Host-` cookies in Nginx (audit S-08)
 - [ ] Security review, dependency audit, accessibility audit, responsive QA
 - [ ] Backups + restore drill, monitoring, error reporting
 - [ ] Deployment runbook (Nginx + Gunicorn/Uvicorn), production config checks

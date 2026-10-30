@@ -1,5 +1,6 @@
 import { STATUS_LABELS, type TaskStatus } from '@/features/tasks/task-meta'
-import type { TaskActivity } from '@/features/tasks/types'
+import type { TaskActivity, TaskVisibility } from '@/features/tasks/types'
+import { VISIBILITY_LABELS } from '@/features/work/types'
 
 const FIELD_LABELS: Record<string, string> = {
   title: 'title',
@@ -34,6 +35,16 @@ export function describeActivity(activity: TaskActivity): string {
       return 'archived this task'
     case 'restored':
       return 'restored this task'
+    case 'assigned':
+      return newValue.name ? `assigned this to ${String(newValue.name)}` : 'unassigned this task'
+    case 'collaborator_added':
+      return `added ${String(newValue.name)} as a collaborator`
+    case 'collaborator_removed':
+      return `removed ${String(oldValue.name)} as a collaborator`
+    case 'moved':
+      return `moved this to ${newValue.department ? String(newValue.department) : 'no department'}`
+    case 'visibility_changed':
+      return `changed visibility to ${VISIBILITY_LABELS[newValue.visibility as TaskVisibility]}`
     case 'subtask_added':
       return `added subtask “${String(newValue.title)}”`
     case 'subtask_deleted':

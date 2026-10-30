@@ -86,6 +86,10 @@ function ImpactSummary({ impact, member }: { impact: MemberImpact; member: Membe
       paused ? 'Roles paused' : 'Roles ending',
       impact.roles_ending.map((role) => roleLabel(role, member.departments)).join(', '),
     ],
+    [
+      'Open tasks',
+      impact.tasks_to_reassign > 0 ? `${impact.tasks_to_reassign} flagged for reassignment` : '',
+    ],
   ]
   return (
     <div className="space-y-2 text-sm">

@@ -11,11 +11,11 @@ Milestones (M0–M9) are defined in `implementation-roadmap.md`. Status values: 
 | BR-003 | Create organization, profile, departments | M3 | `test_creator_becomes_owner_with_departments_and_audit`, `test_department_lifecycle` | Done |
 | BR-004 | Membership via invitation or approval | M3 | `test_pending_request_grants_nothing_until_approved`, `test_email_invitation_flow`, `e2e/organizations.spec.ts` | Done |
 | BR-005 | Requested department approve/reject/change | M3 | `test_approver_can_amend_department_and_role`, `test_rejection_grants_no_access_and_allows_a_new_request` | Done |
-| BR-006 | No board without membership/permission | M5 | `test_board_access_denied_non_member` | Planned |
-| BR-007 | Creator, single assignee, collaborators | M5 | `test_task_roles_distinct` | Planned |
-| BR-008 | Priority, status, deadline, tags, description, scope | M2, M5 | `test_task_fields_validation` | Planned |
+| BR-006 | No board without membership/permission | M5 | `test_board_access_denied_non_member`, `test_other_organizations_stay_out` | Done |
+| BR-007 | Creator, single assignee, collaborators | M5 | `test_task_roles_distinct` | Done |
+| BR-008 | Priority, status, deadline, tags, description, scope | M2, M5 | `test_task_department_must_belong_to_org_and_to_the_creator`, `test_tags_belong_to_the_organization` | Done |
 | BR-009 | Comment, collaborate, review history | M6 | `test_comments_visibility`, `test_activity_log` | Planned |
-| BR-010 | Assign to eligible members | M5 | `test_assign_requires_active_member` | Planned |
+| BR-010 | Assign to eligible members | M5 | `test_assign_requires_active_member_of_the_department`, `test_assignment_rights` | Done |
 | BR-011 | Request status/progress update | M6 | `test_update_request_lifecycle` | Planned |
 | BR-012 | Dashboards with documented definitions | M2, M7 | `test_metrics_*` fixtures | Planned |
 | BR-013 | Audit membership/permission/assignment/state changes | M3–M6 | `test_audit_written_*` | Planned |
@@ -28,7 +28,7 @@ Milestones (M0–M9) are defined in `implementation-roadmap.md`. Status values: 
 | Rule | Summary | Milestone | Planned tests |
 |---|---|---|---|
 | 1 | Personal tasks: no org/dept scope, private | M2 | DB CHECK test, isolation tests |
-| 2 | Org task in valid org; dept ∈ org | M5 | `test_task_department_must_belong_to_org` |
+| 2 | Org task in valid org; dept ∈ org | M5 | `test_task_department_must_belong_to_org_and_to_the_creator`, `test_the_database_refuses_a_task_with_mixed_scope` |
 | 3 | Only active members assignable | M5 | `test_assign_suspended_member_rejected` |
 | 4 | Creator/assignee/collaborator distinct | M5 | `test_task_roles_distinct` |
 | 5 | Collaborator → task-only access | M5 | `test_collaborator_cannot_list_board` |
@@ -40,7 +40,7 @@ Milestones (M0–M9) are defined in `implementation-roadmap.md`. Status values: 
 | 11 | Overdue definition | M2, M7 | `test_overdue_excludes_no_due`, `test_overdue_terminal_excluded` |
 | 12 | Explicit deadline timezone | M2 | `test_due_at_timezone_roundtrip` |
 | 13 | Historical attribution | M7 | `test_completed_department_snapshot` |
-| 14 | Checks on reads/search/exports/notifications/attachments/aggregates | M5–M8 | per-surface negative tests |
+| 14 | Checks on reads/search/exports/notifications/attachments/aggregates | M5–M8 | `test_visibility_matrix` (reads, lists, search); later surfaces in M6–M8 |
 
 ## Functional requirements (PRD §5)
 
@@ -58,26 +58,26 @@ Milestones (M0–M9) are defined in `implementation-roadmap.md`. Status values: 
 | FR-PER-05 | P0 | Personal dashboard counts and trends | M2 | `test_dashboard.py`, `analytics.test.tsx` | Done |
 | FR-PER-06 | P2 | Recurring tasks | Later | — | Deferred |
 | FR-ORG-01 | P0 | Create org; creator = owner | M3 | `test_creator_becomes_owner_with_departments_and_audit`, `test_organization_creation_is_atomic` | Done |
-| FR-ORG-02 | P0 | Create/edit/archive departments | M3 | `test_department_lifecycle`, `test_only_open_active_departments_can_be_requested` (blocking new tasks: M5) | Done |
+| FR-ORG-02 | P0 | Create/edit/archive departments | M3 | `test_department_lifecycle`, `test_only_open_active_departments_can_be_requested` , `test_archived_department_blocks_new_tasks_but_keeps_old_ones` | Done |
 | FR-ORG-03 | P1 | Invite by email/link, expiring | M3 | `tests/test_invitations.py`, `e2e/organizations.spec.ts` | Done |
 | FR-ORG-04 | P0 | Request membership; pending = no access | M3 | `test_pending_request_grants_nothing_until_approved` | Done |
 | FR-ORG-05 | P0 | Choose department; only open active depts | M3 | `test_only_open_active_departments_can_be_requested`, `test_department_is_required_when_some_are_open` | Done |
 | FR-ORG-06 | P0 | Approve/reject/amend atomically | M3 | `test_approval_is_atomic`, `test_approver_can_amend_department_and_role` | Done |
 | FR-ORG-07 | P1 | Suspend/remove member; prompt revocation | M4 | `test_suspended_member_requests_fail`, `test_removing_revokes_access_and_keeps_history`, `e2e/organizations.spec.ts` | Done |
 | FR-ORG-08 | P1 | Department transfer | M4 | `test_transfer_revokes_old_dept`, `test_transfer_leaves_org_wide_access_in_place` | Done |
-| PRD §5.4 | P0 | Permission-based RBAC, predefined roles | M3 (roles, checks), M4 (role changes) | `test_seeded_roles_match_the_code_catalog`, `test_role_permission_matrix` (task permissions join in M5) | Done |
-| PRD §5.5 | P0 | Work Boards: Kanban/List; filters; isolation | M5 | board tests | Planned |
-| PRD §5.5 | P1 | Calendar view | M5 | UI test | Planned |
-| PRD §5.6.1 | P0 | Task fields & validation | M2, M5 | schema tests | Planned |
-| PRD §5.6.2 | P0 | Assignee vs collaborator | M5 | `test_task_roles_distinct` | Planned |
-| PRD §5.6.3 | P0 | Visibility Private/Department/Selected/Org | M5 | `test_visibility_matrix` | Planned |
-| PRD §5.6.4 | P0 | State transitions (ADR-015) | M2 | `test_transitions_matrix` | Planned |
+| PRD §5.4 | P0 | Permission-based RBAC, predefined roles | M3 (roles, checks), M4 (role changes) | `test_seeded_roles_match_the_code_catalog`, `test_role_permission_matrix` | Done |
+| PRD §5.5 | P0 | Work Boards: Kanban/List; filters; isolation | M5 | `test_board_groups_by_status_and_filters`, `work.test.tsx`, `e2e/work.spec.ts` | Done |
+| PRD §5.5 | P1 | Calendar view | M5 | `work.test.tsx`, `e2e/work.spec.ts` | Done |
+| PRD §5.6.1 | P0 | Task fields & validation | M2, M5 | `test_tasks.py`, `test_organization_tasks.py` | Done |
+| PRD §5.6.2 | P0 | Assignee vs collaborator | M5 | `test_task_roles_distinct`, `test_collaborators_can_edit_but_not_reassign` | Done |
+| PRD §5.6.3 | P0 | Visibility Private/Department/Selected/Org | M5 | `test_visibility_matrix` | Done |
+| PRD §5.6.4 | P0 | State transitions (ADR-015) | M2, M5 | `test_transitions_matrix`, `test_review_required_routes_work_through_review` | Done |
 | PRD §5.7 | P1 | Comments, activity, audit | M6 (comments), M2+ (activity) | `test_activity_events` | Planned |
 | PRD §5.8 | P1 | Update requests | M6 | `test_update_request_lifecycle` | Planned |
 | PRD §5.8 | P1 | In-app notifications (no leakage) | M6, M8 | `test_notification_hidden_after_access_loss` | Planned |
 | PRD §5.6.1 | P1 | Attachments with per-download authz | M6 | `test_attachment_download_forbidden` | Planned |
 | PRD §5.9 | P0/P1 | Personal / dept / org / member dashboards | M2, M7 | metric fixture tests | Planned |
-| PRD §6.7 | P1 | Transfer/removal impact preview | M4 (departments, roles, requests); M5/M6 (tasks, update requests, notifications) | `test_transfer_preview`, `test_preview_refuses_what_the_action_would_refuse` | Partly done |
+| PRD §6.7 | P1 | Transfer/removal impact preview | M4 (departments, roles, requests), M5 (tasks); M6 (update requests, notifications) | `test_transfer_preview`, `test_suspending_an_assignee_flags_their_tasks_without_touching_them`, `test_transfer_flags_only_the_old_departments_tasks` | Partly done |
 | PRD §7 | — | Switcher, task panel, states, confirmations, a11y | M0–M9 | RTL + Playwright | Planned |
 | PRD §13 | — | Edge cases 1–10 | M3–M8 | one test per edge case | Planned |
 

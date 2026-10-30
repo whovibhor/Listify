@@ -19,7 +19,8 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Listify API"
-    app_env: Literal["development", "test", "production"] = "development"
+    # No default: a forgotten setting must stop the app, not quietly skip the production checks.
+    app_env: Literal["development", "test", "production"]
     app_version: str = "0.1.0"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 

@@ -22,4 +22,7 @@ def csrf_token_for_session(session_token: str, secret: str) -> str:
 
 
 def tokens_match(a: str | None, b: str | None) -> bool:
-    return bool(a) and bool(b) and hmac.compare_digest(a, b)  # type: ignore[arg-type]
+    if not a or not b:
+        return False
+    # As bytes: comparing text raises an error on any non-ASCII input.
+    return hmac.compare_digest(a.encode(), b.encode())

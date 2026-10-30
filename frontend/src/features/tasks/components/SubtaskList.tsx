@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 
 export function SubtaskList({ task, readOnly }: { task: TaskDetail; readOnly: boolean }) {
   const [title, setTitle] = useState('')
-  const create = useCreateTask()
+  const create = useCreateTask(task.organization_id)
   const action = useTaskAction()
   const remove = useDeleteTask()
 
@@ -103,12 +103,9 @@ export function SubtaskList({ task, readOnly }: { task: TaskDetail; readOnly: bo
             maxLength={200}
             className="h-8"
           />
-          <Button
-            type="submit"
-            variant="outline"
-            size="sm"
-            disabled={!title.trim() || create.isPending}
-          >
+          {/* Not disabled while saving: browsers ignore Enter when a form's submit button is
+              disabled, which would silently drop a subtask typed during the previous save. */}
+          <Button type="submit" variant="outline" size="sm" disabled={!title.trim()}>
             <PlusIcon data-icon="inline-start" />
             Add
           </Button>

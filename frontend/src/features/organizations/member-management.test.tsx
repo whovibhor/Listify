@@ -73,6 +73,7 @@ const impact: MemberImpact = {
   keeps_every_department: false,
   sole_manager_of: [{ id: 3, name: 'Sales' }],
   pending_requests: 2,
+  tasks_to_reassign: 3,
 }
 
 const routes = {
@@ -176,6 +177,7 @@ describe('member sheet', () => {
     expect(await within(dialog).findByText('Access paused')).toBeInTheDocument()
     expect(within(dialog).getByText('Team Lead · Sales', { exact: false })).toBeInTheDocument()
     expect(within(dialog).getByText('Not affected')).toBeInTheDocument()
+    expect(within(dialog).getByText('3 flagged for reassignment')).toBeInTheDocument()
     expect(
       within(dialog).getByText(/Sales will have no Department Manager\. 2 join requests/),
     ).toBeInTheDocument()

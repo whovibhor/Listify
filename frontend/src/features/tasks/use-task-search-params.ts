@@ -28,7 +28,15 @@ export interface TaskFilterState {
   sort: TaskSort | undefined
   page: number
   overdue: boolean
+  // Organization views only.
+  assignee: string
+  creator: string
+  due_from: string
+  due_to: string
 }
+
+/** URL keys beyond the filters: the open task, and each organization page's own settings. */
+type ExtraParam = 'task' | 'layout' | 'month' | 'view' | 'department' | 'flagged' | 'archived'
 
 /**
  * Filters, sort, page and the open task live in the URL: shareable, back-button friendly and
@@ -51,6 +59,10 @@ export function useTaskSearchParams() {
       sort: sort && SORTS.includes(sort) ? sort : undefined,
       page: Math.max(1, Number(params.get('page')) || 1),
       overdue: params.get('overdue') === 'true',
+      assignee: params.get('assignee') ?? '',
+      creator: params.get('creator') ?? '',
+      due_from: params.get('due_from') ?? '',
+      due_to: params.get('due_to') ?? '',
     }
   }, [params])
 
@@ -58,7 +70,9 @@ export function useTaskSearchParams() {
 
   const update = useCallback(
     (
-      changes: Partial<Record<keyof TaskFilterState | 'task', string | string[] | number | null>>,
+      changes: Partial<
+        Record<keyof TaskFilterState | ExtraParam, string | string[] | number | null>
+      >,
     ) => {
       setParams(
         (current) => {
@@ -84,7 +98,18 @@ export function useTaskSearchParams() {
 
   const openTask = useCallback((id: number | null) => update({ task: id }), [update])
   const clearFilters = useCallback(
-    () => update({ status: null, priority: null, tag: null, q: null, overdue: null }),
+    () =>
+      update({
+        status: null,
+        priority: null,
+        tag: null,
+        q: null,
+        overdue: null,
+        assignee: null,
+        creator: null,
+        due_from: null,
+        due_to: null,
+      }),
     [update],
   )
   const activeFilterCount =
@@ -92,7 +117,8 @@ export function useTaskSearchParams() {
     filters.priority.length +
     filters.tag.length +
     (filters.q ? 1 : 0) +
-    (filters.overdue ? 1 : 0)
+    (filters.overdue ? 1 : 0) +
+    [filters.assignee, filters.creator, filters.due_from, filters.due_to].filter(Boolean).length
 
   return { filters, update, openTaskId, openTask, clearFilters, activeFilterCount }
 }

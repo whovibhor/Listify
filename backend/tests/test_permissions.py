@@ -1,7 +1,7 @@
 """Every role against every permission-guarded endpoint that exists so far (ADR-011).
 
-Each case runs against the real API, so a route that forgot its check fails here. Task permissions
-join this table with the organization task endpoints in Phase 5.
+Each case runs against the real API, so a route that forgot its check fails here. Who can see which
+task is covered by the visibility matrix in `test_organization_tasks.py`.
 """
 
 from collections.abc import Callable
@@ -29,6 +29,7 @@ ROLE_KEYS = ("owner", "admin", "department_manager", "team_lead", "member")
 ADMINS = {"owner", "admin"}
 OWNER_ONLY = {"owner"}
 MANAGERS = ADMINS | {"department_manager"}
+LEADS = MANAGERS | {"team_lead"}
 
 
 @dataclass
@@ -40,6 +41,9 @@ class World:
     sales: int
     clients: dict[str, ApiClient]
     subject: int  # the membership of an ordinary Engineering member, to act on
+    subject_user: int
+    task: int  # created by the Owner, in Engineering, so nobody else is on it
+    tag: int
     engineering_request: int
     sales_request: int
 
@@ -50,6 +54,10 @@ class World:
     @property
     def member_url(self) -> str:
         return f"{self.base}/members/{self.subject}"
+
+    @property
+    def task_url(self) -> str:
+        return f"/api/v1/tasks/{self.task}"
 
 
 @pytest.fixture(autouse=True)
@@ -83,12 +91,20 @@ def world(api: ApiClient, make_api) -> World:
     members = api.get(
         f"/api/v1/organizations/{org['id']}/members", params={"q": "Sam Subject"}
     ).json()
+    task = api.post(
+        f"/api/v1/organizations/{org['id']}/tasks",
+        json={"title": "Team task", "department_id": engineering},
+    ).json()
+    tag = api.post(f"/api/v1/organizations/{org['id']}/tags", json={"name": "team"}).json()
     return World(
         org_id=org["id"],
         engineering=engineering,
         sales=sales,
         clients=clients,
         subject=members["items"][0]["membership_id"],
+        subject_user=members["items"][0]["user_id"],
+        task=task["id"],
+        tag=tag["id"],
         engineering_request=request_to_join(person("Amy Eng"), org["id"], engineering).json()["id"],
         sales_request=request_to_join(person("Ben Sales"), org["id"], sales).json()["id"],
     )
@@ -175,12 +191,68 @@ CASES: dict[str, tuple[Attempt, set[str]]] = {
         ),
         OWNER_ONLY,
     ),
+    "create a task in own department": (
+        lambda w, c: c.post(
+            f"{w.base}/tasks", json={"title": "New", "department_id": w.engineering}
+        ),
+        set(ROLE_KEYS),
+    ),
+    "create a task in another department": (
+        lambda w, c: c.post(f"{w.base}/tasks", json={"title": "New", "department_id": w.sales}),
+        ADMINS,
+    ),
+    "share a task with the whole organization": (
+        lambda w, c: c.post(
+            f"{w.base}/tasks",
+            json={"title": "New", "visibility": "organization"},
+        ),
+        ADMINS,
+    ),
+    "open own department's board": (
+        lambda w, c: c.get(f"{w.base}/departments/{w.engineering}/board"),
+        set(ROLE_KEYS),
+    ),
+    "open another department's board": (
+        lambda w, c: c.get(f"{w.base}/departments/{w.sales}/board"),
+        ADMINS,
+    ),
+    "update a colleague's task": (
+        lambda w, c: c.patch(w.task_url, json={"priority": "high"}),
+        LEADS,
+    ),
+    "assign a colleague's task": (
+        lambda w, c: c.patch(w.task_url, json={"assigned_to": w.subject_user}),
+        LEADS,
+    ),
+    "add a collaborator": (
+        lambda w, c: c.post(f"{w.task_url}/collaborators", json={"user_id": w.subject_user}),
+        LEADS,
+    ),
+    "archive a colleague's task": (lambda w, c: c.post(f"{w.task_url}/archive"), MANAGERS),
+    "move a task to another department": (
+        lambda w, c: c.patch(w.task_url, json={"department_id": w.sales}),
+        ADMINS,
+    ),
+    "create an organization tag": (
+        lambda w, c: c.post(f"{w.base}/tags", json={"name": "fresh"}),
+        set(ROLE_KEYS),
+    ),
+    "delete an organization tag": (lambda w, c: c.delete(f"{w.base}/tags/{w.tag}"), ADMINS),
 }
 
 
 # Managers may approve in general, but a request outside their department isn't visible to them,
 # so it answers 404 like anything else they can't see (ADR-010).
-NOT_VISIBLE = {("approve in another department", "department_manager")}
+NOT_VISIBLE = {
+    ("approve in another department", "department_manager"),
+    *(
+        (case, role)
+        for case in ("create a task in another department", "open another department's board")
+        for role in ("department_manager", "team_lead", "member")
+    ),
+    ("move a task to another department", "department_manager"),
+    ("move a task to another department", "team_lead"),
+}
 
 
 @pytest.mark.parametrize("role_key", ROLE_KEYS)

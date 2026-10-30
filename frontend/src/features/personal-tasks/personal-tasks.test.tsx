@@ -31,11 +31,20 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     tags: [],
     subtask_count: 0,
     subtasks_completed: 0,
+    organization_id: null,
+    visibility: 'private',
+    department: null,
+    assignee: null,
+    creator: null,
+    collaborators: [],
+    needs_reassignment: false,
+    allowed_statuses: [],
+    actions: [],
     ...overrides,
   }
 }
 
-const detail = (task: Task): TaskDetail => ({ ...task, subtasks: [] })
+const detail = (task: Task): TaskDetail => ({ ...task, subtasks: [], visible_to: [] })
 
 describe('My Tasks list', () => {
   it('shows tasks with priority, overdue state, subtask progress and tags', async () => {

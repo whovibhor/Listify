@@ -47,6 +47,7 @@ import {
   type TaskStatus,
 } from '@/features/tasks/task-meta'
 import type { TaskDetail, TaskInput } from '@/features/tasks/types'
+import { TaskPeopleFields } from '@/features/work/components/TaskPeopleFields'
 import { ApiError } from '@/lib/api-client'
 
 // Personal tasks never require review, so "In review" isn't offered here (ADR-015).
@@ -101,7 +102,14 @@ function TaskEditor({
   const action = useTaskAction()
   const toggle = useToggleComplete()
   const remove = useDeleteTask()
-  const readOnly = task.archived_at !== null
+  const isOrganizationTask = task.organization_id !== null
+  const archived = task.archived_at !== null
+  const readOnly = archived || (isOrganizationTask && !task.actions.includes('edit'))
+  const canArchive = !isOrganizationTask || task.actions.includes('archive')
+  const statuses = isOrganizationTask ? [task.status, ...task.allowed_statuses] : PERSONAL_STATUSES
+  const canToggle = !isOrganizationTask
+    ? true
+    : task.allowed_statuses.includes(task.status === 'completed' ? 'in_progress' : 'completed')
   const dates = dateInputs(task, timezone)
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description ?? '')
@@ -138,7 +146,7 @@ function TaskEditor({
         <div className="pt-2">
           <TaskCheckbox
             checked={done}
-            disabled={readOnly || task.status === 'cancelled' || toggle.isPending}
+            disabled={readOnly || !canToggle || task.status === 'cancelled' || toggle.isPending}
             label={done ? 'Reopen task' : 'Complete task'}
             onToggle={() =>
               toggle.mutate(
@@ -171,11 +179,17 @@ function TaskEditor({
       </header>
 
       <div className="flex-1 space-y-6 overflow-y-auto p-4">
-        {readOnly ? (
+        {archived ? (
           <p className="rounded-lg bg-warning/15 px-3 py-2 text-sm text-warning-foreground dark:text-warning">
             This task is archived and read-only. Restore it to make changes.
           </p>
+        ) : readOnly ? (
+          <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+            You can view this task, but not change it.
+          </p>
         ) : null}
+
+        {isOrganizationTask ? <TaskPeopleFields task={task} readOnly={archived} /> : null}
 
         <div className="space-y-3">
           <Field label="Status">
@@ -188,7 +202,7 @@ function TaskEditor({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {PERSONAL_STATUSES.map((status) => (
+                {statuses.map((status) => (
                   <SelectItem key={status} value={status}>
                     {STATUS_LABELS[status]}
                   </SelectItem>
@@ -278,6 +292,7 @@ function TaskEditor({
                 />
               ))}
               <TagPicker
+                organizationId={task.organization_id}
                 selected={task.tags}
                 disabled={readOnly}
                 onChange={(tag_ids) => save({ tag_ids })}
@@ -316,8 +331,8 @@ function TaskEditor({
         </Section>
       </div>
 
-      <footer className="flex items-center justify-between gap-2 border-t p-4">
-        {readOnly ? (
+      <footer className="flex items-center justify-between gap-2 border-t p-4 empty:hidden">
+        {!canArchive ? null : archived ? (
           <Button
             variant="outline"
             onClick={() =>
@@ -358,41 +373,44 @@ function TaskEditor({
             Archive
           </Button>
         )}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive">
-              <Trash2Icon data-icon="inline-start" />
-              Delete
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete “{task.title}”?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This permanently deletes the task
-                {task.subtask_count ? `, its ${task.subtask_count} subtask(s)` : ''} and its
-                history. This can't be undone. Archive it instead if you might need it later.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                variant="destructive"
-                onClick={() =>
-                  remove.mutate(task.id, {
-                    onSuccess: () => {
-                      toast.success('Task deleted')
-                      onClose()
-                    },
-                    onError: (e) => toast.error(e.message),
-                  })
-                }
-              >
-                Delete permanently
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* Organization tasks are archived, never deleted (PRD: keep the audit trail). */}
+        {isOrganizationTask ? null : (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                <Trash2Icon data-icon="inline-start" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete “{task.title}”?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently deletes the task
+                  {task.subtask_count ? `, its ${task.subtask_count} subtask(s)` : ''} and its
+                  history. This can't be undone. Archive it instead if you might need it later.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  onClick={() =>
+                    remove.mutate(task.id, {
+                      onSuccess: () => {
+                        toast.success('Task deleted')
+                        onClose()
+                      },
+                      onError: (e) => toast.error(e.message),
+                    })
+                  }
+                >
+                  Delete permanently
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </footer>
     </div>
   )

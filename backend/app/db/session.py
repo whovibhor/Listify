@@ -21,6 +21,9 @@ def build_engine(*, test: bool = False, poolclass: type[Pool] | None = None) -> 
         pool_recycle=3600,
         connect_args={"connect_timeout": 5},
         poolclass=poolclass,
+        # Outside development, values in failed statements (password hashes, tokens) stay out of
+        # error logs.
+        hide_parameters=settings.app_env != "development",
     )
 
     @event.listens_for(engine, "connect")

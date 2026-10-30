@@ -23,9 +23,13 @@ export const taskKeys = {
   all: ['tasks'] as const,
   lists: ['tasks', 'list'] as const,
   list: (params: TaskListParams) => ['tasks', 'list', params] as const,
+  organization: (id: number, params: object) =>
+    ['tasks', 'list', 'organization', id, params] as const,
+  board: (id: number, departmentId: number, params: object) =>
+    ['tasks', 'board', id, departmentId, params] as const,
   detail: (id: number) => ['tasks', 'detail', id] as const,
   activity: (id: number) => ['tasks', 'activity', id] as const,
-  tags: ['tags'] as const,
+  tags: (organizationId?: number) => ['tags', organizationId ?? 'personal'] as const,
 }
 
 const DASHBOARD_KEY = ['dashboard'] as const
@@ -45,7 +49,7 @@ function toQuery(params: TaskListParams) {
 }
 
 /** Everything derived from tasks (lists, details, dashboard) is refreshed after a write. */
-function invalidateTaskData(queryClient: QueryClient) {
+export function invalidateTaskData(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: taskKeys.all })
   void queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY })
 }
@@ -74,10 +78,15 @@ export function useTaskActivity(id: number | null) {
   })
 }
 
-export function useCreateTask() {
+/** With an organization, creates organization work; otherwise a personal task. */
+export function useCreateTask(organizationId?: number | null) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: TaskInput & { title: string }) => api.post<TaskDetail>('/me/tasks', input),
+    mutationFn: (input: TaskInput & { title: string }) =>
+      api.post<TaskDetail>(
+        organizationId ? `/organizations/${organizationId}/tasks` : '/me/tasks',
+        input,
+      ),
     onSuccess: () => invalidateTaskData(queryClient),
   })
 }
@@ -153,19 +162,25 @@ export function useDeleteTask() {
 
 // --- Tags --------------------------------------------------------------------------------------
 
-export function useTags() {
+function tagsPath(organizationId?: number | null) {
+  return organizationId ? `/organizations/${organizationId}/tags` : '/me/tags'
+}
+
+export function useTags(organizationId?: number | null) {
   return useQuery({
-    queryKey: taskKeys.tags,
-    queryFn: () => api.get<Tag[]>('/me/tags'),
+    queryKey: taskKeys.tags(organizationId ?? undefined),
+    queryFn: () => api.get<Tag[]>(tagsPath(organizationId)),
     staleTime: 5 * 60_000,
   })
 }
 
-export function useCreateTag() {
+export function useCreateTag(organizationId?: number | null) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { name: string; color: TagColor }) => api.post<Tag>('/me/tags', input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: taskKeys.tags }),
+    mutationFn: (input: { name: string; color: TagColor }) =>
+      api.post<Tag>(tagsPath(organizationId), input),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: taskKeys.tags(organizationId ?? undefined) }),
   })
 }
 
@@ -174,7 +189,7 @@ export function useDeleteTag() {
   return useMutation({
     mutationFn: (id: number) => api.delete<void>(`/me/tags/${id}`),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: taskKeys.tags })
+      void queryClient.invalidateQueries({ queryKey: taskKeys.tags() })
       invalidateTaskData(queryClient)
     },
   })

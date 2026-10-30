@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status
 from sqlalchemy import select
 
+from app.common.security_log import security_event
 from app.core.exceptions import NotFoundError
 from app.db.base import utc_now
 from app.modules.auth import service as auth_service
@@ -85,3 +86,4 @@ def revoke_session(session_id: int, auth: CurrentAuth, db: DbSession) -> None:
         raise NotFoundError("Session not found.")
     record.revoked_at = utc_now()
     db.commit()
+    security_event("session_revoked", user_id=auth.user.id, session_id=record.id)

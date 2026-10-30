@@ -97,6 +97,25 @@ const organizationRoutes: RouteObject[] = [
         }),
       },
       {
+        path: 'departments/:departmentId',
+        lazy: async () => ({
+          Component: (await import('@/features/work/pages/DepartmentBoardPage'))
+            .DepartmentBoardPage,
+        }),
+      },
+      {
+        path: 'my-work',
+        lazy: async () => ({
+          Component: (await import('@/features/work/pages/MyWorkPage')).MyWorkPage,
+        }),
+      },
+      {
+        path: 'tasks',
+        lazy: async () => ({
+          Component: (await import('@/features/work/pages/TeamTasksPage')).TeamTasksPage,
+        }),
+      },
+      {
         path: 'members',
         lazy: async () => ({
           Component: (await import('@/features/organizations/pages/MembersPage')).MembersPage,

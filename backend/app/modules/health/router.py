@@ -13,8 +13,9 @@ router = APIRouter(tags=["health"])
 class HealthResponse(BaseModel):
     status: Literal["ok", "degraded"]
     service: str
-    version: str
-    environment: str
+    # Hidden in production: an attacker shouldn't learn these from a public endpoint.
+    version: str | None
+    environment: str | None
     checks: dict[str, DependencyStatus]
 
 
@@ -31,7 +32,7 @@ async def health(
     return HealthResponse(
         status="ok" if healthy else "degraded",
         service=settings.app_name,
-        version=settings.app_version,
-        environment=settings.app_env,
+        version=None if settings.is_production else settings.app_version,
+        environment=None if settings.is_production else settings.app_env,
         checks={"database": database},
     )

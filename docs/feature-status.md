@@ -1,6 +1,6 @@
 # Listify — Feature Status
 
-**Last updated:** 2026-10-30 · **Current phase:** Phase 5 (Department Work Boards) — next up
+**Last updated:** 2026-10-30 · **Current phase:** Phase 6 (Collaboration) — next up
 
 This is the single list of what is **done** and what is **pending**, feature by feature. It is updated every time a feature is completed or changed. A feature is marked ✅ only after it works end-to-end (UI → API → MySQL) and its tests have been run and passed. Detailed plans live in [`implementation-roadmap.md`](implementation-roadmap.md).
 
@@ -17,7 +17,7 @@ Legend: ✅ done · 🟡 partly done · ⏳ pending · ⏸ deferred (later relea
 | Personal analytics & home page | ✅ Done |
 | Organizations, departments, membership | ✅ Done |
 | Roles & permissions, member management | ✅ Done |
-| Department work boards (team tasks) | ⏳ Pending (Phase 5) |
+| Department work boards (team tasks) | ✅ Done |
 | Comments, update requests, attachments, inbox | ⏳ Pending (Phase 6) |
 | Team & organization dashboards | ⏳ Pending (Phase 7) |
 | Reminders, notifications, email | ⏳ Pending (Phase 8) |
@@ -91,27 +91,40 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 | Filter the Members page by status | reads `organization_memberships` |
 | Losing access while a page is open: the next request fails and the page updates itself | — (reloads your organizations) |
 
+### Department work boards & team tasks
+| Feature | Stored in |
+|---|---|
+| Create team tasks with department, assignee, collaborators, visibility, tags, priority and deadline | `tasks`, `task_collaborators`, `task_visibility_grants`, `task_tags`, `task_activity_logs` |
+| Department board: drag cards between columns, or use each card's Move menu (works by keyboard and on phones) | `tasks` |
+| List view: sort by task, priority or deadline; pagination | reads `tasks` |
+| Calendar view: month grid by deadline on larger screens, agenda on phones | reads `tasks` |
+| Filters kept in the page URL: assignee, creator, priority, status, tags, overdue, deadline range, search | — (URL state) |
+| My Work: assigned to you, and tasks you're collaborating on | reads `tasks`, `task_collaborators` |
+| Team Tasks: everything you can see, across departments, with search and an Archived view | reads `tasks` |
+| Four visibility levels: Private, Department, Selected people, Organization | `tasks`, `task_visibility_grants` |
+| Assign, reassign, or pick up an unassigned task; add and remove collaborators | `tasks`, `task_collaborators` |
+| Move a task to another department: access changes at once, and it's in the activity log | `tasks`, `audit_logs` |
+| Organization tags, separate from personal tags | `tags` |
+| Subtasks on team tasks, following the parent task's access | `tasks` |
+| Review workflow: when the organization turns it on, work goes through In Review and the assignee can't approve their own (Owners and Admins can) | `organizations`, `tasks` |
+| Tasks of suspended, removed or moved members are flagged for reassignment and nothing is lost; the impact preview counts them | computed from `tasks` and memberships |
+| Team tasks are archived, never deleted | `tasks`, `audit_logs` |
+
 ### Quality (applies to everything above)
-- Responsive: all 15 pages, the member panel and the impact preview checked at phone (375px), tablet (768px) and desktop (1280px) for overflow; screenshots reviewed.
-- Accessibility: automated WCAG 2.2 AA scans (axe) on sign-in, task pages, the task panel, all organization pages, the member panel and its dialogs, plus one dark-mode scan; keyboard and screen-reader labels.
+- Responsive: all 20 pages, the member panel and the impact preview checked at phone (375px), tablet (768px) and desktop (1280px) for overflow; screenshots reviewed.
+- Accessibility: automated WCAG 2.2 AA scans (axe) on sign-in, task pages, the task panel, all organization pages, the member panel and its dialogs, the board in all three layouts, My Work, Team Tasks and the create dialog, plus dark-mode scans of the panels; dragging always has a menu alternative; keyboard and screen-reader labels.
 - Privacy: other users get "not found" for your tasks, tags and sessions. Outsiders, pending applicants and suspended or removed members get "not found" for everything in an organization. Organizations can never see personal tasks. All tested.
-- Permissions: every role tested against every permission-guarded endpoint on the real API.
+- Permissions: every role tested against every permission-guarded endpoint on the real API, and each visibility level tested against eight kinds of viewer across reading, listing and search.
 
 ---
 
 ## ⏳ Pending
 
-### Phase 5 — Department work boards *(next)*
-- ⏳ Kanban (drag and drop), List and Calendar views per department
-- ⏳ Team tasks with assignee, collaborators, visibility, organization tags
-- ⏳ "My Work" and "Team Tasks" views, search
-- ⏳ Impact preview also counts open assigned tasks; suspended or removed members' tasks are flagged for reassignment (Phase 4 has no organization tasks to count yet)
-
-### Phase 6 — Collaboration
+### Phase 6 — Collaboration *(next)*
 - ⏳ Comments on tasks
 - ⏳ Progress update requests and responses
 - ⏳ File attachments (also enables profile avatars)
-- ⏳ Inbox with notifications and unread badges, including telling people when their role, department or membership changes
+- ⏳ Inbox with notifications and unread badges, including telling people when they're assigned or added to a task, and when their role, department or membership changes
 - ⏳ Impact preview also counts pending update requests
 
 ### Phase 7 — Team & organization dashboards
@@ -127,8 +140,20 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 - ⏳ CI run on GitHub (workflow written and the repository is on GitHub; a passing run hasn't been confirmed)
 - ⏳ Privacy / data-retention policy
 
+### Security improvements
+- ✅ 16 of the 28 audit findings fixed, 2 more partly fixed: see [`security-audit.md`](security-audit.md)
+- ⏸ Kept as they are by the owner's decision until Login with Google, or until the app leaves this PC: email verification, login limits, password strength, and the MySQL root account
+- ⏳ Waiting on real email and scheduled jobs (Phase 8) and the production web server (Phase 9)
+
+### Future — Sign-in with Google and other providers
+- ⏳ Login with Google, then other providers (`user_identities` table, ADR-005)
+- ⏳ Safe account linking, verified emails, and a decision on whether password sign-in stays
+
 ### Small gaps in finished areas
 - 🟡 Estimated / actual effort: saved by the API (`tasks`), no input field in the app yet
+- 🟡 Board cards don't keep a custom order within a column; they sort by deadline, then priority
+- 🟡 Calendar shows the first 100 tasks in a month and says so; the List view has them all
+- 🟡 A member can't leave an organization by themselves; an administrator removes them
 - 🟡 Profile avatar: waits for file storage (Phase 6)
 - ⏸ Recurring tasks, custom role builder, sign-in with Google etc. — later releases (PRD P2)
 
@@ -137,6 +162,10 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 ## Change log
 | Date | Change |
 |---|---|
+| 2026-10-30 | Fixed a Phase 2 bug: a subtask entered while the previous one was still saving was silently lost. |
+| 2026-10-30 | Security fixes: 16 audit findings closed and 2 partly closed, with regression tests. Sign-in and the MySQL account left unchanged by the owner's decision. Login with Google added to future plans. |
+| 2026-10-30 | Security audit of Phases 0–5 written; no critical findings, 5 high. Desktop launcher `Start Listify.bat` added. |
+| 2026-10-30 | Phase 5 (department work boards) completed. Added a `task.view_all` permission; every member now holds `task.view_organization`. Status colours darkened so they stay readable on tinted backgrounds. |
 | 2026-10-30 | Phase 4 (roles & permissions, member management) completed. Shared red colour darkened in light mode and lightened in dark mode to meet the contrast standard. |
 | 2026-10-30 | Phase 3 (organizations, departments, membership) completed. Product renamed to **Listify** (new checklist logo, cookies and internal names updated). Borders removed from all cards; cards now separate by shadow on a tinted background. |
 | 2026-10-29 | Theme preference moved from browser-only to the database (`user_preferences`); My Day, My Tasks and Upcoming redesigned; responsive fixes (Home overflow on phones, full-width task panel on phones, priority icons, day-strip fade); "Done today" on My Day. |

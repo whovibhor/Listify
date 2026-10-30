@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import sys
 import time
 import uuid
@@ -11,6 +12,8 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
 
 REQUEST_ID_HEADER = "X-Request-ID"
+# Invitation links carry their secret in the path, and an unused one still works.
+_SECRET_IN_PATH = re.compile(r"(/invitations/)[^/]+")
 
 
 class JsonFormatter(logging.Formatter):
@@ -76,7 +79,7 @@ class RequestContextMiddleware:
                 extra={
                     "extra_fields": {
                         "method": scope["method"],
-                        "path": scope["path"],
+                        "path": _SECRET_IN_PATH.sub(r"\1<token>", scope["path"]),
                         "status": status_code,
                         "duration_ms": round((time.perf_counter() - start) * 1000, 1),
                     }

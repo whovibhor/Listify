@@ -81,15 +81,16 @@ function InviteForm() {
         <CardTitle>Invite someone</CardTitle>
         <CardDescription>
           Enter an email to send an invite, or leave it empty for a one-time link you can share.
-          Invitations expire after 7 days.
+          Admin invitations need an email. Invitations expire after 7 days.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={submit} className="space-y-4">
-          <FormField label="Email (optional)" error={error}>
+          <FormField label={role === 'admin' ? 'Email' : 'Email (optional)'} error={error}>
             <Input
               type="email"
               autoComplete="off"
+              required={role === 'admin'}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />

@@ -7,15 +7,7 @@
     <meta name="description" content="Listify — personal tasks and team work management" />
     <meta name="color-scheme" content="light dark" />
     <title>Listify</title>
-    <script>
-      // Apply the saved theme before first paint to avoid a light/dark flash (see theme-provider.tsx).
-      try {
-        var t = localStorage.getItem('listify-theme')
-        var dark =
-          t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
-        if (dark) document.documentElement.classList.add('dark')
-      } catch (e) {}
-    </script>
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>

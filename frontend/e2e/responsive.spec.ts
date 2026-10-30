@@ -76,6 +76,28 @@ async function seedData(page: Page) {
   await post(`/organizations/${organization.id}/invitations`, {
     email: 'a.very.long.email.address.for.testing@example-company.com',
   })
+  const departments = await (
+    await page.request.get(`/api/v1/organizations/${organization.id}/departments`)
+  ).json()
+  const engineering = departments[0].id as number
+  const release = await post(`/organizations/${organization.id}/tags`, {
+    name: 'release',
+    color: 'violet',
+  })
+  const teamTask = (title: string, fields: object = {}) =>
+    post(`/organizations/${organization.id}/tasks`, {
+      title,
+      department_id: engineering,
+      ...fields,
+    })
+  await teamTask('Plan the migration of the customer records to the new warehouse system', {
+    priority: 'urgent',
+    due_date: localDate(-1),
+    tag_ids: [release.id],
+  })
+  const started = await teamTask('Review supplier contracts', { due_date: localDate(0) })
+  await post(`/tasks/${started.id}/complete`, {})
+  await teamTask('Update the onboarding guide', { priority: 'low', due_date: localDate(4) })
   return organization.id as number
 }
 
@@ -128,6 +150,11 @@ test('every page fits phone, tablet and desktop widths', async ({ browser, page 
   await expect(page.getByRole('heading', { name: 'Welcome, Mary!' })).toBeVisible()
   const orgId = await seedData(page)
   await addTeammate(browser, page, orgId)
+  const [firstDepartment] = await (
+    await page.request.get(`/api/v1/organizations/${orgId}/departments`)
+  ).json()
+  const board = `/org/${orgId}/departments/${firstDepartment.id}`
+  const departmentName: string = firstDepartment.name
   const pages = [
     ...PAGES,
     { path: '/organizations/new', heading: 'Create an organization', name: 'org-new' },
@@ -135,6 +162,11 @@ test('every page fits phone, tablet and desktop widths', async ({ browser, page 
     { path: `/org/${orgId}`, heading: /Northwind/, name: 'org-overview' },
     { path: `/org/${orgId}/departments`, heading: 'Departments', name: 'org-departments' },
     { path: `/org/${orgId}/members`, heading: 'Members', name: 'org-members' },
+    { path: `/org/${orgId}/my-work`, heading: 'My Work', name: 'org-my-work' },
+    { path: `/org/${orgId}/tasks`, heading: 'Team Tasks', name: 'org-team-tasks' },
+    { path: board, heading: departmentName, name: 'org-board' },
+    { path: `${board}?layout=list`, heading: departmentName, name: 'org-board-list' },
+    { path: `${board}?layout=calendar`, heading: departmentName, name: 'org-board-calendar' },
     { path: `/org/${orgId}/requests`, heading: 'Join requests', name: 'org-requests' },
     { path: `/org/${orgId}/invitations`, heading: 'Invitations', name: 'org-invitations' },
     { path: `/org/${orgId}/activity`, heading: 'Activity log', name: 'org-activity' },

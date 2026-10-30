@@ -143,6 +143,8 @@ class MemberImpact(ApiModel):
     keeps_every_department: bool
     sole_manager_of: list[MemberDepartment]
     pending_requests: int
+    # Open tasks that will be flagged for someone to reassign; they stay assigned until then.
+    tasks_to_reassign: int
 
 
 class InvitationCreate(InputModel):

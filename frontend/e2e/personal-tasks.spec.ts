@@ -93,6 +93,31 @@ test('plan a day: quick add, details, subtasks, complete, review analytics', asy
   await expect(page.getByRole('table')).toBeVisible()
 })
 
+test('subtasks entered faster than the server answers are all kept', async ({ page }, testInfo) => {
+  await registerFreshUser(page, testInfo.project.name)
+  await page.goto('/personal/my-day')
+  const quickAdd = page.getByLabel('New task title')
+  await quickAdd.fill('Pack for the trip')
+  await quickAdd.press('Enter')
+  await page.getByRole('button', { name: 'Pack for the trip' }).click()
+  const panel = page.getByRole('dialog')
+  await expect(panel.getByText('created this task')).toBeVisible()
+
+  // A slow connection: each save is still running when the next Enter is pressed.
+  await page.route('**/api/v1/me/tasks', async (route) => {
+    if (route.request().method() === 'POST') await new Promise((done) => setTimeout(done, 400))
+    await route.continue()
+  })
+  const input = panel.getByLabel('New subtask title')
+  for (const title of ['Passport', 'Charger', 'Tickets']) {
+    await input.fill(title)
+    await input.press('Enter')
+    await expect(input).toHaveValue('')
+  }
+
+  await expect(panel.getByText('Subtasks · 0/3')).toBeVisible()
+})
+
 test('task pages have no detectable accessibility violations', async ({ page }, testInfo) => {
   await registerFreshUser(page, `a11y-${testInfo.project.name}`)
   await page.goto('/personal/tasks')

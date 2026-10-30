@@ -33,12 +33,22 @@ from app.modules.memberships.schemas import (
     MemberTransfer,
     OwnershipTransfer,
 )
-from app.modules.memberships.service import MembershipValidationError, _active_department
+from app.modules.memberships.service import (
+    MembershipValidationError,
+    _active_department,
+    revoke_invitations_from,
+)
 from app.modules.organizations.models import Department, Organization
 from app.modules.organizations.service import get_department, role_by_key
 from app.modules.permissions import catalog
 from app.modules.permissions.models import Role
 from app.modules.permissions.service import OrgContext
+from app.modules.tasks.models import (
+    OPEN_STATUSES,
+    Task,
+    TaskCollaborator,
+    TaskVisibilityGrant,
+)
 
 OWNERSHIP_ATTEMPTS_PER_USER = rate_limit.RateLimit("ownership:user", 10, timedelta(hours=1))
 
@@ -177,6 +187,9 @@ def change_roles(
                 assigned_by=context.user.id,
             )
         )
+    invitations_revoked = 0
+    if (catalog.ADMIN, None) in current - wanted:
+        invitations_revoked = revoke_invitations_from(db, target.organization_id, target.user_id)
     _record(
         db,
         context,
@@ -184,6 +197,7 @@ def change_roles(
         "member.roles_changed",
         before=sorted(f"{key}:{department}" for key, department in current),
         after=sorted(f"{key}:{department}" for key, department in wanted),
+        invitations_revoked=invitations_revoked,
     )
     db.commit()
     return target
@@ -198,7 +212,14 @@ def suspend_member(
     """Access stops, but roles and departments stay for reactivation."""
     target = _load_member(db, context, membership_id, "suspend")
     target.status = MembershipStatus.SUSPENDED
-    _record(db, context, target, "member.suspended", reason=payload.reason or None)
+    _record(
+        db,
+        context,
+        target,
+        "member.suspended",
+        reason=payload.reason or None,
+        invitations_revoked=revoke_invitations_from(db, target.organization_id, target.user_id),
+    )
     db.commit()
     return target
 
@@ -226,7 +247,14 @@ def remove_member(
         reason=payload.reason or None,
         roles=_role_labels(target),
         department_ids=sorted(_department_ids(db, target)),
+        invitations_revoked=revoke_invitations_from(db, target.organization_id, target.user_id),
     )
+    # A removed person starts over: task links would otherwise come back if they rejoin (S-12).
+    organization_tasks = select(Task.id).where(Task.organization_id == target.organization_id)
+    for link in (TaskCollaborator, TaskVisibilityGrant):
+        db.execute(
+            delete(link).where(link.user_id == target.user_id, link.task_id.in_(organization_tasks))
+        )
     target.status = MembershipStatus.REMOVED
     target.primary_department_id = None
     target.roles.clear()
@@ -468,6 +496,19 @@ def member_impact(
             or 0
         )
 
+    task_conditions = [
+        Task.organization_id == context.organization.id,
+        Task.assigned_to == target.user_id,
+        Task.parent_task_id.is_(None),
+        Task.archived_at.is_(None),
+        Task.status.in_(OPEN_STATUSES),
+    ]
+    if action in ("transfer", "leave_department"):
+        task_conditions.append(Task.department_id.in_(losing_ids))
+    tasks_to_reassign = (
+        db.scalar(select(func.count()).select_from(Task).where(*task_conditions)) or 0
+    )
+
     names = {
         row.id: row.name
         for row in db.execute(
@@ -503,4 +544,5 @@ def member_impact(
         keeps_every_department=keeps_every_department,
         sole_manager_of=departments(sole_manager_ids),
         pending_requests=pending_requests,
+        tasks_to_reassign=tasks_to_reassign,
     )

@@ -61,6 +61,7 @@ test('sign-in and registration pages have no detectable accessibility violations
   for (const path of ['/login', '/register', '/forgot-password']) {
     await page.goto(path)
     await expect(page.locator('h1')).toBeVisible()
+    await page.waitForTimeout(400) // the page fades in; mid-fade text would fail the contrast check
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
       .analyze()

@@ -4,7 +4,8 @@ Task and work management for individuals and organizations: a private **Personal
 
 - Requirements: [`docs/WorkPulse_BRD_v1.docx`](docs/WorkPulse_BRD_v1.docx), [`docs/WorkPulse_PRD_v1.docx`](docs/WorkPulse_PRD_v1.docx)
 - Analysis and plan: [`docs/requirements-analysis.md`](docs/requirements-analysis.md), [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md), [`docs/architecture-decisions.md`](docs/architecture-decisions.md)
-- Status: **Phases 0–4 complete (foundation, accounts, personal workspace, organizations, roles & member management); Phase 5 (Department Work Boards) next.** What's done and pending, feature by feature: [`docs/feature-status.md`](docs/feature-status.md). Phase tracker: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md) · history: [`docs/development-log.md`](docs/development-log.md).
+- Security: audit, current status and remaining plan in [`docs/security-audit.md`](docs/security-audit.md).
+- Status: **Phases 0–5 complete (foundation, accounts, personal workspace, organizations, roles & member management, department work boards); Phase 6 (Collaboration) next.** What's done and pending, feature by feature: [`docs/feature-status.md`](docs/feature-status.md). Phase tracker: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md) · history: [`docs/development-log.md`](docs/development-log.md).
 
 ## Repository layout
 
@@ -49,13 +50,13 @@ copy .env.example .env          # then edit DB_* values and SESSION_SECRET
 ```
 
 - API: <http://127.0.0.1:8000/api/v1/health> · interactive docs (non-production only): <http://127.0.0.1:8000/api/docs>
-- `requirements.lock.txt` pins the exact versions last verified (runtime + dev tools); `pyproject.toml` holds the supported ranges. After upgrading packages, regenerate it with `pip freeze > requirements.lock.txt`.
+- `requirements.lock.txt` pins the exact versions last verified (runtime + dev tools); `pyproject.toml` holds the supported ranges. It also pins each package by hash, so a tampered download is refused. After upgrading packages, regenerate it with `pip-tools`: run `pip freeze > requirements.in`, then `pip-compile --generate-hashes --allow-unsafe --output-file requirements.lock.txt requirements.in`.
 
 ### Environment variables (`backend/.env`)
 
 | Variable | Purpose | Example |
 |---|---|---|
-| `APP_ENV` | `development`, `test` or `production` (production enforces secure settings at startup) | `development` |
+| `APP_ENV` | **Required.** `development`, `test` or `production` (production enforces secure settings at startup). The app won't start without it. | `development` |
 | `LOG_LEVEL` | `DEBUG`/`INFO`/`WARNING`/`ERROR` | `INFO` |
 | `DB_HOST`, `DB_PORT` | MySQL server | `127.0.0.1`, `3306` |
 | `DB_NAME`, `DB_TEST_NAME` | development and test databases | `listify`, `listify_test` |
@@ -94,12 +95,13 @@ Optional `frontend/.env.local` (see `.env.example`): `VITE_API_BASE_URL` (defaul
 | End-to-end tests | `cd frontend; npm run test:e2e` (first time: `npx playwright install chromium`). Starts its own backend on :8001 against `listify_test` and Vite on :5174, after resetting the test database. |
 | Reset the test database | `cd backend; .\.venv\Scripts\python.exe -m scripts.reset_test_db` (refuses unless the name ends in `_test`) |
 
-**Trying the app locally:** start the backend and frontend, open <http://localhost:5173>, create an account. To test "forgot password", submit the form, then copy the reset link from the backend log line `Email (console backend, not sent)`.
+**Trying the app locally:** double-click `Start Listify.bat` on the Desktop, or start the backend and frontend by hand. Open <http://localhost:5173> and create an account. To test "forgot password", submit the form, then copy the reset link from the backend log line `Email (console backend, not sent)`.
 
 **CI:** `.github/workflows/ci.yml` runs lint, formatting, migrations round-trip, backend tests against a MySQL 8.4 service, frontend tests and build, the production dependency audit, and the Playwright suite. It runs once the repository is pushed to GitHub.
 
 ## Common setup problems
 
+- **`app_env Field required` on startup** — `APP_ENV` is missing from `backend/.env`. Copy it from `.env.example`.
 - **`ImportError: DLL load failed ... An Application Control policy has blocked this file`** — Windows Smart App Control can block a freshly installed native wheel (seen once with SQLAlchemy) on first load while it checks reputation. Re-run the command; if it persists, allow the file in Windows Security.
 - **Health shows `Database: Unavailable` / `Access denied for user`** — check `DB_*` in `backend/.env` and that you are on port 3306 (MySQL), not 3307 (MariaDB). The backend log contains a one-line reason.
 - **`node`/`npm`/`git` not recognized** after installing — open a new terminal (or restart the app) so the updated PATH is picked up.

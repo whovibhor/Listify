@@ -39,6 +39,9 @@ function describe(entry: AuditEntry): string {
     'member.department_added': `added ${who} to ${department}`,
     'member.department_removed': `took ${who} out of ${department}`,
     'organization.ownership_transferred': `transferred ownership to ${who}`,
+    'task.moved': `moved “${String(details.title)}” to ${String(details.to_department ?? 'no department')}`,
+    'task.archived': `archived “${String(details.title)}”`,
+    'task.restored': `restored “${String(details.title)}”`,
   }
   return texts[entry.action] ?? entry.action.replaceAll('.', ' ')
 }

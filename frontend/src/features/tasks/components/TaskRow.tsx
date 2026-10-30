@@ -28,6 +28,10 @@ export const TaskRow = forwardRef<HTMLLIElement, TaskRowProps>(function TaskRow(
   const toggle = useToggleComplete()
   const done = task.status === 'completed'
   const showStatus = task.status !== 'not_started' && task.status !== 'completed'
+  // Organization tasks may be read-only, or need review before they can be completed.
+  const lockedByOrganization =
+    task.organization_id !== null &&
+    !task.allowed_statuses.includes(done ? 'in_progress' : 'completed')
 
   const onToggle = () =>
     toggle.mutate(
@@ -58,7 +62,12 @@ export const TaskRow = forwardRef<HTMLLIElement, TaskRowProps>(function TaskRow(
         <TaskCheckbox
           checked={done}
           onToggle={onToggle}
-          disabled={toggle.isPending || task.archived_at !== null || task.status === 'cancelled'}
+          disabled={
+            toggle.isPending ||
+            task.archived_at !== null ||
+            task.status === 'cancelled' ||
+            lockedByOrganization
+          }
           label={done ? `Reopen “${task.title}”` : `Complete “${task.title}”`}
         />
       </div>

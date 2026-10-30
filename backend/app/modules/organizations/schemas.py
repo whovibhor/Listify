@@ -1,4 +1,6 @@
+import re
 from typing import Annotated
+from urllib.parse import urlsplit
 
 from pydantic import AfterValidator, Field, field_validator
 
@@ -8,9 +10,13 @@ from app.modules.users.schemas import validate_timezone
 
 
 def _validate_website(value: str | None) -> str | None:
-    if value and not value.lower().startswith(("http://", "https://")):
+    if not value:
+        return None
+    parts = urlsplit(value)
+    valid = parts.scheme.lower() in ("http", "https") and parts.netloc
+    if not valid or re.search(r"[\s<>\"'`\\]", value):
         raise ValueError("Enter a full URL starting with http:// or https://")
-    return value or None
+    return value
 
 
 Website = Annotated[str | None, Field(max_length=255), AfterValidator(_validate_website)]

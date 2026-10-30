@@ -7,8 +7,9 @@ export type DependencyState = 'ok' | 'error'
 export interface HealthResponse {
   status: 'ok' | 'degraded'
   service: string
-  version: string
-  environment: string
+  // Hidden in production.
+  version: string | null
+  environment: string | null
   checks: Record<string, { status: DependencyState; latency_ms: number | null }>
 }
 

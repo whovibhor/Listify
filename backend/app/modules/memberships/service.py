@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import timedelta
 from urllib.parse import quote
 
-from sqlalchemy import case, delete, func, select
+from sqlalchemy import case, delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -50,11 +50,12 @@ from app.modules.organizations.service import (
 )
 from app.modules.permissions import catalog
 from app.modules.permissions.models import Role
-from app.modules.permissions.service import OrgContext
+from app.modules.permissions.service import OrgContext, load_context
 from app.modules.users.models import User
 
 JOIN_REQUESTS_PER_USER = rate_limit.RateLimit("join-request:user", 20, timedelta(hours=1))
 INVITATIONS_PER_USER = rate_limit.RateLimit("invitation:user", 50, timedelta(hours=1))
+MAX_ADMIN_INVITATION_DAYS = 7
 DEPARTMENT_ROLES = (catalog.TEAM_LEAD, catalog.DEPARTMENT_MANAGER)
 
 
@@ -507,6 +508,21 @@ def _invitation_status(invitation: OrganizationInvitation) -> str:
     return "pending"
 
 
+def revoke_invitations_from(db: Session, organization_id: int, user_id: int) -> int:
+    """Ends someone's unused invitations when they lose the right to invite (S-01)."""
+    result = db.execute(
+        update(OrganizationInvitation)
+        .where(
+            OrganizationInvitation.organization_id == organization_id,
+            OrganizationInvitation.created_by == user_id,
+            OrganizationInvitation.accepted_at.is_(None),
+            OrganizationInvitation.revoked_at.is_(None),
+        )
+        .values(revoked_at=utc_now())
+    )
+    return result.rowcount  # type: ignore[attr-defined, no-any-return]
+
+
 def to_invitation_read(invitation: OrganizationInvitation) -> InvitationRead:
     return InvitationRead(
         id=invitation.id,
@@ -529,6 +545,16 @@ def create_invitation(
     context.require("member.manage")
     if payload.role_key != catalog.MEMBER:
         context.require("role.assign")
+    if payload.role_key == catalog.ADMIN:
+        if payload.email is None:
+            raise MembershipValidationError(
+                "email", "Admin invitations must go to a specific email address."
+            )
+        if payload.expires_in_days > MAX_ADMIN_INVITATION_DAYS:
+            raise MembershipValidationError(
+                "expires_in_days",
+                f"Admin invitations can last at most {MAX_ADMIN_INVITATION_DAYS} days.",
+            )
     rate_limit.hit(db, INVITATIONS_PER_USER, str(context.user.id))
     _check_role_choice(payload.role_key, payload.department_id)
     if payload.department_id is not None:
@@ -608,6 +634,20 @@ def revoke_invitation(db: Session, context: OrgContext, invitation_id: int) -> N
     db.commit()
 
 
+def _creator_can_still_grant(db: Session, invitation: OrganizationInvitation) -> bool:
+    """An invitation is only as good as its creator's authority today, not when they made it."""
+    creator = db.get(User, invitation.created_by) if invitation.created_by else None
+    if creator is None:
+        return False
+    try:
+        context = load_context(db, creator, invitation.organization_id)
+    except NotFoundError:
+        return False
+    return context.can("member.manage") and (
+        invitation.role.key == catalog.MEMBER or context.can("role.assign")
+    )
+
+
 def _usable_invitation(
     db: Session, token: str, *, for_update: bool = False
 ) -> OrganizationInvitation:
@@ -621,6 +661,8 @@ def _usable_invitation(
         invitation is None
         or _invitation_status(invitation) != "pending"
         or invitation.organization.status != OrganizationStatus.ACTIVE
+        or (invitation.department and invitation.department.status != DepartmentStatus.ACTIVE)
+        or not _creator_can_still_grant(db, invitation)
     ):
         raise InvitationInvalidError("This invitation is invalid, has expired or was already used.")
     return invitation

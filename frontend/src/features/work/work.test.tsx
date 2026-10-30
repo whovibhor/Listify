@@ -1,0 +1,461 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import type { Member, MyOrganization } from '@/features/organizations/types'
+import type { TaskStatus } from '@/features/tasks/task-meta'
+import type { Task, TaskDetail } from '@/features/tasks/types'
+import type { Board } from '@/features/work/types'
+import { jsonResponse, renderApp } from '@/test/render'
+import { emptyPage, mockApi, signedInRoutes, testUser } from '@/test/mock-api'
+
+afterEach(() => vi.unstubAllGlobals())
+
+const org: MyOrganization = {
+  id: 7,
+  name: 'Acme',
+  slug: 'acme',
+  description: null,
+  website: null,
+  location: null,
+  timezone: 'Asia/Kolkata',
+  is_discoverable: false,
+  review_required: false,
+  created_at: '2026-10-30T09:00:00Z',
+  role_keys: ['member'],
+  permissions: ['member.view', 'task.create'],
+  department_permissions: {},
+  department_ids: [3],
+}
+
+const admin: MyOrganization = {
+  ...org,
+  role_keys: ['admin'],
+  permissions: [...org.permissions, 'task.view_all', 'member.manage'],
+}
+
+function makeTask(overrides: Partial<Task> = {}): Task {
+  return {
+    id: 1,
+    parent_task_id: null,
+    title: 'Fix the login page',
+    description: null,
+    status: 'not_started',
+    priority: 'medium',
+    start_at: null,
+    due_at: null,
+    due_all_day: true,
+    is_overdue: false,
+    completed_at: null,
+    archived_at: null,
+    created_at: '2026-10-29T09:00:00Z',
+    updated_at: '2026-10-29T09:00:00Z',
+    estimated_minutes: null,
+    actual_minutes: null,
+    tags: [],
+    subtask_count: 0,
+    subtasks_completed: 0,
+    organization_id: 7,
+    visibility: 'department',
+    department: { id: 3, name: 'Engineering' },
+    assignee: { id: 2, name: 'Eve Eng' },
+    creator: { id: 1, name: 'Ada Lovelace' },
+    collaborators: [],
+    needs_reassignment: false,
+    allowed_statuses: ['in_progress', 'completed', 'cancelled'],
+    actions: ['edit', 'assign', 'change_visibility', 'manage_collaborators', 'archive'],
+    ...overrides,
+  }
+}
+
+const detail = (task: Task): TaskDetail => ({ ...task, subtasks: [], visible_to: [] })
+
+function makeBoard(tasks: Task[], overrides: Partial<Board> = {}): Board {
+  const statuses: TaskStatus[] = [
+    'not_started',
+    'in_progress',
+    'blocked',
+    'in_review',
+    'completed',
+    'cancelled',
+  ]
+  return {
+    department: { id: 3, name: 'Engineering' },
+    archived: false,
+    review_required: false,
+    can_create: true,
+    columns: statuses.map((status) => {
+      const items = tasks.filter((task) => task.status === status)
+      return { status, total: items.length, items }
+    }),
+    ...overrides,
+  }
+}
+
+const eve: Member = {
+  membership_id: 21,
+  user_id: 2,
+  name: 'Eve Eng',
+  email: 'eve@example.com',
+  job_title: null,
+  status: 'active',
+  joined_at: '2026-10-30T09:00:00Z',
+  roles: [{ key: 'member', name: 'Member', department_id: null }],
+  departments: [{ id: 3, name: 'Engineering' }],
+  actions: [],
+}
+
+const routes = {
+  'GET /me/organizations': [org],
+  'GET /organizations/7/departments': [
+    {
+      id: 3,
+      organization_id: 7,
+      name: 'Engineering',
+      description: null,
+      status: 'active',
+      open_for_join_requests: true,
+      member_count: 2,
+    },
+  ],
+  'GET /organizations/7/members': emptyPage([eve]),
+  'GET /organizations/7/tags': [],
+  'GET /organizations/7/tasks': emptyPage(),
+}
+
+function lastCall(api: ReturnType<typeof mockApi>, method: string, path: string) {
+  return api.calls.filter((call) => call.method === method && call.path === path).at(-1)
+}
+
+function renderBoard(tasks: Task[], extra: Record<string, unknown> = {}, boardOverrides = {}) {
+  const api = mockApi(
+    signedInRoutes({
+      ...routes,
+      'GET /organizations/7/departments/3/board': makeBoard(tasks, boardOverrides),
+      ...extra,
+    }),
+  )
+  return { api, ...renderApp('/org/7/departments/3') }
+}
+
+describe('department board', () => {
+  it('shows the columns and what matters on each card', async () => {
+    renderBoard([
+      makeTask({
+        title: 'Rewrite search',
+        status: 'in_progress',
+        priority: 'urgent',
+        needs_reassignment: true,
+      }),
+    ])
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Engineering' }),
+    ).toBeInTheDocument()
+    const column = await screen.findByRole('region', { name: 'In progress, 1 tasks' })
+    expect(within(column).getByText('Rewrite search')).toBeInTheDocument()
+    expect(within(column).getByText('Urgent')).toBeInTheDocument()
+    expect(within(column).getByText('Eve Eng')).toBeInTheDocument()
+    expect(within(column).getByText('Needs reassignment')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Not started, 0 tasks' })).toBeInTheDocument()
+  })
+
+  it('only shows In Review where the organization uses review', async () => {
+    const { unmount } = renderBoard([makeTask()])
+    await screen.findByRole('region', { name: 'Not started, 1 tasks' })
+    expect(screen.queryByRole('region', { name: /In review/ })).not.toBeInTheDocument()
+    unmount()
+
+    renderBoard([makeTask()], {}, { review_required: true })
+    expect(await screen.findByRole('region', { name: 'In review, 0 tasks' })).toBeInTheDocument()
+  })
+
+  it('moves a card from its menu', async () => {
+    const task = makeTask()
+    const { user, api } = renderBoard([task], {
+      'PATCH /tasks/1': detail({ ...task, status: 'in_progress' }),
+    })
+    await user.click(
+      await screen.findByRole('button', { name: 'Move “Fix the login page” to another column' }),
+    )
+    await user.click(await screen.findByRole('menuitem', { name: 'In progress' }))
+
+    await waitFor(() =>
+      expect(lastCall(api, 'PATCH', '/tasks/1')?.body).toEqual({ status: 'in_progress' }),
+    )
+  })
+
+  it('puts the card back and explains when the server refuses', async () => {
+    const task = makeTask()
+    const { user } = renderBoard([task], {
+      'PATCH /tasks/1': () =>
+        jsonResponse(
+          {
+            error: {
+              code: 'open_subtasks',
+              message: 'Finish or cancel 1 open subtask(s) before completing this task.',
+              details: [],
+              request_id: null,
+            },
+          },
+          409,
+        ),
+    })
+    await user.click(
+      await screen.findByRole('button', { name: 'Move “Fix the login page” to another column' }),
+    )
+    await user.click(await screen.findByRole('menuitem', { name: 'Completed' }))
+
+    expect(await screen.findByText(/Finish or cancel 1 open subtask/)).toBeInTheDocument()
+    expect(await screen.findByRole('region', { name: 'Not started, 1 tasks' })).toBeInTheDocument()
+  })
+
+  it('offers no move controls on a task the viewer can only read', async () => {
+    renderBoard([makeTask({ allowed_statuses: [], actions: [] })])
+    await screen.findByRole('button', { name: 'Fix the login page' })
+    expect(screen.queryByRole('button', { name: /^Move/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Drag/ })).not.toBeInTheDocument()
+  })
+
+  it('treats a department the viewer can’t open as a page that doesn’t exist', async () => {
+    mockApi(
+      signedInRoutes({
+        ...routes,
+        'GET /organizations/7/departments/3/board': () =>
+          jsonResponse(
+            {
+              error: {
+                code: 'not_found',
+                message: 'Department not found.',
+                details: [],
+                request_id: null,
+              },
+            },
+            404,
+          ),
+      }),
+    )
+    renderApp('/org/7/departments/3')
+    expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
+  })
+
+  it('hides New task on an archived department', async () => {
+    renderBoard([makeTask()], {}, { archived: true, can_create: false })
+    expect(await screen.findByText(/This department is archived/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'New task' })).not.toBeInTheDocument()
+  })
+
+  it('keeps filters in the URL and sends them to the board', async () => {
+    const { user, api, router } = renderBoard([makeTask()])
+    await user.click(await screen.findByRole('button', { name: 'More filters' }))
+    await user.selectOptions(await screen.findByLabelText('Filter by assignee'), 'Eve Eng')
+
+    await waitFor(() => expect(router.state.location.search).toContain('assignee=2'))
+    await waitFor(() =>
+      expect(
+        lastCall(api, 'GET', '/organizations/7/departments/3/board')?.query.get('assignee'),
+      ).toBe('2'),
+    )
+  })
+})
+
+describe('list and calendar', () => {
+  it('sorts by deadline from the table header', async () => {
+    const api = mockApi(
+      signedInRoutes({
+        ...routes,
+        'GET /organizations/7/departments/3/board': makeBoard([]),
+        'GET /organizations/7/tasks': emptyPage([makeTask()]),
+      }),
+    )
+    const { user, router } = renderApp('/org/7/departments/3?layout=list')
+    await user.click(await screen.findByRole('button', { name: 'Deadline' }))
+
+    await waitFor(() => expect(router.state.location.search).toContain('sort=-due'))
+    await waitFor(() =>
+      expect(lastCall(api, 'GET', '/organizations/7/tasks')?.query.get('sort')).toBe('-due'),
+    )
+  })
+
+  it('places tasks on their deadline in the organization’s time zone', async () => {
+    // 20:00 UTC on 30 Nov is already 1 Dec in Kolkata.
+    const task = makeTask({ title: 'Late night', due_at: '2026-11-30T20:00:00Z' })
+    const api = mockApi(
+      signedInRoutes({
+        ...routes,
+        'GET /organizations/7/departments/3/board': makeBoard([]),
+        'GET /organizations/7/tasks': emptyPage([task]),
+      }),
+    )
+    const { user } = renderApp('/org/7/departments/3?layout=calendar&month=2026-12')
+
+    const day = await screen.findByTestId('day-2026-12-01')
+    expect(await within(day).findByRole('button', { name: /Late night/ })).toBeInTheDocument()
+    const call = lastCall(api, 'GET', '/organizations/7/tasks')
+    expect(call?.query.get('due_from')).toBe('2026-11-30')
+    expect(call?.query.get('department_id')).toBe('3')
+
+    await user.click(screen.getByRole('button', { name: 'Next month' }))
+    expect(await screen.findByRole('heading', { name: 'January 2027' })).toBeInTheDocument()
+  })
+})
+
+describe('creating a task', () => {
+  const created = detail(makeTask({ id: 9, title: 'New work' }))
+
+  it('sends the department, assignee and visibility', async () => {
+    const { user, api } = renderBoard([], {
+      'POST /organizations/7/tasks': created,
+      'GET /tasks/9': created,
+      'GET /tasks/9/activity': [],
+    })
+    await user.click(await screen.findByRole('button', { name: 'New task' }))
+    const dialog = await screen.findByRole('dialog', { name: 'New task' })
+
+    await user.type(within(dialog).getByLabelText('Title'), 'New work')
+    await user.selectOptions(
+      within(dialog).getByLabelText('Assignee'),
+      await within(dialog).findByRole('option', { name: 'Eve Eng' }),
+    )
+    await user.selectOptions(within(dialog).getByLabelText('Priority'), 'high')
+    await user.click(within(dialog).getByRole('button', { name: 'Create task' }))
+
+    await waitFor(() =>
+      expect(lastCall(api, 'POST', '/organizations/7/tasks')?.body).toMatchObject({
+        title: 'New work',
+        department_id: 3,
+        assigned_to: 2,
+        priority: 'high',
+        visibility: 'department',
+      }),
+    )
+  })
+
+  it('tells members that admins can open private tasks', async () => {
+    const { user } = renderBoard([])
+    await user.click(await screen.findByRole('button', { name: 'New task' }))
+    const dialog = await screen.findByRole('dialog', { name: 'New task' })
+
+    await user.selectOptions(within(dialog).getByLabelText('Who can see this'), 'private')
+
+    expect(within(dialog).getByText(/Organization admins can still open it/)).toBeInTheDocument()
+    expect(within(dialog).queryByRole('option', { name: 'Organization' })).not.toBeInTheDocument()
+  })
+
+  it('offers organization-wide sharing to administrators', async () => {
+    const { user } = renderBoard([], { 'GET /me/organizations': [admin] })
+    await user.click(await screen.findByRole('button', { name: 'New task' }))
+    const dialog = await screen.findByRole('dialog', { name: 'New task' })
+    expect(within(dialog).getByRole('option', { name: 'Organization' })).toBeInTheDocument()
+  })
+})
+
+describe('task panel on organization work', () => {
+  function renderPanel(task: Task, extra: Record<string, unknown> = {}) {
+    const api = mockApi(
+      signedInRoutes({
+        ...routes,
+        'GET /organizations/7/departments/3/board': makeBoard([task]),
+        'GET /tasks/1': detail(task),
+        'GET /tasks/1/activity': [],
+        ...extra,
+      }),
+    )
+    return { api, ...renderApp('/org/7/departments/3?task=1') }
+  }
+
+  it('shows who’s on the task and only archives, never deletes', async () => {
+    renderPanel(makeTask({ collaborators: [{ id: 5, name: 'Lee Lead' }] }))
+    const panel = await screen.findByRole('dialog')
+    expect(await within(panel).findByText('Ada Lovelace')).toBeInTheDocument()
+    expect(within(panel).getByText('Lee Lead')).toBeInTheDocument()
+    expect(within(panel).getByRole('button', { name: 'Archive' })).toBeInTheDocument()
+    expect(within(panel).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+  })
+
+  it('reassigns a task', async () => {
+    const task = makeTask({ assignee: null })
+    const { user, api } = renderPanel(task, { 'PATCH /tasks/1': detail(task) })
+    const panel = await screen.findByRole('dialog')
+    await user.selectOptions(
+      await within(panel).findByLabelText('Assignee'),
+      await within(panel).findByRole('option', { name: 'Eve Eng' }),
+    )
+    await waitFor(() =>
+      expect(lastCall(api, 'PATCH', '/tasks/1')?.body).toEqual({ assigned_to: 2 }),
+    )
+  })
+
+  it('makes a read-only task clear, and lets someone pick up unassigned work', async () => {
+    const task = makeTask({ assignee: null, allowed_statuses: [], actions: [] })
+    const { user, api } = renderPanel(task, { 'PATCH /tasks/1': detail(task) })
+    const panel = await screen.findByRole('dialog')
+
+    expect(
+      await within(panel).findByText('You can view this task, but not change it.'),
+    ).toBeInTheDocument()
+    expect(within(panel).queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
+    await user.click(within(panel).getByRole('button', { name: 'Assign to me' }))
+
+    await waitFor(() =>
+      expect(lastCall(api, 'PATCH', '/tasks/1')?.body).toEqual({ assigned_to: testUser.id }),
+    )
+  })
+
+  it('explains a task that needs a new assignee', async () => {
+    renderPanel(makeTask({ needs_reassignment: true }))
+    expect(await screen.findByText(/Eve Eng can no longer work on this task/)).toBeInTheDocument()
+  })
+
+  it('adds a collaborator', async () => {
+    const task = makeTask({ assignee: null })
+    const { user, api } = renderPanel(task, { 'POST /tasks/1/collaborators': detail(task) })
+    const panel = await screen.findByRole('dialog')
+    await user.click(await within(panel).findByRole('button', { name: 'Add collaborator' }))
+    await user.click(await screen.findByRole('button', { name: 'Eve Eng' }))
+    await waitFor(() =>
+      expect(lastCall(api, 'POST', '/tasks/1/collaborators')?.body).toEqual({ user_id: 2 }),
+    )
+  })
+})
+
+describe('My Work and Team Tasks', () => {
+  it('splits what’s assigned from what you’re helping with', async () => {
+    const api = mockApi(signedInRoutes({ ...routes }))
+    const { user } = renderApp('/org/7/my-work')
+    expect(await screen.findByText('Nothing assigned to you')).toBeInTheDocument()
+    expect(lastCall(api, 'GET', '/organizations/7/tasks')?.query.get('view')).toBe('my_work')
+
+    await user.click(screen.getByRole('button', { name: 'Collaborating' }))
+    await waitFor(() =>
+      expect(lastCall(api, 'GET', '/organizations/7/tasks')?.query.get('view')).toBe(
+        'collaborating',
+      ),
+    )
+  })
+
+  it('finds tasks that need reassigning', async () => {
+    const api = mockApi(
+      signedInRoutes({ ...routes, 'GET /organizations/7/tasks': emptyPage([makeTask()]) }),
+    )
+    const { user } = renderApp('/org/7/tasks')
+    await screen.findByRole('button', { name: 'Fix the login page' })
+
+    await user.click(screen.getByRole('button', { name: 'Needs reassignment' }))
+
+    await waitFor(() =>
+      expect(lastCall(api, 'GET', '/organizations/7/tasks')?.query.get('needs_reassignment')).toBe(
+        'true',
+      ),
+    )
+  })
+
+  it('adds Work and Boards to the organization’s navigation', async () => {
+    mockApi(signedInRoutes({ ...routes }))
+    renderApp('/org/7/my-work')
+    const nav = (await screen.findAllByRole('navigation', { name: 'Main' }))[0]
+    expect(await within(nav).findByRole('link', { name: 'Team Tasks' })).toBeInTheDocument()
+    expect(await within(nav).findByRole('link', { name: 'Engineering' })).toHaveAttribute(
+      'href',
+      '/org/7/departments/3',
+    )
+  })
+})

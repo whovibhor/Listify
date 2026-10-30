@@ -9,6 +9,7 @@ import {
   UsersRoundIcon,
 } from 'lucide-react'
 import { motion } from 'motion/react'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 
 import { FormField } from '@/components/shared/FormField'
@@ -171,7 +172,14 @@ function DepartmentCard({
           <Building2Icon aria-hidden className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="truncate font-semibold">{department.name}</h2>
+          <h2 className="truncate font-semibold">
+            <Link
+              to={department.id.toString()}
+              className="underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {department.name}
+            </Link>
+          </h2>
           <p className="flex items-center gap-1 text-sm text-muted-foreground">
             <UsersRoundIcon aria-hidden className="size-3.5" />
             {department.member_count} member{department.member_count === 1 ? '' : 's'}

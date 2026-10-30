@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.common import rate_limit
 from app.common.mailer import EmailMessage, Mailer
+from app.common.security_log import security_event
 from app.core.config import Settings
 from app.core.exceptions import AppError, ConflictError, UnauthenticatedError
 from app.db.base import utc_now
@@ -109,14 +110,20 @@ def login(
     previous_session_token: str | None,
 ) -> tuple[User, IssuedSession]:
     ip = client_ip(request) or "unknown"
-    rate_limit.hit(db, LOGIN_PER_IP, ip)
-    rate_limit.hit(db, LOGIN_PER_ACCOUNT, payload.email)
+    try:
+        rate_limit.hit(db, LOGIN_PER_IP, ip)
+        rate_limit.hit(db, LOGIN_PER_ACCOUNT, payload.email)
+    except rate_limit.RateLimitedError:
+        security_event("login_rate_limited", ip=ip)
+        raise
 
     user = db.scalar(select(User).where(User.email == payload.email))
     if user is None:
         passwords.burn_verification_time(payload.password)
+        security_event("login_failed", ip=ip, user_id=None)
         raise InvalidCredentialsError("Email or password is incorrect.")
     if not passwords.verify_password(user.password_hash, payload.password) or not user.is_active:
+        security_event("login_failed", ip=ip, user_id=user.id)
         raise InvalidCredentialsError("Email or password is incorrect.")
 
     if passwords.needs_rehash(user.password_hash):
@@ -126,6 +133,7 @@ def login(
     issued = create_session(db, user, request, settings)
     user.last_login_at = utc_now()
     db.commit()
+    security_event("login_succeeded", ip=ip, user_id=user.id)
     return user, issued
 
 
@@ -164,6 +172,7 @@ def request_password_reset(
         )
     )
     db.commit()
+    security_event("password_reset_requested", user_id=user.id, ip=ip)
 
     link = f"{settings.frontend_base_url.rstrip('/')}/reset-password?{urlencode({'token': token})}"
     mailer.send(
@@ -201,7 +210,7 @@ def reset_password(db: Session, payload: ResetPasswordRequest, request: Request)
     record.used_at = now
     revoke_user_sessions(db, user.id)  # sign out everywhere after a reset
     db.commit()
-    logger.info("Password reset completed", extra={"extra_fields": {"user_id": user.id}})
+    security_event("password_reset_completed", user_id=user.id, ip=client_ip(request))
 
 
 def change_password(db: Session, auth: AuthContext, payload: ChangePasswordRequest) -> None:
@@ -215,3 +224,4 @@ def change_password(db: Session, auth: AuthContext, payload: ChangePasswordReque
     user.password_changed_at = utc_now()
     revoke_user_sessions(db, user.id, except_session_id=auth.session.id)
     db.commit()
+    security_event("password_changed", user_id=user.id)

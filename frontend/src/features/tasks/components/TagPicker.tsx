@@ -16,11 +16,13 @@ interface TagPickerProps {
   selected: Tag[]
   onChange: (tagIds: number[]) => void
   disabled?: boolean
+  /** Organization tasks use that organization's tags, never personal ones. */
+  organizationId?: number | null
 }
 
-export function TagPicker({ selected, onChange, disabled }: TagPickerProps) {
-  const { data: tags = [] } = useTags()
-  const createTag = useCreateTag()
+export function TagPicker({ selected, onChange, disabled, organizationId }: TagPickerProps) {
+  const { data: tags = [] } = useTags(organizationId)
+  const createTag = useCreateTag(organizationId)
   const [search, setSearch] = useState('')
   const selectedIds = selected.map((tag) => tag.id)
   const term = search.trim()

@@ -124,12 +124,12 @@
   --info: oklch(0.53 0.15 250);
   --info-foreground: oklch(0.99 0.01 250);
 
-  --status-not-started: oklch(0.55 0.02 270);
-  --status-in-progress: oklch(0.53 0.15 250);
-  --status-blocked: oklch(0.55 0.21 27);
-  --status-in-review: oklch(0.5 0.2 289);
-  --status-completed: oklch(0.52 0.13 155);
-  --status-cancelled: oklch(0.6 0.01 286);
+  --status-not-started: oklch(0.46 0.02 270);
+  --status-in-progress: oklch(0.46 0.15 250);
+  --status-blocked: oklch(0.47 0.19 27);
+  --status-in-review: oklch(0.46 0.2 289);
+  --status-completed: oklch(0.43 0.11 155);
+  --status-cancelled: oklch(0.47 0.01 286);
 
   --priority-low: oklch(0.6 0.03 250);
   --priority-medium: oklch(0.53 0.15 250);
@@ -184,7 +184,7 @@
   --status-blocked: oklch(0.7 0.18 22);
   --status-in-review: oklch(0.72 0.15 290);
   --status-completed: oklch(0.72 0.14 155);
-  --status-cancelled: oklch(0.6 0.01 286);
+  --status-cancelled: oklch(0.72 0.01 286);
 
   --priority-low: oklch(0.7 0.03 250);
   --priority-medium: oklch(0.72 0.12 250);

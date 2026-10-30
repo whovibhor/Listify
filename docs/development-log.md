@@ -1,5 +1,95 @@
 # Listify — Development Log
 
+## 2026-10-30 — Security fixes
+
+### Requested by the owner
+Keep the MySQL root account and user login as they are, since the app is still in testing and Login with Google comes later. Fix everything else safely without changing other features, and update the docs and future plans.
+
+### Changes
+- **Fixed:** 16 audit findings. Partly fixed: S-08 (API headers done, web server part waits for Phase 9) and S-27. Details and the small visible changes are in `security-audit.md`.
+- **Not touched, by decision:** S-02, S-03, S-06, S-14 and S-16 (sign-in) and S-04 (MySQL). The only sign-in change is added logging; behaviour is the same.
+- **Waiting:** S-20, S-24, S-26 and S-28 need email or scheduled jobs.
+- **No database migration.**
+
+### Tests executed (all actually run)
+| Suite | Result |
+|---|---|
+| Backend pytest (real MySQL) | **461 passed**: the 408 existing tests plus 53 new regression tests. The only existing tests edited were 3 in `test_config.py`, which relied on the removed `APP_ENV` default |
+| Frontend Vitest | **97 passed** (2 new) |
+| Playwright E2E | **25 passed, 1 skipped by design** (desktop 13, mobile 12), run as two separate sets, plus a new slowed-connection test for the subtask bug |
+| Ruff, ESLint, Prettier, `tsc -b`, `vite build` | passed; no warnings. `npm audit --omit=dev` 0 vulnerabilities; `alembic check` clean; no migration needed |
+
+### Decided along the way
+- Only Admin invitations need an email. Department Manager and Team Lead links still work, to keep existing behaviour.
+- Owners and Admins can approve their own review, so a one-person organization can still finish tasks.
+- Speed: the new request checks add no measurable time, and creation limits add about 5 ms per item created. Test runs were slower that day, most likely because the laptop was on battery; that part wasn't proven.
+- `shadcn` keeps its low-severity warning: 4.23.0 is the newest version, and the only suggested fix is a downgrade to 1.0.0.
+
+### Problems found while testing
+- 18 checks in `work.test.tsx` (Phase 5) could fail on a busy machine, because they tested visibility while the page's fade-in was still at zero opacity. This was a flaw in the tests, not the app. They now check that the element is on the page.
+- The sign-in accessibility test could also fail while the page was fading in, because it scanned the moment the heading appeared. It now waits, as the other scans do; 16 repeats passed.
+- **A real bug from Phase 2: a subtask could be silently lost.** The Add button was disabled during a save, and browsers ignore Enter in a form whose submit button is disabled. Pressing Enter on a second subtask before the first had saved did nothing. It showed up as an intermittent browser test failure, first blamed on machine load; the test recording showed the second request was never sent. On a slow connection it would have affected real people. The button now stays enabled during saves, and `subtasks entered faster than the server answers are all kept` reproduces it with a slowed connection: it failed every time before the fix. The server was never at fault: 160 simultaneous subtask requests all saved.
+
+### Next
+**Phase 6 — Collaboration.**
+
+## 2026-10-30 — Security audit and desktop launcher
+
+### Requested by the owner
+Commands to run the servers, a clickable launcher on the Desktop, and a thorough security audit with a prioritized improvement plan.
+
+### Changes
+- **Launcher:** `Start Listify.bat` on the Desktop (outside the repository). It checks MySQL, starts both servers in their own windows, skips any already running, waits until they answer, then opens the browser.
+- **Audit:** [`security-audit.md`](security-audit.md). No application code changed. Attack scripts were throwaway and ran against `listify_test` only.
+
+### Result
+No critical findings and no SQL injection. 5 high, 12 medium and 11 low findings, in a 4-stage plan. The most serious: a removed admin can regain access with an invitation link made beforehand.
+
+## 2026-10-30 — Phase 5 complete: department work boards
+
+### Requested by the owner
+Go with Phase 5.
+
+### Changes
+- **Database:** migration `c75db4ee8921` adds organization columns on `tasks`, `task_collaborators`, `task_visibility_grants`, organization tags and a `task.view_all` permission. Applied to `listify` and `listify_test`; round-tripped on `listify_test` only.
+- **Backend:** `tasks/policies.py` rewritten around `visible_tasks` and `TaskAccess`; new `tasks/organization.py`. The shared `/tasks/{id}` routes now serve both workspaces. Personal task behaviour is unchanged, and its existing tests pass unmodified. Rules are in ADR-027.
+- **Frontend:** new `features/work`: board with drag and drop (`@dnd-kit/core`), sortable list, calendar, My Work, Team Tasks, create dialog. The shared task panel now shows department, people and visibility on team tasks. New Work and Boards sections in the sidebar; department names link to their boards.
+- **Member management:** the impact preview now counts open tasks to reassign.
+
+### Tests executed (all actually run)
+| Suite | Result |
+|---|---|
+| Backend pytest (real MySQL) | **408 passed** (108 new, including the 4 × 8 visibility matrix; the permission matrix grew to 35 actions × 5 roles) |
+| Frontend Vitest | **95 passed** (21 new) |
+| Playwright E2E | **23 passed, 1 skipped by design**. New: two-person journey with a real mouse drag on desktop and the Move menu on mobile, access rules, reassignment after suspension; axe scans of all work pages; board layouts, My Work and Team Tasks added to the 3-width responsive check |
+| Ruff, ESLint, Prettier, `tsc -b`, `vite build` | passed; no warnings |
+| `npm audit --omit=dev` | 0 vulnerabilities |
+| Migrations | upgrade → downgrade → upgrade on `listify_test`; `alembic check` clean on `listify` |
+| Visual review | board, list, calendar and Team Tasks screenshots at phone and desktop widths |
+
+### Defects found and fixed during the phase
+- The first migration downgrade failed partway, because MySQL won't drop an index a foreign key relies on. It left `listify_test` half-downgraded; the development database was never touched. The migration was fixed and the test database restored.
+- Status labels failed contrast on tinted backgrounds (4.17:1). Fixed at the shared colours.
+- Faded out-of-month calendar days failed contrast, and the first fix shaded the calendar backwards: found in screenshot review.
+- Two buttons in the task panel were both called "Add", which a screen reader can't tell apart.
+- Both Departments and the board were highlighted in the sidebar.
+
+### Decisions worth checking
+- Owners and Admins can open Private team tasks, and the form says so. A departed person's private task could otherwise never be reassigned.
+- Organization visibility means everyone in the organization, which needed `task.view_organization` on every role, a change to ADR-011. Only administrators can choose it.
+- A task's creator can assign it to anyone eligible, following the PRD over the stricter first draft of ADR-011.
+
+### Known limitations
+- People aren't told about assignments until notifications arrive in Phase 6.
+- Dragging orders nothing within a column; cards sort by deadline and priority.
+- Drag and drop was exercised with a mouse. Touch dragging hasn't been tried on a real phone; the Move menu covers phones and keyboards and is tested.
+- The calendar shows the first 100 tasks of a month and says so.
+- Board and list loading hasn't been measured with large data sets; that's in Phase 7/9.
+- CI result unverified (`gh` isn't installed here). Phase 5 isn't committed.
+
+### Next
+**Phase 6 — Collaboration.**
+
 ## 2026-10-30 — Phase 4 complete: roles, permissions and member management
 
 ### Requested by the owner

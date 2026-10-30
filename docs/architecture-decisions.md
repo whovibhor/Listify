@@ -65,8 +65,9 @@ Format: each ADR states context, decision and consequences. Status is **Accepted
 | task.create | ✓ | ✓ | ✓ | ✓ | ✓ |
 | task.view_own | ✓ | ✓ | ✓ | ✓ | ✓ |
 | task.view_department | ✓ | ✓ | ✓ | ✓ | ✓ (own depts) |
-| task.view_organization | ✓ | ✓ | – | – | – |
-| task.assign | ✓ | ✓ | ✓ | ✓ | – |
+| task.view_all *(added in M5)* | ✓ | ✓ | – | – | – |
+| task.view_organization *(widened in M5, ADR-027)* | ✓ | ✓ | ✓ | ✓ | ✓ |
+| task.assign | ✓ | ✓ | ✓ | ✓ | – (own created, or picking up unassigned work) |
 | task.update | ✓ | ✓ | ✓ | ✓ | ✓ (own/assigned/collab) |
 | task.delete | ✓ | ✓ | ✓ | – | – (own created) |
 | task.comment | ✓ | ✓ | ✓ | ✓ | ✓ |
@@ -201,5 +202,31 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 - **Suspended members keep roles and departments** so reactivation is exact, and can't change state until reactivated (except removal). Removed members lose both; the row stays as history.
 - **A transfer is confirmed by the administrator who starts it.** That confirmation is the approval FR-ORG-08 asks for; there is no second approver. The person arrives as a plain member of the new department, and roles limited to the old department end. Organization-wide roles keep their access, which the preview states.
 - **Department Managers don't manage members.** `member.manage` and `role.assign` stay with Owner and Admin (ADR-011), so a manager's reach stays limited to approving requests and editing their own department.
+- **Department Managers don't manage members** applies to organization-wide actions; ADR-027 covers what they can do to tasks.
 - **Revocation needs no session work:** access is read from the database on every request, so a change applies from the person's next request and their session keeps working for personal tasks. In the SPA, any organization 403 or 404 reloads the user's organizations, so navigation and pages follow (PRD §13).
 - **Concurrency:** member changes hold a row lock on the organization. The lock is taken after ending the read snapshot from loading `OrgContext`, because InnoDB's repeatable read would otherwise show pre-lock data.
+
+## ADR-027 Organization task access (Phase 5)
+
+- **One visibility rule:** `tasks/policies.py::visible_tasks` is the only definition of who can see a task. Lists, boards, search and single reads all use it, so they can't disagree.
+- **Who sees what:** the creator, assignee and collaborators always see a task. Beyond them: Private adds nobody, Department adds members of that department, Selected people adds those chosen, Organization adds every member.
+- **Owners and Admins see every task** (`task.view_all`), including Private ones. The PRD left this for us to define. A private task of someone who has left must still be reassignable, so oversight wins, and the UI says so wherever Private is offered. Anything truly private belongs in personal tasks, which organizations can never see.
+- **`task.view_organization` went to every role.** With only Owner and Admin holding it, as ADR-011 first had it, Organization visibility would have shown a task to exactly the people who already see everything, making it the same as Private. Only administrators can choose Organization visibility, so a member can't expose department work company-wide.
+- **Editing:** the people on a task, plus Team Leads and Department Managers of its department, and administrators. Selected people can read, not edit.
+- **Creators who leave:** creator rights only apply while the person is in the task's department, or if it has none. They can still read what they created.
+- **Assigning:** the creator or anyone with `task.assign` in that department, following the PRD's "manager, creator or task owner". Anyone who can see an unassigned task can pick it up. Assignees must be active members of the task's department; collaborators can come from any department, and get that task only.
+- **Moving between departments** needs `task.assign` in both, so a manager can't push work into a department they don't belong to. It's written to the audit log.
+- **People leaving:** tasks stay assigned, with their history, and show as needing reassignment. That's worked out from memberships rather than stored.
+- **Review:** with the organization's setting on, work passes through In Review, and only the creator or a manager can approve it. The assignee can't sign off their own work, even if they created it, unless they're an Owner or Admin, so a one-person organization isn't stuck. Subtasks skip review.
+- **Organization tasks are archived, never deleted,** with an audit entry. Subtasks can be deleted.
+- **Dates use the organization's timezone,** not the viewer's profile, so a deadline is the same day for the whole team (ADR-019).
+- **The board is a view of filters, not of order:** cards sort by deadline and priority, so dragging changes status only. A saved card order isn't a PRD requirement.
+
+## ADR-028 Security hardening and accepted risks
+
+- **Decision:** the 2026-10-30 audit findings are fixed in the code, each with a regression test in `tests/test_security_fixes.py`. Status of every finding is in `security-audit.md`.
+- **An invitation is only as good as its creator's authority today.** It's checked at acceptance as well as revoked when the creator loses access, so one missed revoke can't reopen the hole.
+- **One validation rule for all input:** `InputModel` refuses control characters in every string field, so new fields are covered automatically. Multi-line fields and secrets are listed by name.
+- **Limits on creation, not on all writes.** A write limit on every request would add a database commit to each one. Limits on what fills the database stop the same abuse.
+- **Accepted for now, by the owner:** sign-in stays unchanged until Login with Google, and the MySQL root account stays unchanged while the app only runs on this PC. Both must be closed before real users or deployment.
+- **Security events go to the `listify.security` log,** not `audit_logs`, which is per organization and visible to its admins. The log never holds passwords or the text typed into a failed sign-in.

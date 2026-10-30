@@ -13,6 +13,13 @@ export const TAG_COLORS = [
 ] as const
 export type TagColor = (typeof TAG_COLORS)[number]
 
+export type TaskVisibility = 'private' | 'department' | 'selected' | 'organization'
+
+export interface Person {
+  id: number
+  name: string
+}
+
 export interface Tag {
   id: number
   name: string
@@ -39,10 +46,22 @@ export interface Task {
   tags: Tag[]
   subtask_count: number
   subtasks_completed: number
+  // Organization tasks only; empty or null on personal tasks.
+  organization_id: number | null
+  visibility: TaskVisibility
+  department: { id: number; name: string } | null
+  assignee: Person | null
+  creator: Person | null
+  collaborators: Person[]
+  needs_reassignment: boolean
+  /** Statuses the signed-in user may move this task to. The server checks again. */
+  allowed_statuses: TaskStatus[]
+  actions: string[]
 }
 
 export interface TaskDetail extends Task {
   subtasks: Task[]
+  visible_to: Person[]
 }
 
 export interface TaskActivity {
@@ -90,4 +109,10 @@ export interface TaskInput {
   tag_ids?: number[]
   parent_task_id?: number
   estimated_minutes?: number | null
+  // Organization tasks only.
+  department_id?: number | null
+  assigned_to?: number | null
+  collaborator_ids?: number[]
+  visibility?: TaskVisibility
+  visible_to?: number[]
 }

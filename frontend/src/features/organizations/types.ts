@@ -113,6 +113,7 @@ export interface MemberImpact {
   keeps_every_department: boolean
   sole_manager_of: { id: number; name: string }[]
   pending_requests: number
+  tasks_to_reassign: number
 }
 
 export type AssignableRole = 'member' | 'team_lead' | 'department_manager' | 'admin'

@@ -1,34 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Browser, type Page, type TestInfo } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
-const PASSWORD = 'correct horse battery staple'
-
-async function newUser(browser: Browser, testInfo: TestInfo, name: string, label: string) {
-  const context = await browser.newContext({
-    ...testInfo.project.use,
-    baseURL: testInfo.project.use.baseURL,
-  })
-  const page = await context.newPage()
-  await page.goto('/register')
-  await page.getByLabel('Full name').fill(name)
-  await page.getByLabel('Email').fill(`${label}.${testInfo.project.name}.${Date.now()}@example.com`)
-  await page.getByLabel('Password', { exact: true }).fill(PASSWORD)
-  await page.getByRole('checkbox').check()
-  await page.getByRole('button', { name: 'Create account' }).click()
-  await expect(page.getByRole('heading', { name: /^Welcome, / })).toBeVisible()
-  return page
-}
-
-async function createOrganization(page: Page, name: string, searchable: boolean) {
-  await page.goto('/organizations/new')
-  await page.getByLabel('Organization name').fill(name)
-  await page.getByRole('button', { name: 'Engineering' }).click()
-  await page.getByRole('button', { name: 'Sales' }).click()
-  if (searchable) await page.getByRole('switch').click()
-  await page.getByRole('button', { name: 'Create organization' }).click()
-  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
-  return Number(new URL(page.url()).pathname.split('/')[2])
-}
+import { createOrganization, newUser, PASSWORD } from './helpers.js'
 
 test('request to join, approval, and what each person can then do', async ({
   browser,

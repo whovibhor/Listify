@@ -1,6 +1,6 @@
 # Listify — Database Design
 
-Status: **Phase 3 schema applied** (head revision `fa2cb7581b65`; Phase 4 needed no schema change). Databases: `listify` (development) and `listify_test` (automated tests and E2E).
+Status: **Phase 5 schema applied** (head revision `c75db4ee8921`; Phase 4 needed no schema change). Databases: `listify` (development) and `listify_test` (automated tests and E2E).
 
 ## Server and conventions
 
@@ -30,7 +30,7 @@ Migration note: the downgrade drops tables without dropping their indexes first,
 | Table | Key columns | Keys, checks & indexes | Delete behavior / notes |
 |---|---|---|---|
 | `tasks` | `id`; `workspace_type` (personal\|organization); `owner_user_id` (personal only); `created_by`; `parent_task_id`; `title` VARCHAR(200); `description` TEXT; `status`, `priority` (VARCHAR+CHECK); `start_at`, `due_at` DATETIME(6) UTC; `due_all_day`; `estimated_minutes`, `actual_minutes`; `sort_order`; `completed_at`, `completed_by`; `archived_at`; timestamps | CHECK `ck_tasks_personal_has_owner` (personal ⇒ owner set); CHECK `ck_tasks_title_not_empty`; enum CHECKs; `ix_tasks_owner_archived_status_due`, `ix_tasks_owner_completed_at`, `ix_tasks_parent_task_id` | `owner_user_id` **RESTRICT** (MySQL forbids referential actions on columns used in a CHECK; users are deactivated, not deleted); `parent_task_id` CASCADE (subtasks go with the parent); `completed_by` SET NULL; `created_by` RESTRICT. Organization columns (`organization_id`, `department_id`, `assigned_to`, `visibility`, completion attribution) arrive in Phase 5. |
-| `tags` | `id`, `owner_user_id`, `name` VARCHAR(40), `color`, `created_at` | unique (`owner_user_id`, `name`) — case-insensitive via collation | CASCADE from users. Organization-scoped tags arrive in Phase 5. |
+| `tags` | `id`, `owner_user_id`, `name` VARCHAR(40), `color`, `created_at` | unique (`owner_user_id`, `name`) — case-insensitive via collation | CASCADE from users. Organization tags arrived in Phase 5 (below). |
 | `task_tags` | (`task_id`, `tag_id`) PK | `ix_task_tags_tag_id` | CASCADE from both sides. |
 | `task_activity_logs` | `id`, `task_id`, `actor_id`, `event_type`, `old_value`/`new_value` JSON, `created_at` | `ix_task_activity_logs_task_id_created_at` | CASCADE with the task; actor SET NULL. Events: created, updated, status_changed, completed, reopened, archived, restored, subtask_added, subtask_deleted. |
 
@@ -56,7 +56,21 @@ Enums are stored as VARCHAR + CHECK (not native `ENUM`) so later phases can add 
 | `organization_invitations` | `organization_id`, `email`, `token_hash`, `role_id`, `department_id`, `expires_at`, `accepted_at`, `accepted_by`, `revoked_at` | `token_hash` unique; composite FK | Only the SHA-256 of the token is stored. |
 | `audit_logs` | `organization_id`, `actor_id`, `action`, `target_type`, `target_id`, `details`, `created_at` | index (`organization_id`, `created_at`) | Append-only: the API has no update or delete. |
 
-**Phase 4 uses these tables as they are.** Suspending changes only `organization_memberships.status`, so roles and departments survive for reactivation. Removing sets `status = removed` and deletes the member's `membership_roles` and `department_memberships` rows, so the membership row and `audit_logs` stay as history and rejoining starts clean. Ownership is a role row: a transfer swaps Owner and Admin in one transaction. Member changes take a row lock on the organization, so two administrators can't race each other into an invalid state.
+**Phase 4 uses these tables as they are.** Suspending changes only `organization_memberships.status`, so roles and departments survive for reactivation. Removing sets `status = removed` and deletes the member's `membership_roles`, `department_memberships`, `task_collaborators` and `task_visibility_grants` rows, so the membership row and `audit_logs` stay as history and rejoining starts clean. It also revokes their unused invitations, as do suspending and losing the Admin role. Ownership is a role row: a transfer swaps Owner and Admin in one transaction. Member changes take a row lock on the organization, so two administrators can't race each other into an invalid state.
+
+## Phase 5 tables and columns (revision `c75db4ee8921`)
+
+| Table | Key columns | Keys & constraints | Notes |
+|---|---|---|---|
+| `tasks` (added) | `organization_id`, `department_id`, `assigned_to`, `visibility`, `completed_department_id` | CHECKs `personal_has_no_organization`, `organization_scope`, `department_visibility_has_department`, `task_visibility`; composite FKs to `departments` for both department columns; indexes on (organization, department, archived, status) and (organization, assignee, archived, status) | Existing rows are personal, so `visibility` defaults them to `private`. `completed_department_id` is the snapshot from ADR-020. Subtasks hold only `organization_id`; access follows the parent. |
+| `task_collaborators` | `task_id`, `user_id`, `added_by`, `created_at` | PK (`task_id`, `user_id`) | CASCADE with the task; user RESTRICT. |
+| `task_visibility_grants` | `task_id`, `user_id`, `granted_by`, `created_at` | PK (`task_id`, `user_id`) | People a Selected people task is shared with. They can read, not edit. |
+| `tags` (added) | `organization_id`; `owner_user_id` now nullable | unique (`organization_id`, `name`) | A tag has one owner or one organization. There's no CHECK for this, because MySQL forbids one on a column with ON DELETE CASCADE. |
+| `permissions` (seed) | new `task.view_all` for Owner and Admin; `task.view_organization` added to the other roles | | See ADR-027. |
+
+"Needs reassignment" isn't stored. It's worked out from memberships on each read, so reactivating someone clears it with nothing to keep in sync.
+
+Downgrade note: organization tasks and organization tags can't exist in the older schema, so the downgrade deletes them. Never run it on a database with real organization work.
 
 **Persistence rule:** every piece of user-entered data lives in MySQL. The browser keeps only a cached copy of the theme (to avoid a flash on load; the account value wins) and URL state for filters. See `feature-status.md` for the table behind each feature.
 
@@ -69,7 +83,7 @@ The logical model follows PRD §8 with the additions listed in `requirements-ana
 | M1 ✅ | users, user_sessions, password_reset_tokens, rate_limit_buckets (`user_preferences` moved to M8 with notification preferences) |
 | M2 ✅ | tasks, tags, task_tags, task_activity_logs |
 | M3 ✅ | organizations, departments, organization_memberships, department_memberships, roles, permissions, role_permissions, membership_roles, membership_requests, organization_invitations, audit_logs |
-| M5 | task_collaborators, task_visibility_grants |
+| M5 ✅ | task_collaborators, task_visibility_grants |
 | M6 | task_comments, task_attachments, task_update_requests, notifications |
 
 ## Personal vs organization tasks (design intent)

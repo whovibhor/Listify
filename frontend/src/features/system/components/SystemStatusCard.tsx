@@ -75,7 +75,7 @@ export function SystemStatusCard() {
               icon={ServerIcon}
               label="API"
               state="ok"
-              detail={`v${data.version} · ${data.environment}`}
+              detail={data.version ? `v${data.version} · ${data.environment}` : 'Running'}
             />
             {Object.entries(data.checks).map(([name, check]) => (
               <StatusRow

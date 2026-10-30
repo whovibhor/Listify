@@ -139,8 +139,9 @@ export function useCancelJoinRequest() {
 
 // --- Departments -------------------------------------------------------------------------------
 
-export function useDepartments(organizationId: number, { archived = false } = {}) {
+export function useDepartments(organizationId: number, { archived = false, enabled = true } = {}) {
   return useQuery({
+    enabled,
     queryKey: orgKeys.departments(organizationId, archived),
     queryFn: () =>
       api.get<Department[]>(`/organizations/${organizationId}/departments`, {

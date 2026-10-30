@@ -1,11 +1,13 @@
 import re
 import secrets
 from collections.abc import Iterable
+from datetime import timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.common import rate_limit
 from app.core.exceptions import ConflictError, NotFoundError
 from app.db.base import utc_now
 from app.modules.audit_logs import service as audit
@@ -38,6 +40,10 @@ from app.modules.permissions.models import Role
 from app.modules.permissions.service import OrgContext, load_context
 from app.modules.users.models import User
 
+# Generous for real use: they only stop a script filling the database (S-10).
+ORGANIZATIONS_PER_USER = rate_limit.RateLimit("organization-create:user", 20, timedelta(hours=1))
+DEPARTMENTS_PER_USER = rate_limit.RateLimit("department-create:user", 100, timedelta(hours=1))
+
 
 class DepartmentNameTakenError(ConflictError):
     code = "department_name_taken"
@@ -61,6 +67,7 @@ def _unique_slug(db: Session, name: str) -> str:
 
 def create_organization(db: Session, user: User, payload: OrganizationCreate) -> Organization:
     """Organization, Owner membership and first departments commit together or not at all."""
+    rate_limit.hit(db, ORGANIZATIONS_PER_USER, str(user.id))
     organization = Organization(
         name=payload.name,
         slug=_unique_slug(db, payload.name),
@@ -307,6 +314,7 @@ def _commit_department(db: Session) -> None:
 
 
 def create_department(db: Session, context: OrgContext, payload: DepartmentInput) -> Department:
+    rate_limit.hit(db, DEPARTMENTS_PER_USER, str(context.user.id))
     department = Department(
         organization_id=context.organization.id,
         name=payload.name,

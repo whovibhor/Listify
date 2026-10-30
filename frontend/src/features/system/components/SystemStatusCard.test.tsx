@@ -28,6 +28,18 @@ describe('SystemStatusCard', () => {
     expect(within(dbRow).getByText('2.4 ms')).toBeInTheDocument()
   })
 
+  it('still reads well when production hides the version', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(jsonResponse({ ...healthy, version: null, environment: null }))),
+    )
+
+    renderWithProviders(<SystemStatusCard />)
+
+    expect(await screen.findByText('Running')).toBeInTheDocument()
+    expect(screen.queryByText(/null/)).not.toBeInTheDocument()
+  })
+
   it('reports a degraded database from a 503 health response', async () => {
     const degraded = {
       ...healthy,

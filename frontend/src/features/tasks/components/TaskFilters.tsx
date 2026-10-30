@@ -41,6 +41,9 @@ interface TaskFiltersProps {
   sorts: TaskSort[]
   defaultSort: TaskSort
   showOverdue?: boolean
+  /** Organization views use that organization's tags. */
+  organizationId?: number
+  extra?: ReactNode
 }
 
 function FilterButton({
@@ -86,9 +89,11 @@ export function TaskFilters({
   sorts,
   defaultSort,
   showOverdue = true,
+  organizationId,
+  extra,
 }: TaskFiltersProps) {
   const { filters, update, clearFilters, activeFilterCount } = search
-  const { data: tags = [] } = useTags()
+  const { data: tags = [] } = useTags(organizationId)
   const [q, setQ] = useState(filters.q)
 
   // Debounce typing into the URL (and thus the API).
@@ -185,6 +190,8 @@ export function TaskFilters({
         </Button>
       ) : null}
 
+      {extra}
+
       <div className="ml-auto flex items-center gap-2">
         {activeFilterCount > 0 ? (
           <Button
@@ -199,28 +206,30 @@ export function TaskFilters({
             Clear
           </Button>
         ) : null}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" aria-label="Sort tasks">
-              <ArrowUpDownIcon data-icon="inline-start" />
-              <span className="hidden sm:inline">{SORT_LABELS[filters.sort ?? defaultSort]}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuRadioGroup
-              value={filters.sort ?? defaultSort}
-              onValueChange={(value) => update({ sort: value === defaultSort ? null : value })}
-            >
-              {sorts.map((sort) => (
-                <DropdownMenuRadioItem key={sort} value={sort}>
-                  {SORT_LABELS[sort]}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {sorts.length > 0 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" aria-label="Sort tasks">
+                <ArrowUpDownIcon data-icon="inline-start" />
+                <span className="hidden sm:inline">{SORT_LABELS[filters.sort ?? defaultSort]}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuRadioGroup
+                value={filters.sort ?? defaultSort}
+                onValueChange={(value) => update({ sort: value === defaultSort ? null : value })}
+              >
+                {sorts.map((sort) => (
+                  <DropdownMenuRadioItem key={sort} value={sort}>
+                    {SORT_LABELS[sort]}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
       </div>
     </div>
   )

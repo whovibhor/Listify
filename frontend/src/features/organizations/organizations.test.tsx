@@ -343,3 +343,23 @@ describe('invitations', () => {
     expect(await screen.findByText("This invitation can't be used")).toBeInTheDocument()
   })
 })
+
+describe('admin invitations', () => {
+  it('asks for an email address only when inviting an Admin', async () => {
+    mockApi(
+      signedInRoutes({
+        'GET /me/organizations': [makeOrg()],
+        ...orgRoutes,
+        'GET /organizations/7/invitations': [],
+      }),
+    )
+    const { user } = renderApp('/org/7/invitations')
+
+    const optional = await screen.findByLabelText('Email (optional)')
+    expect(optional).not.toBeRequired()
+
+    await user.selectOptions(screen.getByLabelText('Role'), 'admin')
+
+    expect(screen.getByLabelText('Email')).toBeRequired()
+  })
+})

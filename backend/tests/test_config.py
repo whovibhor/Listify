@@ -7,7 +7,7 @@ from app.core.config import Settings
 def test_frontend_origins_accepts_comma_separated_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("FRONTEND_ORIGINS", "http://localhost:5173, http://127.0.0.1:5173")
 
-    settings = Settings(_env_file=None)
+    settings = Settings(_env_file=None, app_env="test")
 
     assert settings.frontend_origins == ["http://localhost:5173", "http://127.0.0.1:5173"]
 
@@ -56,7 +56,7 @@ def test_production_rejects_console_mailer_and_insecure_cookies() -> None:
 
 
 def test_database_url_never_renders_password_by_default() -> None:
-    settings = Settings(_env_file=None, db_password="s3cr3t!@#", db_name="listify")
+    settings = Settings(_env_file=None, app_env="test", db_password="s3cr3t!@#", db_name="listify")
 
     url = settings.database_url()
 
@@ -67,6 +67,8 @@ def test_database_url_never_renders_password_by_default() -> None:
 
 
 def test_database_url_uses_test_db_name_when_requested() -> None:
-    settings = Settings(_env_file=None, db_name="listify", db_test_name="listify_test")
+    settings = Settings(
+        _env_file=None, app_env="test", db_name="listify", db_test_name="listify_test"
+    )
     assert settings.database_url(test=True).database == "listify_test"
     assert settings.database_url().database == "listify"

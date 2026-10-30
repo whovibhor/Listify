@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import UnaryExpression
 
+from app.common import rate_limit
 from app.common.time import (
     END_OF_DAY,
     day_bounds_utc,
@@ -15,7 +16,9 @@ from app.common.time import (
     local_today,
     zone,
 )
-from app.core.exceptions import AppError, ConflictError
+from app.core.exceptions import AppError, ConflictError, ForbiddenError
+from app.modules.audit_logs import service as audit
+from app.modules.organizations.models import Organization
 from app.modules.tasks import policies
 from app.modules.tasks.models import (
     OPEN_STATUSES,
@@ -27,6 +30,7 @@ from app.modules.tasks.models import (
     WorkspaceType,
     task_tags,
 )
+from app.modules.tasks.policies import TaskAccess
 from app.modules.tasks.schemas import (
     ActivityRead,
     TagCreate,
@@ -41,6 +45,9 @@ from app.modules.users.models import User
 
 MAX_SUBTASKS = 50
 UPCOMING_DAYS = 14
+# Generous for real work: they only stop a script filling the database (S-10).
+TASKS_PER_USER = rate_limit.RateLimit("task-create:user", 1000, timedelta(hours=1))
+TAGS_PER_USER = rate_limit.RateLimit("tag-create:user", 200, timedelta(hours=1))
 
 
 class TaskValidationError(AppError):
@@ -91,6 +98,8 @@ def to_read(task: Task, now: datetime) -> TaskRead:
 _READ_COLUMNS = (
     "id",
     "parent_task_id",
+    "organization_id",
+    "visibility",
     "title",
     "description",
     "status",
@@ -116,7 +125,7 @@ def to_detail(task: Task, now: datetime) -> TaskDetail:
 # --- Activity --------------------------------------------------------------------------------
 
 
-def _record(
+def record(
     db: Session,
     task: Task,
     actor: User,
@@ -170,17 +179,17 @@ def _jsonable(value: Any) -> Any:
 # --- Dates -----------------------------------------------------------------------------------
 
 
-def _due_from_local(user: User, due_date: date | None, due_time: time | None):
+def due_from_local(timezone: str, due_date: date | None, due_time: time | None):
     if due_date is None:
         return None, True
-    tz = zone(user.timezone)
+    tz = zone(timezone)
     if due_time is None:
         return local_to_utc(due_date, END_OF_DAY, tz), True
     return local_to_utc(due_date, due_time, tz), False
 
 
-def _start_from_local(user: User, start_date: date | None) -> datetime | None:
-    return None if start_date is None else day_start_utc(start_date, zone(user.timezone))
+def start_from_local(timezone: str, start_date: date | None) -> datetime | None:
+    return None if start_date is None else day_start_utc(start_date, zone(timezone))
 
 
 # --- Create / update -------------------------------------------------------------------------
@@ -193,22 +202,30 @@ def _resolve_tags(db: Session, user: User, tag_ids: list[int]) -> list[Tag]:
     return tags
 
 
+def next_subtask_position(parent: Task) -> int:
+    if parent.parent_task_id is not None:
+        raise TaskValidationError("parent_task_id", "Subtasks can't have their own subtasks.")
+    if parent.archived_at is not None:
+        raise TaskArchivedError("Restore the task before adding subtasks.")
+    if len(parent.subtasks) >= MAX_SUBTASKS:
+        raise TaskValidationError(
+            "parent_task_id", f"A task can have at most {MAX_SUBTASKS} subtasks."
+        )
+    return max((s.sort_order for s in parent.subtasks), default=-1) + 1
+
+
 def create_personal_task(db: Session, user: User, payload: TaskCreate) -> Task:
+    rate_limit.hit(db, TASKS_PER_USER, str(user.id))
     parent: Task | None = None
     sort_order = 0
     if payload.parent_task_id is not None:
-        parent = policies.get_task_for_user(db, user, payload.parent_task_id, for_update=True)
-        if parent.parent_task_id is not None:
-            raise TaskValidationError("parent_task_id", "Subtasks can't have their own subtasks.")
-        if parent.archived_at is not None:
-            raise TaskArchivedError("Restore the task before adding subtasks.")
-        if len(parent.subtasks) >= MAX_SUBTASKS:
-            raise TaskValidationError(
-                "parent_task_id", f"A task can have at most {MAX_SUBTASKS} subtasks."
-            )
-        sort_order = max((s.sort_order for s in parent.subtasks), default=-1) + 1
+        access = policies.get_access(db, user, payload.parent_task_id, for_update=True)
+        if access.context is not None:
+            raise TaskValidationError("parent_task_id", "That task isn't a personal task.")
+        parent = access.task
+        sort_order = next_subtask_position(parent)
 
-    due_at, due_all_day = _due_from_local(user, payload.due_date, payload.due_time)
+    due_at, due_all_day = due_from_local(user.timezone, payload.due_date, payload.due_time)
     task = Task(
         workspace_type=WorkspaceType.PERSONAL,
         owner_user_id=user.id,
@@ -218,7 +235,7 @@ def create_personal_task(db: Session, user: User, payload: TaskCreate) -> Task:
         description=payload.description or None,
         status=payload.status,
         priority=payload.priority,
-        start_at=_start_from_local(user, payload.start_date),
+        start_at=start_from_local(user.timezone, payload.start_date),
         due_at=due_at,
         due_all_day=due_all_day,
         estimated_minutes=payload.estimated_minutes,
@@ -227,18 +244,23 @@ def create_personal_task(db: Session, user: User, payload: TaskCreate) -> Task:
     )
     db.add(task)
     db.flush()
-    _record(db, task, user, "created", new={"title": task.title})
+    record(db, task, user, "created", new={"title": task.title})
     if parent is not None:
-        _record(db, parent, user, "subtask_added", new={"title": task.title, "subtask_id": task.id})
+        record(db, parent, user, "subtask_added", new={"title": task.title, "subtask_id": task.id})
     db.commit()
     db.refresh(task)
     return task
 
 
-def update_task(db: Session, user: User, task: Task, payload: TaskUpdate, now: datetime) -> Task:
+def update_task(
+    db: Session, access: TaskAccess, user: User, payload: TaskUpdate, now: datetime
+) -> Task:
+    task = access.task
     if task.archived_at is not None:
         raise TaskArchivedError("Archived tasks are read-only. Restore the task to edit it.")
     fields = payload.model_fields_set
+    organization = access.context.organization if access.context else None
+    timezone = organization.timezone if organization else user.timezone
     old: dict[str, Any] = {}
     new: dict[str, Any] = {}
 
@@ -254,24 +276,30 @@ def update_task(db: Session, user: User, task: Task, payload: TaskUpdate, now: d
     if "description" in fields:
         assign("description", payload.description or None)
     if "due_date" in fields:
-        due_at, due_all_day = _due_from_local(user, payload.due_date, payload.due_time)
+        due_at, due_all_day = due_from_local(timezone, payload.due_date, payload.due_time)
         assign("due_at", due_at)
         assign("due_all_day", due_all_day)
     if "start_date" in fields:
-        assign("start_at", _start_from_local(user, payload.start_date))
+        assign("start_at", start_from_local(timezone, payload.start_date))
     if task.start_at and task.due_at and task.start_at > task.due_at:
         raise TaskValidationError("start_date", "Start date must be on or before the deadline.")
     if "tag_ids" in fields:
-        tags = _resolve_tags(db, user, payload.tag_ids or [])
+        tag_ids = payload.tag_ids or []
+        if organization:
+            tags = policies.tags_of_organization(db, organization.id, tag_ids)
+            if len(tags) != len(tag_ids):
+                raise TaskValidationError("tag_ids", "One or more tags don't exist.")
+        else:
+            tags = _resolve_tags(db, user, tag_ids)
         before, after = sorted(t.name for t in task.tags), sorted(t.name for t in tags)
         if before != after:
             old["tags"], new["tags"] = before, after
             task.tags = tags
 
     if new:
-        _record(db, task, user, "updated", old, new)
+        record(db, task, user, "updated", old, new)
     if "status" in fields and payload.status != task.status:
-        _apply_status(db, user, task, payload.status, now)  # type: ignore[arg-type]
+        _apply_status(db, access, user, payload.status, now)  # type: ignore[arg-type]
     db.commit()
     db.refresh(task)
     return task
@@ -280,21 +308,36 @@ def update_task(db: Session, user: User, task: Task, payload: TaskUpdate, now: d
 # --- Status ----------------------------------------------------------------------------------
 
 
-def _review_required(task: Task) -> bool:
-    return False  # personal tasks never require review; organizations configure it (Phase 5)
+def _review_required(db: Session, task: Task) -> bool:
+    """Organizations opt in. Personal tasks and subtasks never need review."""
+    if task.organization_id is None or task.parent_task_id is not None:
+        return False
+    organization = db.get(Organization, task.organization_id)
+    return organization is not None and organization.review_required
 
 
-def _apply_status(db: Session, user: User, task: Task, target: TaskStatus, now: datetime) -> None:
+def _apply_status(
+    db: Session, access: TaskAccess, user: User, target: TaskStatus, now: datetime
+) -> None:
+    task = access.task
     if task.archived_at is not None:
         raise TaskArchivedError("Archived tasks are read-only. Restore the task to edit it.")
     if target == task.status:
         return
-    allowed = allowed_targets(task.status, review_required=_review_required(task))
+    review_required = _review_required(db, task)
+    allowed = allowed_targets(task.status, review_required=review_required)
     if target not in allowed:
         raise InvalidTransitionError(
             f"A task can't move from {task.status.value} to {target.value}.",
             details=[{"field": "status", "message": f"Allowed: {', '.join(sorted(allowed))}"}],
         )
+    if (
+        review_required
+        and task.status == TaskStatus.IN_REVIEW
+        and target == TaskStatus.COMPLETED
+        and not access.can("approve_review")
+    ):
+        raise ForbiddenError("The task's creator or a manager needs to approve this.")
     if target == TaskStatus.COMPLETED:
         open_subtasks = [s for s in task.subtasks if s.is_open]
         if open_subtasks:
@@ -308,10 +351,11 @@ def _apply_status(db: Session, user: User, task: Task, target: TaskStatus, now: 
     if target == TaskStatus.COMPLETED:
         task.completed_at = now
         task.completed_by = user.id
-        _record(db, task, user, "completed", {"status": previous.value}, {"status": target.value})
+        task.completed_department_id = task.department_id
+        record(db, task, user, "completed", {"status": previous.value}, {"status": target.value})
     elif previous == TaskStatus.COMPLETED:
         # Reopen: current state is no longer complete; the earlier event stays in history.
-        _record(
+        record(
             db,
             task,
             user,
@@ -321,26 +365,40 @@ def _apply_status(db: Session, user: User, task: Task, target: TaskStatus, now: 
         )
         task.completed_at = None
         task.completed_by = None
+        task.completed_department_id = None
     else:
-        _record(
+        record(
             db, task, user, "status_changed", {"status": previous.value}, {"status": target.value}
         )
 
 
-def complete_task(db: Session, user: User, task: Task, now: datetime) -> Task:
-    _apply_status(db, user, task, TaskStatus.COMPLETED, now)
+def complete_task(db: Session, access: TaskAccess, user: User, now: datetime) -> Task:
+    _apply_status(db, access, user, TaskStatus.COMPLETED, now)
     db.commit()
-    db.refresh(task)
-    return task
+    db.refresh(access.task)
+    return access.task
 
 
-def reopen_task(db: Session, user: User, task: Task, now: datetime) -> Task:
-    if task.status != TaskStatus.COMPLETED:
+def reopen_task(db: Session, access: TaskAccess, user: User, now: datetime) -> Task:
+    if access.task.status != TaskStatus.COMPLETED:
         raise InvalidTransitionError("Only completed tasks can be reopened.")
-    _apply_status(db, user, task, REOPEN_STATUS, now)
+    _apply_status(db, access, user, REOPEN_STATUS, now)
     db.commit()
-    db.refresh(task)
-    return task
+    db.refresh(access.task)
+    return access.task
+
+
+def _audit_organization_task(db: Session, task: Task, user: User, action: str) -> None:
+    if task.organization_id is not None:
+        audit.record(
+            db,
+            organization_id=task.organization_id,
+            actor_id=user.id,
+            action=action,
+            target_type="task",
+            target_id=task.id,
+            details={"title": task.title},
+        )
 
 
 def archive_task(db: Session, user: User, task: Task, now: datetime) -> Task:
@@ -350,7 +408,8 @@ def archive_task(db: Session, user: User, task: Task, now: datetime) -> Task:
         )
     if task.archived_at is None:
         task.archived_at = now
-        _record(db, task, user, "archived")
+        record(db, task, user, "archived")
+        _audit_organization_task(db, task, user, "task.archived")
         db.commit()
         db.refresh(task)
     return task
@@ -359,21 +418,22 @@ def archive_task(db: Session, user: User, task: Task, now: datetime) -> Task:
 def restore_task(db: Session, user: User, task: Task) -> Task:
     if task.archived_at is not None:
         task.archived_at = None
-        _record(db, task, user, "restored")
+        record(db, task, user, "restored")
+        _audit_organization_task(db, task, user, "task.restored")
         db.commit()
         db.refresh(task)
     return task
 
 
-def delete_personal_task(db: Session, user: User, task: Task) -> None:
-    """Permanent delete (owner decision A6 for personal tasks); subtasks and history go too."""
+def delete_task(db: Session, user: User, task: Task) -> None:
+    """Permanent delete: personal tasks (owner decision A6) and subtasks; history goes too."""
     parent_id = task.parent_task_id
     title = task.title
     db.delete(task)
     if parent_id is not None:
         parent = db.get(Task, parent_id)
         if parent is not None:
-            _record(db, parent, user, "subtask_deleted", old={"title": title})
+            record(db, parent, user, "subtask_deleted", old={"title": title})
     db.commit()
 
 
@@ -437,7 +497,7 @@ def _view_conditions(view: str, user: User, now: datetime) -> list[ColumnElement
     return [active, is_open]  # "all" = My Tasks
 
 
-def _order_by(sort: str) -> list[UnaryExpression[Any] | ColumnElement[Any]]:
+def order_by(sort: str) -> list[UnaryExpression[Any] | ColumnElement[Any]]:
     nulls_last_due = [Task.due_at.is_(None), Task.due_at.asc()]
     return {
         "due": [*nulls_last_due, _PRIORITY_RANK.desc(), Task.id.desc()],
@@ -478,7 +538,7 @@ def list_personal_tasks(
     total = db.scalar(select(func.count()).select_from(Task).where(*conditions)) or 0
     sort = query.sort or _DEFAULT_SORT[query.view]
     items = db.scalars(
-        select(Task).where(*conditions).order_by(*_order_by(sort)).offset(offset).limit(limit)
+        select(Task).where(*conditions).order_by(*order_by(sort)).offset(offset).limit(limit)
     ).all()
     return list(items), total
 
@@ -493,19 +553,20 @@ def list_tags(db: Session, user: User) -> list[Tag]:
 
 
 def create_tag(db: Session, user: User, payload: TagCreate) -> Tag:
+    rate_limit.hit(db, TAGS_PER_USER, str(user.id))
     tag = Tag(owner_user_id=user.id, name=payload.name, color=payload.color)
     db.add(tag)
-    _commit_tag(db)
+    commit_tag(db)
     db.refresh(tag)
     return tag
 
 
-def update_tag(db: Session, user: User, tag: Tag, payload: TagUpdate) -> Tag:
+def update_tag(db: Session, tag: Tag, payload: TagUpdate) -> Tag:
     if payload.name is not None:
         tag.name = payload.name
     if payload.color is not None:
         tag.color = payload.color
-    _commit_tag(db)
+    commit_tag(db)
     db.refresh(tag)
     return tag
 
@@ -515,9 +576,9 @@ def delete_tag(db: Session, tag: Tag) -> None:
     db.commit()
 
 
-def _commit_tag(db: Session) -> None:
+def commit_tag(db: Session) -> None:
     try:
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        raise TagNameTakenError("You already have a tag with that name.") from exc
+        raise TagNameTakenError("A tag with that name already exists.") from exc

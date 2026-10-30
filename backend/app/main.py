@@ -5,6 +5,7 @@ from app.api.v1.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import REQUEST_ID_HEADER, RequestContextMiddleware, configure_logging
+from app.core.middleware import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 
 API_PREFIX = "/api/v1"
 
@@ -22,6 +23,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url="/api/openapi.json" if docs_enabled else None,
     )
 
+    # Innermost, so refusals still carry CORS, security headers and a request ID.
+    app.add_middleware(BodySizeLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.frontend_origins,
@@ -30,6 +33,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["Content-Type", "X-CSRF-Token", REQUEST_ID_HEADER],
         expose_headers=[REQUEST_ID_HEADER],
     )
+    app.add_middleware(SecurityHeadersMiddleware, strict_transport=settings.is_production)
     # Added last so it wraps everything, including CORS and error responses.
     app.add_middleware(RequestContextMiddleware)
 
