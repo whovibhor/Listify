@@ -1,0 +1,51 @@
+[project]
+name = "workpulse-backend"
+version = "0.1.0"
+description = "WorkPulse API — FastAPI modular monolith"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.162,<1.0",
+    "uvicorn[standard]>=0.54,<1.0",
+    "pydantic>=2.14,<3.0",
+    "pydantic-settings>=2.16,<3.0",
+    "sqlalchemy>=2.1,<2.2",
+    "alembic>=1.20,<2.0",
+    "pymysql>=1.2,<2.0",
+    "cryptography>=50.0",
+    "argon2-cffi>=25.1",
+    "email-validator>=2.3,<3.0",
+    # IANA timezone database; Windows has none built in.
+    "tzdata>=2026.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.2,<10.0",
+    # Starlette's TestClient deprecates `httpx` in favour of its successor `httpx2`.
+    "httpx2>=2.16,<3.0",
+    "ruff>=0.17,<0.18",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "S", "SIM", "RUF", "ASYNC"]
+ignore = ["B008"]  # FastAPI Depends() in argument defaults is idiomatic
+
+[tool.ruff.lint.isort]
+# The local alembic/ migrations folder would otherwise make Ruff treat the package as first-party.
+known-third-party = ["alembic"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers"
+markers = [
+    "db: requires a reachable MySQL test database (skipped when not configured)",
+]

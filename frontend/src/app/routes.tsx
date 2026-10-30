@@ -1,0 +1,118 @@
+import { Navigate, type RouteObject } from 'react-router'
+
+import { ComingSoonPage } from '@/app/pages/ComingSoonPage'
+import { NotFoundPage } from '@/app/pages/NotFoundPage'
+import { RouteErrorBoundary } from '@/app/RouteErrorBoundary'
+import { AppShell } from '@/components/layout/AppShell'
+import { allNavItems } from '@/components/layout/navigation'
+import { AuthLayout } from '@/features/auth/components/AuthLayout'
+import { GuestOnly, RequireAuth } from '@/features/auth/components/RouteGuards'
+import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
+import { LoginPage } from '@/features/auth/pages/LoginPage'
+import { RegisterPage } from '@/features/auth/pages/RegisterPage'
+import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
+import { WelcomePage } from '@/features/auth/pages/WelcomePage'
+import { SettingsLayout } from '@/features/settings/components/SettingsLayout'
+import { ProfileSettingsPage } from '@/features/settings/pages/ProfileSettingsPage'
+import { SecuritySettingsPage } from '@/features/settings/pages/SecuritySettingsPage'
+import { HomePage } from '@/features/system/pages/HomePage'
+
+const plannedRoutes: RouteObject[] = allNavItems
+  .filter((item) => item.plannedMilestone)
+  .map((item) => ({ path: item.to, element: <ComingSoonPage /> }))
+
+// Personal workspace pages are code-split; analytics also pulls in the charting library.
+const personalRoutes: RouteObject[] = [
+  {
+    path: '/personal/my-day',
+    lazy: async () => ({
+      Component: (await import('@/features/personal-tasks/pages/MyDayPage')).MyDayPage,
+    }),
+  },
+  {
+    path: '/personal/tasks',
+    lazy: async () => ({
+      Component: (await import('@/features/personal-tasks/pages/MyTasksPage')).MyTasksPage,
+    }),
+  },
+  {
+    path: '/personal/upcoming',
+    lazy: async () => ({
+      Component: (await import('@/features/personal-tasks/pages/UpcomingPage')).UpcomingPage,
+    }),
+  },
+  {
+    path: '/personal/completed',
+    lazy: async () => ({
+      Component: (await import('@/features/personal-tasks/pages/CompletedPage')).CompletedPage,
+    }),
+  },
+  {
+    path: '/personal/analytics',
+    lazy: async () => ({
+      Component: (await import('@/features/dashboards/pages/PersonalAnalyticsPage'))
+        .PersonalAnalyticsPage,
+    }),
+  },
+]
+
+const devRoutes: RouteObject[] = import.meta.env.DEV
+  ? [
+      {
+        path: '/design',
+        lazy: async () => {
+          const { DesignSystemPage } = await import('@/features/system/pages/DesignSystemPage')
+          return { Component: DesignSystemPage }
+        },
+      },
+    ]
+  : []
+
+// Feature pages are lazy-loaded (route.lazy) as they grow, keeping the initial bundle small.
+export const routes: RouteObject[] = [
+  {
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      {
+        element: <AuthLayout />,
+        children: [
+          {
+            element: <GuestOnly />,
+            children: [
+              { path: '/login', element: <LoginPage /> },
+              { path: '/register', element: <RegisterPage /> },
+              { path: '/forgot-password', element: <ForgotPasswordPage /> },
+            ],
+          },
+          // Reachable signed in or out: the emailed link must always work.
+          { path: '/reset-password', element: <ResetPasswordPage /> },
+        ],
+      },
+      {
+        element: <RequireAuth />,
+        children: [
+          {
+            element: <AppShell />,
+            children: [
+              { index: true, element: <HomePage /> },
+              { path: '/welcome', element: <WelcomePage /> },
+              {
+                path: '/settings',
+                element: <SettingsLayout />,
+                children: [
+                  { index: true, element: <Navigate to="profile" replace /> },
+                  { path: 'profile', element: <ProfileSettingsPage /> },
+                  { path: 'security', element: <SecuritySettingsPage /> },
+                ],
+              },
+              ...personalRoutes,
+              ...plannedRoutes,
+              ...devRoutes,
+              { path: '*', element: <NotFoundPage /> },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+]

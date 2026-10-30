@@ -1,0 +1,235 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * WorkPulse design tokens.
+ * Raw values live on :root / .dark; @theme inline maps them to Tailwind utilities
+ * (bg-primary, text-status-blocked, shadow-card, duration-base, ...).
+ * Brand: restrained violet. Text/background pairs target WCAG 2.2 AA (>= 4.5:1).
+ */
+@theme inline {
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Feedback */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  /* Task status (used by badges, board columns, charts) */
+  --color-status-not-started: var(--status-not-started);
+  --color-status-in-progress: var(--status-in-progress);
+  --color-status-blocked: var(--status-blocked);
+  --color-status-in-review: var(--status-in-review);
+  --color-status-completed: var(--status-completed);
+  --color-status-cancelled: var(--status-cancelled);
+
+  /* Task priority */
+  --color-priority-low: var(--priority-low);
+  --color-priority-medium: var(--priority-medium);
+  --color-priority-high: var(--priority-high);
+  --color-priority-urgent: var(--priority-urgent);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --shadow-card: 0 1px 2px 0 oklch(0.25 0.03 290 / 0.06), 0 1px 3px 0 oklch(0.25 0.03 290 / 0.05);
+  --shadow-raised:
+    0 4px 12px -2px oklch(0.25 0.03 290 / 0.1), 0 2px 4px -2px oklch(0.25 0.03 290 / 0.06);
+  --shadow-overlay: 0 16px 40px -8px oklch(0.2 0.03 290 / 0.22);
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1.2);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Motion durations (also mirrored in src/lib/motion.ts) */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+
+  --background: oklch(0.988 0.003 286);
+  --foreground: oklch(0.21 0.02 286);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.02 286);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.02 286);
+  --primary: oklch(0.5 0.2 289);
+  --primary-foreground: oklch(0.99 0.005 289);
+  --secondary: oklch(0.955 0.018 289);
+  --secondary-foreground: oklch(0.33 0.11 289);
+  --muted: oklch(0.962 0.005 286);
+  --muted-foreground: oklch(0.49 0.018 286);
+  --accent: oklch(0.95 0.028 291);
+  --accent-foreground: oklch(0.38 0.16 289);
+  --destructive: oklch(0.55 0.22 27);
+  --border: oklch(0.915 0.008 286);
+  --input: oklch(0.89 0.01 286);
+  --ring: oklch(0.58 0.19 289);
+
+  --success: oklch(0.52 0.13 155);
+  --success-foreground: oklch(0.99 0.01 155);
+  --warning: oklch(0.78 0.15 75);
+  --warning-foreground: oklch(0.3 0.07 60);
+  --info: oklch(0.53 0.15 250);
+  --info-foreground: oklch(0.99 0.01 250);
+
+  --status-not-started: oklch(0.55 0.02 270);
+  --status-in-progress: oklch(0.53 0.15 250);
+  --status-blocked: oklch(0.55 0.21 27);
+  --status-in-review: oklch(0.5 0.2 289);
+  --status-completed: oklch(0.52 0.13 155);
+  --status-cancelled: oklch(0.6 0.01 286);
+
+  --priority-low: oklch(0.6 0.03 250);
+  --priority-medium: oklch(0.53 0.15 250);
+  --priority-high: oklch(0.66 0.16 60);
+  --priority-urgent: oklch(0.55 0.22 27);
+
+  --chart-1: oklch(0.5 0.2 289);
+  --chart-2: oklch(0.6 0.15 250);
+  --chart-3: oklch(0.62 0.12 180);
+  --chart-4: oklch(0.75 0.15 75);
+  --chart-5: oklch(0.62 0.18 345);
+
+  --sidebar: oklch(0.975 0.006 289);
+  --sidebar-foreground: oklch(0.3 0.025 286);
+  --sidebar-primary: oklch(0.5 0.2 289);
+  --sidebar-primary-foreground: oklch(0.99 0.005 289);
+  --sidebar-accent: oklch(0.935 0.03 291);
+  --sidebar-accent-foreground: oklch(0.33 0.14 289);
+  --sidebar-border: oklch(0.915 0.01 289);
+  --sidebar-ring: oklch(0.58 0.19 289);
+}
+
+.dark {
+  --background: oklch(0.165 0.012 286);
+  --foreground: oklch(0.96 0.005 286);
+  --card: oklch(0.2 0.014 286);
+  --card-foreground: oklch(0.96 0.005 286);
+  --popover: oklch(0.22 0.015 286);
+  --popover-foreground: oklch(0.96 0.005 286);
+  --primary: oklch(0.7 0.16 290);
+  --primary-foreground: oklch(0.18 0.04 290);
+  --secondary: oklch(0.27 0.03 289);
+  --secondary-foreground: oklch(0.9 0.04 289);
+  --muted: oklch(0.25 0.012 286);
+  --muted-foreground: oklch(0.72 0.015 286);
+  --accent: oklch(0.29 0.05 290);
+  --accent-foreground: oklch(0.9 0.06 290);
+  --destructive: oklch(0.7 0.18 22);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.65 0.16 290);
+
+  --success: oklch(0.72 0.14 155);
+  --success-foreground: oklch(0.2 0.04 155);
+  --warning: oklch(0.8 0.14 75);
+  --warning-foreground: oklch(0.25 0.06 60);
+  --info: oklch(0.72 0.12 250);
+  --info-foreground: oklch(0.2 0.04 250);
+
+  --status-not-started: oklch(0.7 0.02 270);
+  --status-in-progress: oklch(0.72 0.12 250);
+  --status-blocked: oklch(0.7 0.18 22);
+  --status-in-review: oklch(0.72 0.15 290);
+  --status-completed: oklch(0.72 0.14 155);
+  --status-cancelled: oklch(0.6 0.01 286);
+
+  --priority-low: oklch(0.7 0.03 250);
+  --priority-medium: oklch(0.72 0.12 250);
+  --priority-high: oklch(0.8 0.14 70);
+  --priority-urgent: oklch(0.7 0.18 22);
+
+  /* chart-1 validated (dataviz validator) against the dark card surface; 2–5 are re-validated
+     as a set when multi-series charts arrive (Phase 7). */
+  --chart-1: oklch(0.64 0.17 290);
+  --chart-2: oklch(0.72 0.12 250);
+  --chart-3: oklch(0.74 0.11 180);
+  --chart-4: oklch(0.8 0.14 75);
+  --chart-5: oklch(0.72 0.16 345);
+
+  --sidebar: oklch(0.185 0.014 286);
+  --sidebar-foreground: oklch(0.9 0.008 286);
+  --sidebar-primary: oklch(0.7 0.16 290);
+  --sidebar-primary-foreground: oklch(0.18 0.04 290);
+  --sidebar-accent: oklch(0.27 0.04 290);
+  --sidebar-accent-foreground: oklch(0.94 0.04 290);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.65 0.16 290);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans antialiased;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
