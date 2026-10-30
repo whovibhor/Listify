@@ -1,6 +1,6 @@
 # Listify — Feature Status
 
-**Last updated:** 2026-10-30 · **Current phase:** Phase 6 (Collaboration) — next up
+**Last updated:** 2026-10-30 · **Current phase:** Phase 8 (Reminders & scheduled notifications) — next up
 
 This is the single list of what is **done** and what is **pending**, feature by feature. It is updated every time a feature is completed or changed. A feature is marked ✅ only after it works end-to-end (UI → API → MySQL) and its tests have been run and passed. Detailed plans live in [`implementation-roadmap.md`](implementation-roadmap.md).
 
@@ -18,8 +18,8 @@ Legend: ✅ done · 🟡 partly done · ⏳ pending · ⏸ deferred (later relea
 | Organizations, departments, membership | ✅ Done |
 | Roles & permissions, member management | ✅ Done |
 | Department work boards (team tasks) | ✅ Done |
-| Comments, update requests, attachments, inbox | ⏳ Pending (Phase 6) |
-| Team & organization dashboards | ⏳ Pending (Phase 7) |
+| Comments, update requests, attachments, inbox | ✅ Done |
+| Team & organization dashboards | ✅ Done |
 | Reminders, notifications, email | ⏳ Pending (Phase 8) |
 | Production readiness (deploy, backups, monitoring) | ⏳ Pending (Phase 9) |
 
@@ -110,9 +110,36 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 | Tasks of suspended, removed or moved members are flagged for reassignment and nothing is lost; the impact preview counts them | computed from `tasks` and memberships |
 | Team tasks are archived, never deleted | `tasks`, `audit_logs` |
 
+### Collaboration & inbox
+| Feature | Stored in |
+|---|---|
+| Comments on tasks: add, edit or delete your own, with line breaks kept. Owners and Admins can remove any comment. Personal tasks can hold notes too | `task_comments`, `task_activity_logs` |
+| Mention someone in a comment. They must be able to see the task | `notifications` |
+| File attachments up to 10 MB: PDF, images, text, CSV, Word, Excel, PowerPoint, ZIP. Drag and drop or pick files | `task_attachments`, files in `backend/storage/` |
+| Request an update from the assignee or a collaborator, with an optional answer-by date | `task_update_requests` |
+| Respond from the Inbox or the task, optionally changing the task's status | `task_update_requests`, `tasks` |
+| Inbox: All, Unread, Assignments and Update requests, plus a list of updates waiting for you | `notifications`, `task_update_requests` |
+| Notifications for assignments, collaborators, comments, mentions, update requests, join decisions, and changes to your role, departments or membership | `notifications` |
+| Unread count on the bell and in the sidebar, refreshed every minute | reads `notifications` |
+| Items you can no longer see show "You no longer have access", with no task details | worked out when read |
+| Impact preview also counts update requests waiting for that person; removing them closes those requests | `task_update_requests` |
+
+### Reports
+| Feature | Stored in |
+|---|---|
+| Organization report for Owners and Admins: open, completed, created, overdue, blocked, on-time rate, tasks per day, workload by department | reads `tasks` |
+| Member activity list, by name and never ranked | reads `tasks`, `organization_memberships` |
+| Department report: all of the above for one department, plus open by status, by assignee, overdue, blocked and recent completions | reads `tasks` |
+| Member summary, for yourself or someone in a department you report on: assigned, completed, overdue, blocked, waiting update requests, open work by status, priority and department. Deliberately no score | reads `tasks`, `task_update_requests` |
+| Periods: 7, 30 or 90 days, 1 year, or your own dates up to 366 days. Reports linked from one another keep the same period | kept in the page address |
+| Every report shows its dates, the organization's timezone, whose tasks it covers, and how each number is worked out | definitions come from the backend |
+| Completed work stays with the department that finished it, even if the task moves later | `tasks.completed_department_id` |
+| CSV export for Owners, Admins and department report readers, recorded in the Activity log | `audit_logs` |
+| Key numbers on the Overview page, and a Report button on department boards | reads `tasks` |
+
 ### Quality (applies to everything above)
-- Responsive: all 20 pages, the member panel and the impact preview checked at phone (375px), tablet (768px) and desktop (1280px) for overflow; screenshots reviewed.
-- Accessibility: automated WCAG 2.2 AA scans (axe) on sign-in, task pages, the task panel, all organization pages, the member panel and its dialogs, the board in all three layouts, My Work, Team Tasks and the create dialog, plus dark-mode scans of the panels; dragging always has a menu alternative; keyboard and screen-reader labels.
+- Responsive: all 24 pages, the member panel and the impact preview checked at phone (375px), tablet (768px) and desktop (1280px) for overflow; screenshots reviewed.
+- Accessibility: automated WCAG 2.2 AA scans (axe) on sign-in, task pages, the task panel, all organization pages, the member panel and its dialogs, the board in all three layouts, My Work, Team Tasks, the Inbox and the create dialog, plus dark-mode scans of the panels; dragging always has a menu alternative; keyboard and screen-reader labels.
 - Privacy: other users get "not found" for your tasks, tags and sessions. Outsiders, pending applicants and suspended or removed members get "not found" for everything in an organization. Organizations can never see personal tasks. All tested.
 - Permissions: every role tested against every permission-guarded endpoint on the real API, and each visibility level tested against eight kinds of viewer across reading, listing and search.
 
@@ -120,25 +147,17 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 
 ## ⏳ Pending
 
-### Phase 6 — Collaboration *(next)*
-- ⏳ Comments on tasks
-- ⏳ Progress update requests and responses
-- ⏳ File attachments (also enables profile avatars)
-- ⏳ Inbox with notifications and unread badges, including telling people when they're assigned or added to a task, and when their role, department or membership changes
-- ⏳ Impact preview also counts pending update requests
-
-### Phase 7 — Team & organization dashboards
-- ⏳ Organization overview, department summary, member summary, CSV export
-
-### Phase 8 — Reminders & notifications
+### Phase 8 — Reminders & notifications *(next)*
 - ⏳ Deadline-approaching and overdue reminders, update-request reminders
 - ⏳ Notification preferences, optional email delivery (SMTP)
 - ⏳ Background worker (Redis + Celery)
+- ⏳ Cleanup of old notifications, and files left behind by failed deletes
 
 ### Phase 9 — Production readiness
 - ⏳ Security review, backups + restore drill, monitoring, deployment runbook
 - ⏳ CI run on GitHub (workflow written and the repository is on GitHub; a passing run hasn't been confirmed)
 - ⏳ Privacy / data-retention policy
+- ⏳ Virus scanning for attachments, and file storage outside the application server
 
 ### Security improvements
 - ✅ 16 of the 28 audit findings fixed, 2 more partly fixed: see [`security-audit.md`](security-audit.md)
@@ -154,7 +173,10 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 - 🟡 Board cards don't keep a custom order within a column; they sort by deadline, then priority
 - 🟡 Calendar shows the first 100 tasks in a month and says so; the List view has them all
 - 🟡 A member can't leave an organization by themselves; an administrator removes them
-- 🟡 Profile avatar: waits for file storage (Phase 6)
+- 🟡 Profile avatar: file storage now exists, but avatars aren't built
+- 🟡 Comments are plain text, and mentions are chosen from a list rather than typed with @
+- 🟡 The BRD's Median completion time and Update response rate aren't on any report. Neither is in the PRD's report list, and the response rate needs the response window that arrives with Phase 8
+- 🟡 Update requests don't expire on their own (optional in the PRD; comes with reminders in Phase 8)
 - ⏸ Recurring tasks, custom role builder, sign-in with Google etc. — later releases (PRD P2)
 
 ---
@@ -162,6 +184,8 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 ## Change log
 | Date | Change |
 |---|---|
+| 2026-10-30 | Phase 7 (reports) completed: organization, department and member reports, date ranges, CSV export. Three new indexes on `tasks`, no new tables. |
+| 2026-10-30 | Phase 6 (collaboration) completed: comments, attachments, update requests, notifications and the Inbox. |
 | 2026-10-30 | Fixed a Phase 2 bug: a subtask entered while the previous one was still saving was silently lost. |
 | 2026-10-30 | Security fixes: 16 audit findings closed and 2 partly closed, with regression tests. Sign-in and the MySQL account left unchanged by the owner's decision. Login with Google added to future plans. |
 | 2026-10-30 | Security audit of Phases 0–5 written; no critical findings, 5 high. Desktop launcher `Start Listify.bat` added. |

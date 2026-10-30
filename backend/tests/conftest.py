@@ -1,6 +1,7 @@
 from argparse import Namespace
 from collections.abc import Iterator
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -12,6 +13,7 @@ from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.common.mailer import OutboxMailer, get_mailer
+from app.common.storage import LocalStorage, get_storage
 from app.core.config import BACKEND_DIR, Settings, get_settings
 from app.db.base import Base
 from app.db.session import build_engine, get_db
@@ -119,8 +121,17 @@ class ApiClient(TestClient):
 
 
 @pytest.fixture
+def storage(tmp_path: Path) -> LocalStorage:
+    """Attachments go to a temporary folder, never the development one."""
+    return LocalStorage(tmp_path / "storage")
+
+
+@pytest.fixture
 def api(
-    app: FastAPI, db_sessionmaker: sessionmaker[Session], outbox: OutboxMailer
+    app: FastAPI,
+    db_sessionmaker: sessionmaker[Session],
+    outbox: OutboxMailer,
+    storage: LocalStorage,
 ) -> Iterator[ApiClient]:
     def override_db() -> Iterator[Session]:
         with db_sessionmaker() as session:
@@ -128,6 +139,7 @@ def api(
 
     app.dependency_overrides[get_db] = override_db
     app.dependency_overrides[get_mailer] = lambda: outbox
+    app.dependency_overrides[get_storage] = lambda: storage
     with ApiClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
 

@@ -74,6 +74,7 @@ const impact: MemberImpact = {
   sole_manager_of: [{ id: 3, name: 'Sales' }],
   pending_requests: 2,
   tasks_to_reassign: 3,
+  open_update_requests: 2,
 }
 
 const routes = {

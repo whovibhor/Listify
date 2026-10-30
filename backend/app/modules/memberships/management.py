@@ -6,13 +6,14 @@ so a change applies from the affected person's next request, with no session han
 
 from datetime import timedelta
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from app.common import rate_limit
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.modules.audit_logs import service as audit
 from app.modules.auth import passwords
+from app.modules.collaboration.models import TaskUpdateRequest, UpdateRequestStatus
 from app.modules.memberships.models import (
     DepartmentMembership,
     MembershipRequest,
@@ -38,6 +39,7 @@ from app.modules.memberships.service import (
     _active_department,
     revoke_invitations_from,
 )
+from app.modules.notifications.service import notify
 from app.modules.organizations.models import Department, Organization
 from app.modules.organizations.service import get_department, role_by_key
 from app.modules.permissions import catalog
@@ -146,6 +148,20 @@ def _record(
     )
 
 
+def _tell(
+    db: Session, context: OrgContext, target: OrganizationMembership, kind: str, **data: object
+) -> None:
+    """Tells the person about a change to their own membership, after it has committed."""
+    notify(
+        db,
+        [target.user_id],
+        kind,
+        actor_id=context.user.id,
+        organization_id=context.organization.id,
+        data={"organization_name": context.organization.name, **data},
+    )
+
+
 def _role_labels(target: OrganizationMembership) -> list[str]:
     return sorted(assignment.role.key for assignment in target.roles)
 
@@ -200,6 +216,7 @@ def change_roles(
         invitations_revoked=invitations_revoked,
     )
     db.commit()
+    _tell(db, context, target, "role_changed")
     return target
 
 
@@ -221,6 +238,7 @@ def suspend_member(
         invitations_revoked=revoke_invitations_from(db, target.organization_id, target.user_id),
     )
     db.commit()
+    _tell(db, context, target, "membership_suspended")
     return target
 
 
@@ -231,6 +249,7 @@ def reactivate_member(
     target.status = MembershipStatus.ACTIVE
     _record(db, context, target, "member.reactivated")
     db.commit()
+    _tell(db, context, target, "membership_reactivated")
     return target
 
 
@@ -249,6 +268,18 @@ def remove_member(
         department_ids=sorted(_department_ids(db, target)),
         invitations_revoked=revoke_invitations_from(db, target.organization_id, target.user_id),
     )
+    # Nobody can answer these now, so they shouldn't sit open for the person who asked.
+    db.execute(
+        update(TaskUpdateRequest)
+        .where(
+            TaskUpdateRequest.recipient_id == target.user_id,
+            TaskUpdateRequest.status == UpdateRequestStatus.PENDING,
+            TaskUpdateRequest.task_id.in_(
+                select(Task.id).where(Task.organization_id == target.organization_id)
+            ),
+        )
+        .values(status=UpdateRequestStatus.CANCELLED)
+    )
     # A removed person starts over: task links would otherwise come back if they rejoin (S-12).
     organization_tasks = select(Task.id).where(Task.organization_id == target.organization_id)
     for link in (TaskCollaborator, TaskVisibilityGrant):
@@ -265,6 +296,7 @@ def remove_member(
         )
     )
     db.commit()
+    _tell(db, context, target, "membership_removed")
 
 
 # --- Departments -----------------------------------------------------------------------------
@@ -336,6 +368,7 @@ def transfer_member(
         roles_ended=roles_ended,
     )
     db.commit()
+    _tell(db, context, target, "member_transferred", department=destination.name)
     return target
 
 
@@ -357,6 +390,7 @@ def add_department(
         target.primary_department_id = department_id
     _record(db, context, target, "member.department_added", department=department.name)
     db.commit()
+    _tell(db, context, target, "department_added", department=department.name)
     return target
 
 
@@ -371,6 +405,7 @@ def leave_department(
         target.primary_department_id = min(remaining) if remaining else None
     _record(db, context, target, "member.department_removed", department=department.name)
     db.commit()
+    _tell(db, context, target, "department_removed", department=department.name)
     return target
 
 
@@ -409,6 +444,7 @@ def transfer_ownership(db: Session, context: OrgContext, payload: OwnershipTrans
         },
     )
     db.commit()
+    _tell(db, context, target, "ownership_received")
 
 
 # --- Impact preview --------------------------------------------------------------------------
@@ -508,6 +544,22 @@ def member_impact(
     tasks_to_reassign = (
         db.scalar(select(func.count()).select_from(Task).where(*task_conditions)) or 0
     )
+    open_requests = [
+        TaskUpdateRequest.recipient_id == target.user_id,
+        TaskUpdateRequest.status == UpdateRequestStatus.PENDING,
+        Task.organization_id == context.organization.id,
+    ]
+    if action in ("transfer", "leave_department"):
+        open_requests.append(Task.department_id.in_(losing_ids))
+    open_update_requests = (
+        db.scalar(
+            select(func.count())
+            .select_from(TaskUpdateRequest)
+            .join(Task, Task.id == TaskUpdateRequest.task_id)
+            .where(*open_requests)
+        )
+        or 0
+    )
 
     names = {
         row.id: row.name
@@ -545,4 +597,5 @@ def member_impact(
         sole_manager_of=departments(sole_manager_ids),
         pending_requests=pending_requests,
         tasks_to_reassign=tasks_to_reassign,
+        open_update_requests=open_update_requests,
     )

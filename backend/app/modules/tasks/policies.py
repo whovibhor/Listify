@@ -144,6 +144,8 @@ class TaskAccess:
             return is_creator or self._in_department("task.manage_collaborators")
         if action == "archive":
             return is_creator or self._in_department("task.delete")
+        if action == "request_update":
+            return self._in_department("task.request_update")
         raise ValueError(action)
 
     def require(self, action: str) -> None:
@@ -162,6 +164,7 @@ TASK_ACTIONS = (
     "move",
     "manage_collaborators",
     "archive",
+    "request_update",
 )
 
 
@@ -188,6 +191,19 @@ def get_access(db: Session, user: User, task_id: int, *, for_update: bool = Fals
         raise NotFoundError("Task not found.")
     root = task if root_id == task.id else db.get(Task, root_id)
     return TaskAccess(task=task, root=root, context=context)
+
+
+def user_can_view(db: Session, task: Task, user_id: int) -> bool:
+    """Whether someone else can see this task right now, for mentions and update requests."""
+    user = db.get(User, user_id)
+    if user is None or task.organization_id is None:
+        return False
+    try:
+        context = load_context(db, user, task.organization_id)
+    except NotFoundError:
+        return False
+    root_id = task.parent_task_id or task.id
+    return db.scalar(select(Task.id).where(Task.id == root_id, visible_tasks(context))) is not None
 
 
 def tags_owned_by(db: Session, user: User, tag_ids: list[int]) -> list[Tag]:

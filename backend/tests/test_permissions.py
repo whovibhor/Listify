@@ -43,6 +43,7 @@ class World:
     subject: int  # the membership of an ordinary Engineering member, to act on
     subject_user: int
     task: int  # created by the Owner, in Engineering, so nobody else is on it
+    assigned_task: int  # the same, but assigned to the ordinary member
     tag: int
     engineering_request: int
     sales_request: int
@@ -95,6 +96,14 @@ def world(api: ApiClient, make_api) -> World:
         f"/api/v1/organizations/{org['id']}/tasks",
         json={"title": "Team task", "department_id": engineering},
     ).json()
+    assigned_task = api.post(
+        f"/api/v1/organizations/{org['id']}/tasks",
+        json={
+            "title": "Assigned task",
+            "department_id": engineering,
+            "assigned_to": members["items"][0]["user_id"],
+        },
+    ).json()
     tag = api.post(f"/api/v1/organizations/{org['id']}/tags", json={"name": "team"}).json()
     return World(
         org_id=org["id"],
@@ -104,6 +113,7 @@ def world(api: ApiClient, make_api) -> World:
         subject=members["items"][0]["membership_id"],
         subject_user=members["items"][0]["user_id"],
         task=task["id"],
+        assigned_task=assigned_task["id"],
         tag=tag["id"],
         engineering_request=request_to_join(person("Amy Eng"), org["id"], engineering).json()["id"],
         sales_request=request_to_join(person("Ben Sales"), org["id"], sales).json()["id"],
@@ -238,6 +248,26 @@ CASES: dict[str, tuple[Attempt, set[str]]] = {
         set(ROLE_KEYS),
     ),
     "delete an organization tag": (lambda w, c: c.delete(f"{w.base}/tags/{w.tag}"), ADMINS),
+    "comment on a visible task": (
+        lambda w, c: c.post(f"{w.task_url}/comments", json={"body": "Noted"}),
+        set(ROLE_KEYS),
+    ),
+    "attach a file to a colleague's task": (
+        lambda w, c: c.post(
+            f"{w.task_url}/attachments",
+            params={"filename": "notes.txt"},
+            content=b"notes",
+            headers={"Content-Type": "application/octet-stream"},
+        ),
+        LEADS,
+    ),
+    "request an update": (
+        lambda w, c: c.post(
+            f"/api/v1/tasks/{w.assigned_task}/update-requests",
+            json={"recipient_id": w.subject_user, "message": "How is it going?"},
+        ),
+        LEADS,
+    ),
 }
 
 

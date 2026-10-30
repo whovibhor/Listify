@@ -1,9 +1,13 @@
 import {
+  AlarmClockIcon,
   ArrowRightIcon,
   Building2Icon,
   CheckCircle2Icon,
+  CircleCheckBigIcon,
   CircleIcon,
+  ListTodoIcon,
   MailPlusIcon,
+  OctagonPauseIcon,
   SearchCheckIcon,
   UserPlusIcon,
   UsersRoundIcon,
@@ -13,9 +17,13 @@ import { motion } from 'motion/react'
 import { Link } from 'react-router'
 
 import { PageHeader } from '@/components/shared/PageHeader'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useMe } from '@/features/auth/api'
 import { useDepartments, useMembers, useMembershipRequests } from '@/features/organizations/api'
 import { can, canAnywhere, primaryRoleLabel } from '@/features/organizations/permissions'
+import type { MyOrganization } from '@/features/organizations/types'
 import { useOrg } from '@/features/organizations/use-current-org'
+import { useMemberSummary, useOrganizationDashboard } from '@/features/reports/api'
 import { StatTile } from '@/features/dashboards/components/StatTile'
 import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
@@ -56,6 +64,67 @@ function ChecklistItem({
   )
 }
 
+/** The organization's numbers for people who can report on it, otherwise your own. */
+function WorkAtAGlance({ org }: { org: MyOrganization }) {
+  const base = `/org/${org.id}`
+  const wholeOrganization = can(org, 'report.view_organization')
+  const { data: me } = useMe()
+  const { data: report } = useOrganizationDashboard(org.id, {}, { enabled: wholeOrganization })
+  const { data: mine } = useMemberSummary(
+    org.id,
+    me?.id ?? 0,
+    {},
+    {
+      enabled: !wholeOrganization && Boolean(me),
+    },
+  )
+  const numbers = wholeOrganization
+    ? report?.counts
+    : mine && { ...mine.counts, open: mine.counts.assigned }
+
+  return (
+    <section aria-labelledby="glance-heading" className="space-y-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="glance-heading" className="font-semibold">
+          {wholeOrganization ? 'Work at a glance' : 'Your work'}
+        </h2>
+        <Link
+          to={`${base}/reports`}
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          {wholeOrganization ? 'Open reports' : 'My summary'}
+          <ArrowRightIcon aria-hidden className="size-4" />
+        </Link>
+      </div>
+      {numbers ? (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatTile
+            label={wholeOrganization ? 'Open' : 'Assigned to you'}
+            value={numbers.open}
+            icon={ListTodoIcon}
+            to={wholeOrganization ? `${base}/tasks` : `${base}/my-work`}
+          />
+          <StatTile
+            label="Overdue"
+            value={numbers.overdue}
+            icon={AlarmClockIcon}
+            tone={numbers.overdue > 0 ? 'danger' : 'default'}
+          />
+          <StatTile label="Blocked" value={numbers.blocked} icon={OctagonPauseIcon} />
+          <StatTile
+            label="Completed"
+            value={numbers.completed}
+            icon={CircleCheckBigIcon}
+            hint="Last 30 days"
+          />
+        </div>
+      ) : (
+        <Skeleton className="h-28 w-full rounded-xl" />
+      )}
+    </section>
+  )
+}
+
 export function OrganizationOverviewPage() {
   const org = useOrg()
   const base = `/org/${org.id}`
@@ -72,6 +141,8 @@ export function OrganizationOverviewPage() {
         title={org.name}
         description={org.description ?? `You’re ${primaryRoleLabel(org)} here.`}
       />
+
+      <WorkAtAGlance org={org} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatTile
@@ -131,22 +202,7 @@ export function OrganizationOverviewPage() {
             />
           </ul>
         </section>
-      ) : (
-        <section className="rounded-2xl bg-card p-4 shadow-card sm:p-5">
-          <h2 className="font-semibold">Team work is coming next</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Department boards and shared tasks arrive in a coming update. Your personal tasks remain
-            private and aren’t visible to this organization.
-          </p>
-          <Link
-            to="/"
-            className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Back to your personal workspace
-            <ArrowRightIcon aria-hidden className="size-4" />
-          </Link>
-        </section>
-      )}
+      ) : null}
     </motion.div>
   )
 }

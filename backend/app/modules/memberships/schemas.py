@@ -145,6 +145,8 @@ class MemberImpact(ApiModel):
     pending_requests: int
     # Open tasks that will be flagged for someone to reassign; they stay assigned until then.
     tasks_to_reassign: int
+    # Waiting for this person's answer; they can't respond once they lose the task.
+    open_update_requests: int
 
 
 class InvitationCreate(InputModel):

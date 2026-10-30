@@ -299,7 +299,7 @@ def update_task(
     if new:
         record(db, task, user, "updated", old, new)
     if "status" in fields and payload.status != task.status:
-        _apply_status(db, access, user, payload.status, now)  # type: ignore[arg-type]
+        apply_status(db, access, user, payload.status, now)  # type: ignore[arg-type]
     db.commit()
     db.refresh(task)
     return task
@@ -316,7 +316,7 @@ def _review_required(db: Session, task: Task) -> bool:
     return organization is not None and organization.review_required
 
 
-def _apply_status(
+def apply_status(
     db: Session, access: TaskAccess, user: User, target: TaskStatus, now: datetime
 ) -> None:
     task = access.task
@@ -373,7 +373,7 @@ def _apply_status(
 
 
 def complete_task(db: Session, access: TaskAccess, user: User, now: datetime) -> Task:
-    _apply_status(db, access, user, TaskStatus.COMPLETED, now)
+    apply_status(db, access, user, TaskStatus.COMPLETED, now)
     db.commit()
     db.refresh(access.task)
     return access.task
@@ -382,7 +382,7 @@ def complete_task(db: Session, access: TaskAccess, user: User, now: datetime) ->
 def reopen_task(db: Session, access: TaskAccess, user: User, now: datetime) -> Task:
     if access.task.status != TaskStatus.COMPLETED:
         raise InvalidTransitionError("Only completed tasks can be reopened.")
-    _apply_status(db, access, user, REOPEN_STATUS, now)
+    apply_status(db, access, user, REOPEN_STATUS, now)
     db.commit()
     db.refresh(access.task)
     return access.task

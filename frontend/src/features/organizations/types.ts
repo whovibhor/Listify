@@ -114,6 +114,7 @@ export interface MemberImpact {
   sole_manager_of: { id: number; name: string }[]
   pending_requests: number
   tasks_to_reassign: number
+  open_update_requests: number
 }
 
 export type AssignableRole = 'member' | 'team_lead' | 'department_manager' | 'admin'

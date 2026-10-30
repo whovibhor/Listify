@@ -5,7 +5,7 @@ Task and work management for individuals and organizations: a private **Personal
 - Requirements: [`docs/WorkPulse_BRD_v1.docx`](docs/WorkPulse_BRD_v1.docx), [`docs/WorkPulse_PRD_v1.docx`](docs/WorkPulse_PRD_v1.docx)
 - Analysis and plan: [`docs/requirements-analysis.md`](docs/requirements-analysis.md), [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md), [`docs/architecture-decisions.md`](docs/architecture-decisions.md)
 - Security: audit, current status and remaining plan in [`docs/security-audit.md`](docs/security-audit.md).
-- Status: **Phases 0–5 complete (foundation, accounts, personal workspace, organizations, roles & member management, department work boards); Phase 6 (Collaboration) next.** What's done and pending, feature by feature: [`docs/feature-status.md`](docs/feature-status.md). Phase tracker: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md) · history: [`docs/development-log.md`](docs/development-log.md).
+- Status: **Phases 0–7 complete (foundation, accounts, personal workspace, organizations, roles & member management, department work boards, collaboration, reports); Phase 8 (Reminders & scheduled notifications) next.** What's done and pending, feature by feature: [`docs/feature-status.md`](docs/feature-status.md). Phase tracker: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md) · history: [`docs/development-log.md`](docs/development-log.md).
 
 ## Repository layout
 
@@ -67,6 +67,7 @@ copy .env.example .env          # then edit DB_* values and SESSION_SECRET
 | `SESSION_IDLE_MINUTES`, `SESSION_ABSOLUTE_MINUTES` | session idle timeout / maximum lifetime | `720`, `10080` |
 | `PASSWORD_RESET_TTL_MINUTES` | reset-link lifetime | `60` |
 | `COOKIE_SECURE` | force `Secure` cookies (defaults to on only in production) | *(unset)* |
+| `STORAGE_DIR` | Where attachments are saved. Back this folder up with the database | `backend/storage` (default) |
 | `MAIL_BACKEND` | `console` (dev: emails, including reset links, are written to the backend log) or `smtp` (Phase 8) | `console` |
 
 ## 3. Frontend setup

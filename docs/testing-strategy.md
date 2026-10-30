@@ -12,7 +12,7 @@ Derived from PRD §14 and the definition of done. Never report a test as passing
 | Frontend unit/component | Vitest + React Testing Library + user-event (jsdom) | API client, hooks, components, routing, forms |
 | End-to-end | Playwright + @axe-core/playwright (`frontend/e2e`) | Desktop Chrome and Pixel 7 projects. Isolated backend (:8001) on `listify_test`, reset in global setup. Phase 1: full auth journey + axe scans of the auth pages. Later: workspace switching, task flows, membership approval. |
 | Security | API tests + M9 review | IDOR/guessed IDs, stale memberships, CSRF, XSS, upload validation, rate limits, privilege escalation |
-| Performance | seeded data + timing (M7/M9) | p95 < 500 ms on lists and dashboards |
+| Performance | `python -m scripts.perf_reports` (reports, M7); task lists in M9 | p95 < 500 ms on lists and dashboards |
 
 ## Rules
 
@@ -25,6 +25,11 @@ Derived from PRD §14 and the definition of done. Never report a test as passing
 - Warnings are fixed, not suppressed.
 - `tests/test_permissions.py` runs every role against every permission-guarded endpoint on the real API. Each new guarded endpoint adds a case there. `tests/test_organization_tasks.py::test_visibility_matrix` does the same for who can see which task, across reading, listing and search. Those two files use cheap Argon2 settings, because each test signs up a whole team.
 - `tests/test_security_fixes.py` holds one regression test per fixed audit finding, named after its ID, such as `test_s01_...`. Each also checks that normal use still works.
+- `tests/test_collaboration.py` covers comments, attachments, update requests and notifications, including what's hidden after access is lost. Uploaded files go to a temporary folder, never `backend/storage/`.
+- `tests/test_reports.py` covers metric definitions, timezone boundaries including uneven offsets and clock changes, attribution after a move, who can open each report, and private work staying out of numbers and exports.
+- `scripts/perf_reports.py` seeds 100,000 tasks into the test database, measures each report over 30 requests, then empties it. It refuses to run on a database whose name doesn't end in `_test`.
+- Look at chart screenshots as well as testing them: Phase 7's lines passed every test while not being drawn, so `reports.spec.ts` now checks that they are.
+- Accessibility scans wait for fade-ins and slide-ins to finish, because text measured mid-animation fails the contrast check.
 - Tests clear data with `DELETE`, not `TRUNCATE`, which costs about a second per test on InnoDB. Identifiers therefore keep rising between tests, so tests must not assume specific IDs.
 
 ## Running

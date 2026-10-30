@@ -36,6 +36,7 @@ from app.modules.memberships.schemas import (
     RequestApprove,
     RequestReject,
 )
+from app.modules.notifications.service import notify
 from app.modules.organizations.models import (
     Department,
     DepartmentStatus,
@@ -375,6 +376,14 @@ def approve_request(
         },
     )
     db.commit()
+    notify(
+        db,
+        [request.user_id],
+        "membership_approved",
+        actor_id=context.user.id,
+        organization_id=context.organization.id,
+        data={"organization_name": context.organization.name},
+    )
     return request
 
 
@@ -397,6 +406,14 @@ def reject_request(
         details={"user_id": request.user_id, "user_name": request.user.name},
     )
     db.commit()
+    notify(
+        db,
+        [request.user_id],
+        "membership_rejected",
+        actor_id=context.user.id,
+        organization_id=context.organization.id,
+        data={"organization_name": context.organization.name},
+    )
     return request
 
 

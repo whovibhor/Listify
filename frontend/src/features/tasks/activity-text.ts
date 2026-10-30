@@ -45,6 +45,20 @@ export function describeActivity(activity: TaskActivity): string {
       return `moved this to ${newValue.department ? String(newValue.department) : 'no department'}`
     case 'visibility_changed':
       return `changed visibility to ${VISIBILITY_LABELS[newValue.visibility as TaskVisibility]}`
+    case 'comment_added':
+      return 'added a comment'
+    case 'comment_deleted':
+      return 'deleted a comment'
+    case 'attachment_added':
+      return `attached ${String(newValue.filename)}`
+    case 'attachment_removed':
+      return `removed attachment ${String(oldValue.filename)}`
+    case 'update_requested':
+      return `asked ${String(newValue.name)} for an update`
+    case 'update_responded':
+      return 'responded to an update request'
+    case 'update_cancelled':
+      return `cancelled the update request to ${String(oldValue.name)}`
     case 'subtask_added':
       return `added subtask “${String(newValue.title)}”`
     case 'subtask_deleted':

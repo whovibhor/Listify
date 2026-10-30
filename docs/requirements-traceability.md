@@ -14,10 +14,10 @@ Milestones (M0–M9) are defined in `implementation-roadmap.md`. Status values: 
 | BR-006 | No board without membership/permission | M5 | `test_board_access_denied_non_member`, `test_other_organizations_stay_out` | Done |
 | BR-007 | Creator, single assignee, collaborators | M5 | `test_task_roles_distinct` | Done |
 | BR-008 | Priority, status, deadline, tags, description, scope | M2, M5 | `test_task_department_must_belong_to_org_and_to_the_creator`, `test_tags_belong_to_the_organization` | Done |
-| BR-009 | Comment, collaborate, review history | M6 | `test_comments_visibility`, `test_activity_log` | Planned |
+| BR-009 | Comment, collaborate, review history | M6 | `test_comments_are_exactly_as_visible_as_their_task`, `test_comment_lifecycle` | Done |
 | BR-010 | Assign to eligible members | M5 | `test_assign_requires_active_member_of_the_department`, `test_assignment_rights` | Done |
-| BR-011 | Request status/progress update | M6 | `test_update_request_lifecycle` | Planned |
-| BR-012 | Dashboards with documented definitions | M2, M7 | `test_metrics_*` fixtures | Planned |
+| BR-011 | Request status/progress update | M6 | `test_update_request_flow` | Done |
+| BR-012 | Dashboards with documented definitions | M2, M7 | `test_organization_metrics`, `test_dashboard.py` | Done |
 | BR-013 | Audit membership/permission/assignment/state changes | M3–M6 | `test_audit_written_*` | Planned |
 | BR-014 | Server-side, tenant-scoped authorization | M1–M9 | `test_*_cross_org_*` in every module | Planned |
 | BR-015 | Mobile + desktop, keyboard accessible | M0–M9 | Playwright viewport + axe checks | Planned |
@@ -36,11 +36,11 @@ Milestones (M0–M9) are defined in `implementation-roadmap.md`. Status values: 
 | 7 | Admin authority bounded | M3, M4 | `test_admin_of_one_org_cannot_reach_into_another`, `test_department_manager_is_limited_to_their_department` |
 | 8 | Request ≠ membership | M3 | `test_pending_request_grants_nothing_until_approved` |
 | 9 | Dept removal revokes derived access | M3, M5 | `test_removed_member_loses_board` |
-| 10 | Completion uses completed_at; reopen | M2, M7 | `test_reopen_clears_completed_at`, `test_completed_in_period` |
-| 11 | Overdue definition | M2, M7 | `test_overdue_excludes_no_due`, `test_overdue_terminal_excluded` |
+| 10 | Completion uses completed_at; reopen | M2, M7 | `test_reopening_removes_a_completion_from_its_department`, `test_organization_metrics` |
+| 11 | Overdue definition | M2, M7 | `test_organization_metrics`, `test_now_is_used_for_overdue_not_the_end_of_the_period` |
 | 12 | Explicit deadline timezone | M2 | `test_due_at_timezone_roundtrip` |
-| 13 | Historical attribution | M7 | `test_completed_department_snapshot` |
-| 14 | Checks on reads/search/exports/notifications/attachments/aggregates | M5–M8 | `test_visibility_matrix` (reads, lists, search); later surfaces in M6–M8 |
+| 13 | Historical attribution | M7 ✅ | `test_completed_department_snapshot` |
+| 14 | Checks on reads/search/exports/notifications/attachments/aggregates | M5–M7 ✅ | `test_visibility_matrix`, `test_a_notification_never_reveals_a_task_after_access_is_lost`, `test_every_download_checks_access_again`, `test_private_work_never_reaches_a_department_report` |
 
 ## Functional requirements (PRD §5)
 
@@ -72,12 +72,12 @@ Milestones (M0–M9) are defined in `implementation-roadmap.md`. Status values: 
 | PRD §5.6.2 | P0 | Assignee vs collaborator | M5 | `test_task_roles_distinct`, `test_collaborators_can_edit_but_not_reassign` | Done |
 | PRD §5.6.3 | P0 | Visibility Private/Department/Selected/Org | M5 | `test_visibility_matrix` | Done |
 | PRD §5.6.4 | P0 | State transitions (ADR-015) | M2, M5 | `test_transitions_matrix`, `test_review_required_routes_work_through_review` | Done |
-| PRD §5.7 | P1 | Comments, activity, audit | M6 (comments), M2+ (activity) | `test_activity_events` | Planned |
-| PRD §5.8 | P1 | Update requests | M6 | `test_update_request_lifecycle` | Planned |
-| PRD §5.8 | P1 | In-app notifications (no leakage) | M6, M8 | `test_notification_hidden_after_access_loss` | Planned |
-| PRD §5.6.1 | P1 | Attachments with per-download authz | M6 | `test_attachment_download_forbidden` | Planned |
-| PRD §5.9 | P0/P1 | Personal / dept / org / member dashboards | M2, M7 | metric fixture tests | Planned |
-| PRD §6.7 | P1 | Transfer/removal impact preview | M4 (departments, roles, requests), M5 (tasks); M6 (update requests, notifications) | `test_transfer_preview`, `test_suspending_an_assignee_flags_their_tasks_without_touching_them`, `test_transfer_flags_only_the_old_departments_tasks` | Partly done |
+| PRD §5.7 | P1 | Comments, activity, audit | M6 (comments), M2+ (activity) | `test_comment_lifecycle`, `test_deleting_hides_the_text_everywhere` | Done |
+| PRD §5.8 | P1 | Update requests | M6 | `test_update_request_flow`, `test_one_open_request_per_person_per_task` | Done |
+| PRD §5.8 | P1 | In-app notifications (no leakage) | M6, M8 (deadlines) | `test_a_notification_never_reveals_a_task_after_access_is_lost`, `test_comment_text_is_never_stored_in_a_notification` | Partly done |
+| PRD §5.6.1 | P1 | Attachments with per-download authz | M6 | `test_every_download_checks_access_again`, `test_unsafe_or_mismatched_files_are_refused` | Done |
+| PRD §5.9 | P0/P1 | Personal / dept / org / member dashboards | M2, M7 | `test_reports.py`, `reports.test.tsx`, `reports.spec.ts` | Done |
+| PRD §6.7 | P1 | Transfer/removal impact preview | M4 (departments, roles, requests), M5 (tasks), M6 (update requests, notifications) | `test_transfer_preview`, `test_suspending_an_assignee_flags_their_tasks_without_touching_them`, `test_transfer_flags_only_the_old_departments_tasks`, `test_removing_someone_closes_requests_waiting_on_them` | Done |
 | PRD §7 | — | Switcher, task panel, states, confirmations, a11y | M0–M9 | RTL + Playwright | Planned |
 | PRD §13 | — | Edge cases 1–10 | M3–M8 | one test per edge case | Planned |
 
@@ -86,7 +86,7 @@ Milestones (M0–M9) are defined in `implementation-roadmap.md`. Status values: 
 | ID | Milestone | Verification |
 |---|---|---|
 | NFR-01 Security | every milestone | cross-tenant negative tests; M9 security review |
-| NFR-02 Performance | M7, M9 | seeded load data; p95 < 500 ms on lists/dashboards |
+| NFR-02 Performance | M7, M9 | `scripts/perf_reports.py` on 100,000 tasks: 7 of 8 reports under 500 ms, full-year organization report about 780 ms. Task lists are still to be measured in M9 |
 | NFR-03 Availability | M9 | uptime monitoring |
 | NFR-04 Scalability | M2+ | pagination enforced; index review per migration |
 | NFR-05 Accessibility | M0+, M9 audit | axe in Playwright; keyboard tests |

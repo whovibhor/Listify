@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, PlainSerializer, ValidationInfo, fie
 # break logs and exports. Tabs stay allowed: they arrive with text pasted from spreadsheets.
 _NOT_ALLOWED_IN_ONE_LINE = re.compile(r"[\x00-\x08\x0a-\x1f\x7f\x85\u2028\u2029]")
 _NOT_ALLOWED_IN_TEXT = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
-_MULTILINE_FIELDS = frozenset({"description", "note", "reason"})
+_MULTILINE_FIELDS = frozenset({"description", "note", "reason", "body", "message", "response_note"})
 # Secrets are compared, never displayed, and any character is valid in a password.
 _UNCHECKED_FIELDS = frozenset({"password", "current_password", "new_password", "token"})
 

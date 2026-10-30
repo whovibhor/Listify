@@ -37,7 +37,7 @@ export async function apiPost(page: Page, path: string, data: object) {
     headers: { 'X-CSRF-Token': csrf },
   })
   expect(response.ok(), await response.text()).toBe(true)
-  return response.json()
+  return response.status() === 204 ? null : response.json()
 }
 
 export async function departmentId(page: Page, orgId: number, name: string) {

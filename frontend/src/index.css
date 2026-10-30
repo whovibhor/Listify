@@ -194,7 +194,7 @@
   /* chart-1 validated (dataviz validator) against the dark card surface; 2–5 are re-validated
      as a set when multi-series charts arrive (Phase 7). */
   --chart-1: oklch(0.64 0.17 290);
-  --chart-2: oklch(0.72 0.12 250);
+  --chart-2: oklch(0.65 0.11 205);
   --chart-3: oklch(0.74 0.11 180);
   --chart-4: oklch(0.8 0.14 75);
   --chart-5: oklch(0.72 0.16 345);

@@ -38,10 +38,10 @@ export function StatTile({
     </>
   )
   const base =
-    'relative block rounded-xl bg-card p-4 shadow-card transition-shadow duration-(--duration-fast)'
+    'relative block h-full rounded-xl bg-card p-4 shadow-card transition-shadow duration-(--duration-fast)'
 
   return (
-    <div className="relative">
+    <div className="relative h-full">
       {to ? (
         <Link
           to={to}

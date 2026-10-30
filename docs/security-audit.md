@@ -268,11 +268,14 @@ Failed logins, lockouts, password changes and sessions being signed out appear n
 | 1 | Dedicated MySQL account with a password, local-only binding, encrypted connection, and refuse root in production | S-04 |
 | 2 | Nginx with HTTPS, frontend headers, size limits, clickjacking protection and `__Host-` cookies | S-08 |
 | 3 | Trusted proxy setup, so rate limits see real visitor addresses | S-03, S-06, S-10 |
-| 4 | Written retention policy | S-26 |
+| 4 | Written retention policy, including notifications and attachments | S-26 |
 | 5 | Automatic dependency scanning in CI | S-27 |
-| 6 | Tested backups and an independent penetration test | — |
+| 6 | Virus scanning for attachments, and file storage outside the application server | — |
+| 7 | Tested backups that include `backend/storage/`, and an independent penetration test | — |
 
-**Build these in from the start of later phases:** uploads in Phase 6 need type and size checks, plus a permission check on every download. Notifications must never show details of a task the person can no longer see. CSV exports in Phase 7 must follow `visible_tasks` and neutralise spreadsheet formulas.
+**Added since the audit (Phase 6):** uploads have type, content and size checks, and every download is authorized. Notifications store no task details, so they can't show any to someone who has lost access. These were tested, but not independently reviewed. Attachments still need virus scanning and storage outside the application server before launch.
+
+**Added since the audit (Phase 7):** reports and CSV exports follow `visible_tasks`, and exports neutralise spreadsheet formulas, are rate limited and are audited. Tested, but not independently reviewed.
 
 ---
 

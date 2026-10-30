@@ -1,6 +1,6 @@
 # Listify — Database Design
 
-Status: **Phase 5 schema applied** (head revision `c75db4ee8921`; Phase 4 needed no schema change). Databases: `listify` (development) and `listify_test` (automated tests and E2E).
+Status: **Phase 7 schema applied** (head revision `7918315c68c9`; Phases 4 and 7 added no tables). Databases: `listify` (development) and `listify_test` (automated tests and E2E).
 
 ## Server and conventions
 
@@ -72,6 +72,27 @@ Enums are stored as VARCHAR + CHECK (not native `ENUM`) so later phases can add 
 
 Downgrade note: organization tasks and organization tags can't exist in the older schema, so the downgrade deletes them. Never run it on a database with real organization work.
 
+## Phase 6 tables (revision `2214469c2393`)
+
+| Table | Key columns | Keys & constraints | Notes |
+|---|---|---|---|
+| `task_comments` | `task_id`, `author_id`, `body`, `edited_at`, `deleted_at`, `deleted_by` | index (`task_id`, `created_at`) | Deleting sets `deleted_at`; the API then returns no text. CASCADE with the task. |
+| `task_attachments` | `task_id`, `uploaded_by`, `filename`, `content_type`, `size_bytes`, `storage_key` | `storage_key` unique | The file is in `backend/storage/`, under its random key. `filename` is display text only. CASCADE with the task; the file is removed by the app. |
+| `task_update_requests` | `task_id`, `requester_id`, `recipient_id`, `message`, `respond_by`, `status`, `pending_recipient_id`, `response_note`, `responded_at` | unique (`task_id`, `pending_recipient_id`) | `pending_recipient_id` is a stored generated column, the same pattern as `membership_requests`, so the database allows one open request per person per task. |
+| `notifications` | `user_id`, `type`, `actor_id`, `organization_id`, `task_id`, `data`, `read_at` | indexes on (`user_id`, `read_at`, `created_at`) and (`user_id`, `created_at`) | Holds references, never a task title or comment text, so an old row can't leak anything. `data` is only facts about the recipient's own membership. |
+
+## Phase 7 indexes (revision `7918315c68c9`)
+
+Reports added no tables. Three indexes on `tasks` hold every column an Owner's report reads, so MySQL doesn't have to open each task row. Without them, a 30-day organization report on 100,000 tasks took about 500 ms; with them, about 290 ms.
+
+| Index | Columns | Used for |
+|---|---|---|
+| `ix_tasks_report_open` | `organization_id`, `parent_task_id`, `archived_at`, `status`, `department_id`, `due_at`, `workspace_type` | Open work |
+| `ix_tasks_report_completed` | `organization_id`, `parent_task_id`, `completed_at`, `status`, `completed_department_id`, `due_at`, `workspace_type` | Completions in a period |
+| `ix_tasks_report_created` | `organization_id`, `parent_task_id`, `created_at`, `department_id`, `workspace_type` | Tasks created in a period |
+
+**Files aren't in the database,** so a backup must include `backend/storage/` as well as MySQL.
+
 **Persistence rule:** every piece of user-entered data lives in MySQL. The browser keeps only a cached copy of the theme (to avoid a flash on load; the account value wins) and URL state for filters. See `feature-status.md` for the table behind each feature.
 
 ## Planned entities
@@ -84,7 +105,7 @@ The logical model follows PRD §8 with the additions listed in `requirements-ana
 | M2 ✅ | tasks, tags, task_tags, task_activity_logs |
 | M3 ✅ | organizations, departments, organization_memberships, department_memberships, roles, permissions, role_permissions, membership_roles, membership_requests, organization_invitations, audit_logs |
 | M5 ✅ | task_collaborators, task_visibility_grants |
-| M6 | task_comments, task_attachments, task_update_requests, notifications |
+| M6 ✅ | task_comments, task_attachments, task_update_requests, notifications |
 
 ## Personal vs organization tasks (design intent)
 

@@ -49,6 +49,8 @@ type Query = Record<string, string | number | boolean | null | undefined>
 
 export interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown
+  /** Sent as it is, not as JSON: a file upload. */
+  file?: Blob
   query?: Query
 }
 
@@ -102,10 +104,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 }
 
 async function send<T>(path: string, options: RequestOptions): Promise<T> {
-  const { body, query, headers, method = 'GET', ...rest } = options
+  const { body, file, query, headers, method = 'GET', ...rest } = options
   const finalHeaders = new Headers(headers)
   finalHeaders.set('Accept', 'application/json')
   if (body !== undefined) finalHeaders.set('Content-Type', 'application/json')
+  if (file) finalHeaders.set('Content-Type', 'application/octet-stream')
   if (UNSAFE_METHODS.has(method.toUpperCase())) {
     const csrf = readCookie(CSRF_COOKIE)
     if (csrf) finalHeaders.set(CSRF_HEADER, csrf)
@@ -118,7 +121,7 @@ async function send<T>(path: string, options: RequestOptions): Promise<T> {
       method,
       headers: finalHeaders,
       credentials: 'include',
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: file ?? (body === undefined ? undefined : JSON.stringify(body)),
     })
   } catch {
     throw new ApiError(0, {
@@ -133,19 +136,42 @@ async function send<T>(path: string, options: RequestOptions): Promise<T> {
 
   const payload: unknown = await response.json().catch(() => null)
 
-  if (!response.ok) {
-    const error: ApiErrorBody = isErrorEnvelope(payload)
-      ? payload.error
-      : {
-          code: 'http_error',
-          message: `Request failed with status ${response.status}`,
-          details: [],
-          request_id: response.headers.get('X-Request-ID'),
-        }
-    throw new ApiError(response.status, error, payload)
-  }
+  if (!response.ok) throw toApiError(response, payload)
 
   return payload as T
+}
+
+function toApiError(response: Response, payload: unknown) {
+  const error: ApiErrorBody = isErrorEnvelope(payload)
+    ? payload.error
+    : {
+        code: 'http_error',
+        message: `Request failed with status ${response.status}`,
+        details: [],
+        request_id: response.headers.get('X-Request-ID'),
+      }
+  return new ApiError(response.status, error, payload)
+}
+
+/** Saves a file from the API. Fetched first, so a refusal can be shown instead of saved. */
+export async function saveFile(path: string, query?: Query) {
+  const response = await fetch(buildUrl(path, query), { credentials: 'include' }).catch(() => {
+    throw new ApiError(0, {
+      code: 'network_error',
+      message: 'Unable to reach the server. Check your connection and try again.',
+      details: [],
+      request_id: null,
+    })
+  })
+  if (!response.ok) {
+    throw toApiError(response, await response.json().catch(() => null))
+  }
+  const disposition = response.headers.get('Content-Disposition') ?? ''
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(await response.blob())
+  link.download = /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'download'
+  link.click()
+  URL.revokeObjectURL(link.href)
 }
 
 export const api = {
@@ -157,4 +183,6 @@ export const api = {
     apiRequest<T>(path, { ...options, method: 'PATCH', body }),
   delete: <T>(path: string, options?: RequestOptions) =>
     apiRequest<T>(path, { ...options, method: 'DELETE' }),
+  upload: <T>(path: string, file: Blob, options?: RequestOptions) =>
+    apiRequest<T>(path, { ...options, method: 'POST', file }),
 }

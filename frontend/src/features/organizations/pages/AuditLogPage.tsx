@@ -39,6 +39,7 @@ function describe(entry: AuditEntry): string {
     'member.department_added': `added ${who} to ${department}`,
     'member.department_removed': `took ${who} out of ${department}`,
     'organization.ownership_transferred': `transferred ownership to ${who}`,
+    'report.exported': `exported a task report (${String(details.rows)} tasks, ${String(details.start)} to ${String(details.end)})`,
     'task.moved': `moved “${String(details.title)}” to ${String(details.to_department ?? 'no department')}`,
     'task.archived': `archived “${String(details.title)}”`,
     'task.restored': `restored “${String(details.title)}”`,

@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { mockApi, signedInRoutes } from '@/test/mock-api'
+import { emptyPage, mockApi, signedInRoutes } from '@/test/mock-api'
 import { renderApp } from '@/test/render'
 
 beforeEach(() => {
@@ -31,11 +31,13 @@ describe('AppShell', () => {
     )
   })
 
-  it('shows an honest placeholder for features not built yet', async () => {
-    renderApp('/inbox')
+  it('opens the inbox from the notifications bell', async () => {
+    mockApi(signedInRoutes({ 'GET /inbox': emptyPage(), 'GET /me/update-requests': [] }))
+    const { user } = renderApp('/')
 
-    expect(await screen.findByRole('heading', { name: 'Inbox', level: 1 })).toBeInTheDocument()
-    expect(screen.getByText(/scheduled for phase 6/i)).toBeInTheDocument()
+    await user.click(await screen.findByRole('link', { name: 'Notifications' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Inbox' })).toBeInTheDocument()
   })
 
   it('opens the mobile navigation sheet and closes it after navigating', async () => {

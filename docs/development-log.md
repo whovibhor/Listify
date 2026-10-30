@@ -1,5 +1,94 @@
 # Listify — Development Log
 
+## 2026-10-30 — Phase 7 complete: dashboards and reports
+
+### Requested by the owner
+Start Phase 7. Phase 6 was still uncommitted, so this work sits on top of it, and nothing has been committed.
+
+### Changes
+- **Database:** migration `7918315c68c9` adds three indexes on `tasks`. Applied to `listify` and `listify_test`; round-tripped on `listify_test` only.
+- **Backend:** `dashboards/organization.py` for the reports and `dashboards/export.py` for CSV, on top of the existing `report.*` permissions. Rules are in ADR-030.
+- **Frontend:** new `features/reports`, with Reports in the organization sidebar. Overview's out-of-date "Team work is coming next" panel was replaced by real numbers, and department boards gained a Report button. `--chart-2` in dark mode changed so that the two chart lines stay distinguishable.
+
+### Tests executed (all actually run)
+| Suite | Result |
+|---|---|
+| Backend pytest (real MySQL) | **608 passed** (68 new) |
+| Frontend Vitest | **131 passed** (16 new) |
+| Playwright E2E | **35 passed, 1 skipped by design** (desktop 18, mobile 17), run as two separate sets. New: a manager journey covering numbers, a real CSV download, a period carried between reports, and a private task left out of a manager's report; a member's own summary; axe scans of all report pages; report pages added to the 3-width responsive check |
+| Ruff, ESLint, Prettier, `tsc -b`, `vite build` | passed; no warnings |
+| `npm audit --omit=dev` | 0 vulnerabilities |
+| Migrations | upgrade → downgrade → upgrade on `listify_test`; `alembic check` clean |
+| Chart colors | dataviz validator passed for both themes, after changing dark `--chart-2` |
+| Visual review | Reports and department report at phone and desktop, member summary at phone, Overview at phone, dark mode at desktop |
+
+### Speed on 100,000 seeded tasks (p95 over 30 requests, this laptop, including the app and MySQL)
+| Report | p95 |
+|---|---|
+| Organization, 30 days | 288 ms |
+| Organization, 1 year | **778 ms, over the 500 ms target** |
+| Departments list | 284 ms |
+| Member activity | 75 ms |
+| Department, 30 days, Owner | 236 ms |
+| Department, 1 year, Owner | 298 ms |
+| Department, 30 days, Manager | 316 ms |
+| Member summary | 74 ms |
+
+### Defects found and fixed during the phase
+- The first version took 938 ms for a 30-day organization report. Each number made its own pass over the tasks; they now share one, helped by the new indexes.
+- Chart lines weren't drawn: the animation never ran, and every test still passed. A review of the screenshots caught it, so the animation is off and a browser test now checks the lines.
+- Short names broke mid-word in narrow tables ("Custome/r"), tiles had uneven heights, and "1 of 1 tasks" was bad grammar. All found the same way.
+
+### Known limitations
+- A full-year report for a whole organization of 100,000 tasks takes about 780 ms.
+- Numbers cover tasks the reader can see, so a manager's total can be lower than an Owner's, and a completed task that moves department may drop out of the old manager's report.
+- The created line uses each task's department today, because no snapshot exists for when it was created.
+- Median completion time and Update response rate, both BRD success measures, aren't on any report.
+- Exports hold up to 50,000 tasks. Nothing is scheduled or emailed.
+- Task-list speed on 100,000 tasks hasn't been measured; that is planned for Phase 9.
+- CI result unverified (`gh` isn't installed here). Phases 6 and 7 aren't committed.
+
+### Next
+**Phase 8 — Reminders & scheduled notifications.**
+
+## 2026-10-30 — Phase 6 complete: collaboration
+
+### Requested by the owner
+Commit the previous work and move to the next phase. Phase 5 and the security fixes were committed as `4996ef6` on branch `phase-5-work-boards`.
+
+### Changes
+- **Database:** migration `2214469c2393` adds `task_comments`, `task_attachments`, `task_update_requests` and `notifications`. Applied to `listify` and `listify_test`; round-tripped on `listify_test` only.
+- **Backend:** new `collaboration` and `notifications` modules, and `common/storage.py`. Existing flows now send notifications after they commit. Rules are in ADR-029.
+- **Frontend:** new `features/collaboration` and `features/inbox`. The task panel gained Attachments, Update requests and Comments sections; the Inbox page replaced its placeholder; the bell and sidebar show unread counts.
+- **Member management:** the impact preview counts update requests waiting for that person, and removing them closes those requests.
+
+### Tests executed (all actually run)
+| Suite | Result |
+|---|---|
+| Backend pytest (real MySQL) | **540 passed** (79 new, including 15 new permission-matrix cases) |
+| Frontend Vitest | **115 passed** (18 new) |
+| Playwright E2E | **29 passed, 1 skipped by design** (desktop 15, mobile 14), run as two separate sets. New: two-person journey through notifications, a refused disguised file, a real upload and download, comments, an update request and response, and what remains after removal; axe scans of the Inbox, task panel and respond dialog; Inbox added to the 3-width responsive check |
+| Ruff, ESLint, Prettier, `tsc -b`, `vite build` | passed; no warnings |
+| `npm audit --omit=dev` | 0 vulnerabilities |
+| Migrations | upgrade → downgrade → upgrade on `listify_test`; `alembic check` clean |
+| Visual review | Inbox and task panel at phone and desktop widths. The Inbox was reviewed empty; its rows were checked by tests and not by eye |
+
+### Defects found and fixed during the phase
+- Reassigning a task didn't notify the new assignee, because the old value was read after the change. Found by a test.
+- The task-panel accessibility scan could run while the panel was sliding in, flagging text that passes at rest. It now waits.
+
+### Known limitations
+- Attachments aren't scanned for viruses yet, and live on the application server. Both are Phase 9 items.
+- Comments are plain text; mentions come from a list rather than typing @.
+- Notifications are in-app only until Phase 8, and appear within about a minute unless the page is refreshed.
+- Update requests don't expire.
+- A failed file delete leaves an unused file behind. Cleanup is planned for Phase 8.
+- `backend/storage/` must be included in backups.
+- CI result unverified (`gh` isn't installed here). Phase 6 isn't committed.
+
+### Next
+**Phase 7 — Dashboards & reporting.**
+
 ## 2026-10-30 — Security fixes
 
 ### Requested by the owner

@@ -36,7 +36,7 @@ export function mockApi(routes: Record<string, Handler | unknown>) {
       method,
       path,
       query: url.searchParams,
-      body: init.body ? JSON.parse(String(init.body)) : undefined,
+      body: typeof init.body === 'string' ? JSON.parse(init.body) : init.body,
     })
     const key = `${method} ${path}`
     if (!(key in routes)) throw new Error(`Unmocked API call: ${key}`)
@@ -91,6 +91,7 @@ export function signedInRoutes(extra: Record<string, Handler | unknown> = {}) {
     'GET /me/tasks': emptyPage(),
     'GET /me/tags': [],
     'GET /me/organizations': [],
+    'GET /inbox/summary': { unread: 0, pending_update_requests: 0 },
     ...extra,
   }
 }

@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     frontend_base_url: str = "http://localhost:5173"
     mail_backend: Literal["console", "smtp"] = "console"
     mail_from: str = "Listify <no-reply@listify.local>"
+    # Attachments. Gitignored; S3-compatible storage can replace it later (ADR-018).
+    storage_dir: Path = BACKEND_DIR / "storage"
 
     @field_validator("frontend_origins", mode="before")
     @classmethod

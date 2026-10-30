@@ -3,6 +3,7 @@
 from app.common.rate_limit import RateLimitBucket
 from app.modules.audit_logs.models import AuditLog
 from app.modules.auth.models import PasswordResetToken, UserSession
+from app.modules.collaboration.models import TaskAttachment, TaskComment, TaskUpdateRequest
 from app.modules.memberships.models import (
     DepartmentMembership,
     MembershipRequest,
@@ -10,6 +11,7 @@ from app.modules.memberships.models import (
     OrganizationInvitation,
     OrganizationMembership,
 )
+from app.modules.notifications.models import Notification
 from app.modules.organizations.models import Department, Organization
 from app.modules.permissions.models import Permission, Role, role_permissions
 from app.modules.tasks.models import Tag, Task, TaskActivity, task_tags
@@ -21,6 +23,7 @@ __all__ = [
     "DepartmentMembership",
     "MembershipRequest",
     "MembershipRole",
+    "Notification",
     "Organization",
     "OrganizationInvitation",
     "OrganizationMembership",
@@ -31,6 +34,9 @@ __all__ = [
     "Tag",
     "Task",
     "TaskActivity",
+    "TaskAttachment",
+    "TaskComment",
+    "TaskUpdateRequest",
     "User",
     "UserPreferences",
     "UserSession",

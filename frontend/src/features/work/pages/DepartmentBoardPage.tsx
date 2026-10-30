@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   CalendarDaysIcon,
+  ChartPieIcon,
   KanbanIcon,
   ListIcon,
   ListTodoIcon,
@@ -8,13 +9,14 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { motion } from 'motion/react'
-import { useParams, useSearchParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 
 import { NotFoundPage } from '@/app/pages/NotFoundPage'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState, ErrorState } from '@/components/shared/StatePanels'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { can } from '@/features/organizations/permissions'
 import { useOrg } from '@/features/organizations/use-current-org'
 import { TaskDetailSheet } from '@/features/tasks/components/TaskDetailSheet'
 import { useTaskSearchParams } from '@/features/tasks/use-task-search-params'
@@ -73,12 +75,22 @@ export function DepartmentBoardPage() {
           data?.archived ? 'This department is archived. Tasks are read-only history.' : undefined
         }
         actions={
-          data?.can_create ? (
-            <Button onClick={() => setCreating(true)}>
-              <PlusIcon data-icon="inline-start" />
-              New task
-            </Button>
-          ) : null
+          <>
+            {can(org, 'report.view_department', departmentId) ? (
+              <Button variant="outline" asChild>
+                <Link to={`/org/${org.id}/reports/departments/${departmentId}`}>
+                  <ChartPieIcon data-icon="inline-start" />
+                  Report
+                </Link>
+              </Button>
+            ) : null}
+            {data?.can_create ? (
+              <Button onClick={() => setCreating(true)}>
+                <PlusIcon data-icon="inline-start" />
+                New task
+              </Button>
+            ) : null}
+          </>
         }
       />
       <div className="flex flex-col gap-3">

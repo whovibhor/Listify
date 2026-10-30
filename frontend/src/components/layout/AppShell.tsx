@@ -17,6 +17,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useInboxSummary } from '@/features/inbox/api'
 
 function SidebarContents({
   instanceId,
@@ -35,6 +36,8 @@ function SidebarContents({
 
 export function AppShell() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const { data: inbox } = useInboxSummary()
+  const unread = (inbox?.unread ?? 0) + (inbox?.pending_update_requests ?? 0)
 
   return (
     <div className="flex min-h-svh bg-background">
@@ -96,8 +99,20 @@ export function AppShell() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" asChild>
-                  <Link to="/inbox" aria-label="Notifications">
+                  <Link
+                    to="/inbox"
+                    className="relative"
+                    aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
+                  >
                     <BellIcon />
+                    {unread ? (
+                      <span
+                        aria-hidden
+                        className="absolute top-1 right-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[0.625rem] font-semibold text-primary-foreground tabular-nums"
+                      >
+                        {unread > 99 ? '99+' : unread}
+                      </span>
+                    ) : null}
                   </Link>
                 </Button>
               </TooltipTrigger>

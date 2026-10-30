@@ -154,6 +154,7 @@ test('every page fits phone, tablet and desktop widths', async ({ browser, page 
     await page.request.get(`/api/v1/organizations/${orgId}/departments`)
   ).json()
   const board = `/org/${orgId}/departments/${firstDepartment.id}`
+  const me = await (await page.request.get('/api/v1/me')).json()
   const departmentName: string = firstDepartment.name
   const pages = [
     ...PAGES,
@@ -162,16 +163,37 @@ test('every page fits phone, tablet and desktop widths', async ({ browser, page 
     { path: `/org/${orgId}`, heading: /Northwind/, name: 'org-overview' },
     { path: `/org/${orgId}/departments`, heading: 'Departments', name: 'org-departments' },
     { path: `/org/${orgId}/members`, heading: 'Members', name: 'org-members' },
+    { path: '/inbox', heading: 'Inbox', name: 'inbox' },
     { path: `/org/${orgId}/my-work`, heading: 'My Work', name: 'org-my-work' },
     { path: `/org/${orgId}/tasks`, heading: 'Team Tasks', name: 'org-team-tasks' },
     { path: board, heading: departmentName, name: 'org-board' },
     { path: `${board}?layout=list`, heading: departmentName, name: 'org-board-list' },
     { path: `${board}?layout=calendar`, heading: departmentName, name: 'org-board-calendar' },
+    { path: `/org/${orgId}/reports`, heading: 'Reports', name: 'org-reports' },
+    {
+      path: `/org/${orgId}/reports/departments/${firstDepartment.id}`,
+      heading: departmentName,
+      name: 'org-report-department',
+    },
+    {
+      path: `/org/${orgId}/reports/members/${me.id}`,
+      heading: 'My summary',
+      name: 'org-report-member',
+    },
     { path: `/org/${orgId}/requests`, heading: 'Join requests', name: 'org-requests' },
     { path: `/org/${orgId}/invitations`, heading: 'Invitations', name: 'org-invitations' },
     { path: `/org/${orgId}/activity`, heading: 'Activity log', name: 'org-activity' },
     { path: `/org/${orgId}/settings`, heading: 'Settings', name: 'org-settings' },
   ]
+
+  // The chart's dark colors are their own, so they get looked at too.
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.goto(`/org/${orgId}/reports`)
+  await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible()
+  await page.waitForLoadState('networkidle')
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'test-results/screens/responsive-dark-org-reports.png' })
+  await page.emulateMedia({ colorScheme: 'light' })
 
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })

@@ -47,6 +47,9 @@ import {
   type TaskStatus,
 } from '@/features/tasks/task-meta'
 import type { TaskDetail, TaskInput } from '@/features/tasks/types'
+import { TaskAttachments } from '@/features/collaboration/components/TaskAttachments'
+import { TaskComments } from '@/features/collaboration/components/TaskComments'
+import { TaskUpdateRequests } from '@/features/collaboration/components/TaskUpdateRequests'
 import { TaskPeopleFields } from '@/features/work/components/TaskPeopleFields'
 import { ApiError } from '@/lib/api-client'
 
@@ -324,6 +327,20 @@ function TaskEditor({
           title={`Subtasks${task.subtask_count ? ` · ${task.subtasks_completed}/${task.subtask_count}` : ''}`}
         >
           <SubtaskList task={task} readOnly={readOnly} />
+        </Section>
+
+        <Section title="Attachments">
+          <TaskAttachments taskId={task.id} canUpload={!readOnly} />
+        </Section>
+
+        {isOrganizationTask ? (
+          <Section title="Update requests">
+            <TaskUpdateRequests task={task} readOnly={archived} />
+          </Section>
+        ) : null}
+
+        <Section title="Comments">
+          <TaskComments task={task} readOnly={archived} />
         </Section>
 
         <Section title="Activity">

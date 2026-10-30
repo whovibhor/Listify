@@ -1,12 +1,15 @@
+import re
+
 from fastapi import HTTPException, status
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.core.exceptions import error_response
 
-# Far above any real request: the longest text field is 10,000 characters. Uploads (Phase 6) will
-# have their own limit.
+# Far above any real request: the longest text field is 10,000 characters.
 MAX_BODY_BYTES = 1024 * 1024
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+_UPLOAD_PATH = re.compile(r"^/api/v1/tasks/\d+/attachments$")
 TOO_LARGE_MESSAGE = "This request is too large."
 API_PATH_PREFIX = "/api/v1"
 
@@ -14,17 +17,17 @@ API_PATH_PREFIX = "/api/v1"
 class BodySizeLimitMiddleware:
     """Refuses oversized requests before they're read into memory (S-09)."""
 
-    def __init__(self, app: ASGIApp, *, max_bytes: int = MAX_BODY_BYTES) -> None:
+    def __init__(self, app: ASGIApp) -> None:
         self.app = app
-        self.max_bytes = max_bytes
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
 
+        limit = MAX_UPLOAD_BYTES if _UPLOAD_PATH.match(scope["path"]) else MAX_BODY_BYTES
         declared = Headers(scope=scope).get("content-length")
-        if declared and declared.isdigit() and int(declared) > self.max_bytes:
+        if declared and declared.isdigit() and int(declared) > limit:
             response = error_response(
                 status.HTTP_413_CONTENT_TOO_LARGE, "payload_too_large", TOO_LARGE_MESSAGE
             )
@@ -39,7 +42,7 @@ class BodySizeLimitMiddleware:
             message = await receive()
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
-                if received > self.max_bytes:
+                if received > limit:
                     raise HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, TOO_LARGE_MESSAGE)
             return message
 

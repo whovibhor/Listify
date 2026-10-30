@@ -16,9 +16,9 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 | 3 | Organizations, departments & membership | ✅ Complete | 2026-10-30 |
 | 4 | Roles & permissions | ✅ Complete | 2026-10-30 |
 | 5 | Department Work Boards | ✅ Complete | 2026-10-30 |
-| 6 | Collaboration (comments, update requests, attachments, inbox) | 🚧 Next | — |
-| 7 | Dashboards & reporting | ⏳ Planned | — |
-| 8 | Reminders & scheduled notifications | ⏳ Planned | — |
+| 6 | Collaboration (comments, update requests, attachments, inbox) | ✅ Complete | 2026-10-30 |
+| 7 | Dashboards & reporting | ✅ Complete | 2026-10-30 |
+| 8 | Reminders & scheduled notifications | 🚧 Next | — |
 | 9 | Production readiness | ⏳ Planned | — |
 | Future | Sign-in with Google and other providers | ⏳ Planned | — |
 
@@ -84,18 +84,20 @@ Security status: [`security-audit.md`](security-audit.md). 16 of 28 findings are
 - [x] Task permissions added to the role × permission matrix test
 - Note: being told about an assignment needs the notifications table, so it moves to Phase 6 with the inbox. The List view is a plain sortable table; TanStack Table wasn't needed.
 
-### Phase 6 — Collaboration
-- [ ] Notify people when they're assigned or added to a task, and when their access changes
-- [ ] Comments (edit/delete your own) and full activity timeline on tasks
-- [ ] Request a progress update; recipient responds from the Inbox
-- [ ] File attachments with access checks on every download
-- [ ] Inbox: assignments, update requests, notifications with unread badges
+### Phase 6 — Collaboration ✅
+- [x] Notify people when they're assigned or added to a task, and when their access changes
+- [x] Comments (edit/delete your own) and full activity timeline on tasks
+- [x] Request a progress update; recipient responds from the Inbox
+- [x] File attachments with access checks on every download
+- [x] Inbox: assignments, update requests, notifications with unread badges
+- Note: the task panel stays one scrolling list rather than tabs, which suits phones better. Deadline reminders and email delivery are Phase 8.
 
-### Phase 7 — Dashboards & reporting
-- [ ] Organization overview: open, completed, overdue, blocked, workload by department, on-time rate
-- [ ] Department summary: by status, by assignee, overdue, blocked, recent completions, trend
-- [ ] Member summary (self or authorized manager)
-- [ ] Date range picker; every metric shows its formula and timezone; CSV export where permitted
+### Phase 7 — Dashboards & reporting ✅
+- [x] Organization overview: open, completed, overdue, blocked, workload by department, on-time rate
+- [x] Department summary: by status, by assignee, overdue, blocked, recent completions, trend
+- [x] Member summary (self or authorized manager)
+- [x] Date range picker; every metric shows its formula and timezone; CSV export where permitted
+- Note: on 100,000 tasks, seven of eight measured reports met the 500 ms target. A full year for a whole organization took about 780 ms. Measured with `scripts/perf_reports.py`; caching, if ever needed, waits for Redis in Phase 8.
 
 ### Phase 8 — Reminders & scheduled notifications
 - [ ] Deadline-approaching and overdue notifications
@@ -110,6 +112,7 @@ Security status: [`security-audit.md`](security-audit.md). 16 of 28 findings are
 - [ ] Decide whether password sign-in stays. If it does, add email confirmation, exact-match email lookups, fairer login limits and stronger password checks (audit S-02, S-03, S-06, S-14, S-16)
 
 ### Phase 9 — Production readiness
+- [ ] Virus scanning for attachments, and file storage outside the application server (PRD §10)
 - [ ] Dedicated MySQL account with a password, local-only binding, and refuse root in production (audit S-04)
 - [ ] Frontend security headers, HTTPS and `__Host-` cookies in Nginx (audit S-08)
 - [ ] Security review, dependency audit, accessibility audit, responsive QA

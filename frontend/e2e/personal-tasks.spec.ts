@@ -141,6 +141,7 @@ test('task pages have no detectable accessibility violations', async ({ page }, 
   await page.goto('/personal/tasks')
   await page.getByRole('button', { name: 'Accessible task' }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
+  await page.waitForTimeout(500) // mid-slide text would fail the contrast check
   const panel = await new AxeBuilder({ page })
     .include('[role=dialog]')
     .withTags(['wcag2a', 'wcag2aa'])

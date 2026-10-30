@@ -42,7 +42,7 @@ export const personalNavigation: NavSection[] = [
   },
   {
     label: 'Inbox',
-    items: [{ label: 'Inbox', to: '/inbox', icon: InboxIcon, plannedMilestone: 'M6' }],
+    items: [{ label: 'Inbox', to: '/inbox', icon: InboxIcon }],
   },
 ]
 

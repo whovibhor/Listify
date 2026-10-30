@@ -59,6 +59,12 @@ const personalRoutes: RouteObject[] = [
 
 const organizationRoutes: RouteObject[] = [
   {
+    path: '/inbox',
+    lazy: async () => ({
+      Component: (await import('@/features/inbox/pages/InboxPage')).InboxPage,
+    }),
+  },
+  {
     path: '/organizations/new',
     lazy: async () => ({
       Component: (await import('@/features/organizations/pages/CreateOrganizationPage'))
@@ -113,6 +119,25 @@ const organizationRoutes: RouteObject[] = [
         path: 'tasks',
         lazy: async () => ({
           Component: (await import('@/features/work/pages/TeamTasksPage')).TeamTasksPage,
+        }),
+      },
+      {
+        path: 'reports',
+        lazy: async () => ({
+          Component: (await import('@/features/reports/pages/ReportsPage')).ReportsPage,
+        }),
+      },
+      {
+        path: 'reports/departments/:departmentId',
+        lazy: async () => ({
+          Component: (await import('@/features/reports/pages/DepartmentReportPage'))
+            .DepartmentReportPage,
+        }),
+      },
+      {
+        path: 'reports/members/:userId',
+        lazy: async () => ({
+          Component: (await import('@/features/reports/pages/MemberSummaryPage')).MemberSummaryPage,
         }),
       },
       {

@@ -230,3 +230,24 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 - **Limits on creation, not on all writes.** A write limit on every request would add a database commit to each one. Limits on what fills the database stop the same abuse.
 - **Accepted for now, by the owner:** sign-in stays unchanged until Login with Google, and the MySQL root account stays unchanged while the app only runs on this PC. Both must be closed before real users or deployment.
 - **Security events go to the `listify.security` log,** not `audit_logs`, which is per organization and visible to its admins. The log never holds passwords or the text typed into a failed sign-in.
+
+## ADR-029 Collaboration and notifications (Phase 6)
+
+- **A notification stores references, never content.** No task title or comment text is saved in a notification. The Inbox looks up the title when it's read, after checking access, so a person who has lost access sees "You no longer have access" and nothing else. This also means nothing needs cleaning up when access changes.
+- **Notifications are sent after the change commits.** A failure is logged and doesn't undo the change (PRD §13). Sending happens in the request for now; it moves to the background worker in Phase 8.
+- **Comments:** authors edit and delete their own. Owners and Admins can delete any comment, but nobody can rewrite someone else's words. Deleting hides the text from every response and leaves a marker. Anyone who can see a task can comment, including people it was only shared with, because `task.comment` says "tasks the user can access".
+- **Mentions must point at someone who can see the task.** Otherwise a mention would be a way to tell someone a private task exists.
+- **Attachments follow ADR-018.** The file's type comes from its contents, never its name or what the browser claims. HTML and SVG aren't allowed because they can run scripts. Files are stored under random keys, and always download rather than display. Only people who can edit a task can upload, and access is checked on every download.
+- **Uploads send the file as the request body** rather than multipart, so no new dependency was needed. The 1 MB request limit rises to 10 MB for that one route.
+- **Update requests go to the assignee or a collaborator,** and the database allows one open request per person per task. Removing someone closes the requests waiting on them. Requests don't expire yet.
+
+## ADR-030 Reports (Phase 7)
+
+- **Reports start from `visible_tasks`,** as BRD Rule 14 requires. A Department Manager's numbers can therefore be lower than an Owner's, because private tasks aren't counted, and each report says whose tasks it covers.
+- **The trade-off with history:** BRD Rule 13 keeps completed work with its original department, while Rule 14 limits what a reader may see. If a completed task moves to another department, an Owner still sees it under the old department, but that department's manager may not. Access wins.
+- **Attribution:** open, overdue, blocked and created use the task's department today. Completed uses `completed_department_id` (ADR-020).
+- **No employee scoring (PRD §5.9).** Member reports show counts of work only, with no on-time rate, and lists are by name, never ranked. "Completed" for a person means tasks assigned to them, not who pressed the button.
+- **One pass, several numbers.** Each report runs three grouped queries rather than one per number. Local days are worked out by MySQL with `INTERVAL(TO_SECONDS(column), each day's start)`, using boundaries computed in Python from the organization's timezone. That is exact in every timezone and on days when the clocks change, and it needs no timezone tables in MySQL.
+- **Permissions:** report access uses the existing `report.*` permissions. Exporting needs the same permission as reading that report, not a separate one.
+- **CSV:** cells starting with a formula character are prefixed with a quote mark, including full-width forms. Exports are refused rather than cut short when too large, because a silently partial file would mislead. Each export is audited, recording counts and dates but no task data.
+- **No caching.** PRD §10 says to add caching only after measuring slow queries. The one report over target is a rare view, so nothing is cached.

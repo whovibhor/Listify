@@ -191,12 +191,14 @@ export function useMembers(
     page?: number
     page_size?: number
   } = {},
+  { enabled = true } = {},
 ) {
   return useQuery({
     queryKey: orgKeys.members(organizationId, params),
     queryFn: () =>
       api.get<Page<Member>>(`/organizations/${organizationId}/members`, { query: params }),
     placeholderData: keepPreviousData,
+    enabled,
   })
 }
 

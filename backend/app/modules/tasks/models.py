@@ -183,6 +183,35 @@ class Task(TimestampMixin, Base):
             "archived_at",
             "status",
         ),
+        # Reports (ADR-030). Long, so that reading them never needs the task rows themselves.
+        Index(
+            "ix_tasks_report_open",
+            "organization_id",
+            "parent_task_id",
+            "archived_at",
+            "status",
+            "department_id",
+            "due_at",
+            "workspace_type",
+        ),
+        Index(
+            "ix_tasks_report_completed",
+            "organization_id",
+            "parent_task_id",
+            "completed_at",
+            "status",
+            "completed_department_id",
+            "due_at",
+            "workspace_type",
+        ),
+        Index(
+            "ix_tasks_report_created",
+            "organization_id",
+            "parent_task_id",
+            "created_at",
+            "department_id",
+            "workspace_type",
+        ),
         MYSQL_TABLE_ARGS,
     )
 

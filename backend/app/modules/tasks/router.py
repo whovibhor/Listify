@@ -4,8 +4,10 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Query, status
 
 from app.common.pagination import Page, PageParams, page_params
+from app.common.storage import StorageBackend, get_storage
 from app.db.base import utc_now
 from app.modules.auth.dependencies import CurrentAuth, DbSession
+from app.modules.collaboration import attachments
 from app.modules.permissions.service import OrgCtx
 from app.modules.tasks import organization, policies, service
 from app.modules.tasks.models import TaskPriority, TaskStatus
@@ -255,13 +257,21 @@ def restore_task(task_id: int, auth: CurrentAuth, db: DbSession) -> TaskDetail:
 
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_task(task_id: int, auth: CurrentAuth, db: DbSession) -> None:
+def delete_task(
+    task_id: int,
+    auth: CurrentAuth,
+    db: DbSession,
+    storage: StorageBackend = Depends(get_storage),
+) -> None:
     access = policies.get_access(db, auth.user, task_id, for_update=True)
     if access.context is not None:
         if access.task.parent_task_id is None:
             raise organization.ArchiveInsteadError("Organization tasks are archived, not deleted.")
         access.require("edit")
+    keys = attachments.storage_keys_of(db, access.task.id)
     service.delete_task(db, auth.user, access.task)
+    for key in keys:
+        storage.delete(key)
 
 
 @router.get("/tasks/{task_id}/activity", response_model=list[ActivityRead])

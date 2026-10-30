@@ -90,6 +90,10 @@ function ImpactSummary({ impact, member }: { impact: MemberImpact; member: Membe
       'Open tasks',
       impact.tasks_to_reassign > 0 ? `${impact.tasks_to_reassign} flagged for reassignment` : '',
     ],
+    [
+      'Update requests',
+      impact.open_update_requests > 0 ? `${impact.open_update_requests} waiting for them` : '',
+    ],
   ]
   return (
     <div className="space-y-2 text-sm">

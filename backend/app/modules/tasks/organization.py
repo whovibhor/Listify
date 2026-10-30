@@ -18,6 +18,7 @@ from app.modules.memberships.models import (
     MembershipStatus,
     OrganizationMembership,
 )
+from app.modules.notifications.service import notify
 from app.modules.organizations.models import Department, DepartmentStatus
 from app.modules.permissions.service import OrgContext
 from app.modules.tasks import policies, service
@@ -75,7 +76,7 @@ def _person(user: User | None) -> PersonRef | None:
     return PersonRef(id=user.id, name=user.name) if user else None
 
 
-def _allowed_statuses(access: TaskAccess) -> list[TaskStatus]:
+def allowed_statuses(access: TaskAccess) -> list[TaskStatus]:
     task = access.task
     if not access.can("edit") or task.archived_at is not None:
         return []
@@ -100,7 +101,7 @@ def to_read(access: TaskAccess, now: datetime, *, flagged: bool) -> TaskRead:
                 for link in sorted(task.collaborator_links, key=lambda link: link.user.name)
             ],
             "needs_reassignment": flagged,
-            "allowed_statuses": _allowed_statuses(access),
+            "allowed_statuses": allowed_statuses(access),
             "actions": access.actions(),
         }
     )
@@ -288,6 +289,9 @@ def create_task(
         )
     db.commit()
     db.refresh(task)
+    reference = {"organization_id": organization_id, "task_id": task.id}
+    notify(db, [payload.assigned_to], "assigned", actor_id=user.id, **reference)
+    notify(db, collaborators, "collaborator_added", actor_id=user.id, **reference)
     return task, TaskAccess(task=task, root=task, context=context)
 
 
@@ -411,6 +415,7 @@ def _set_visibility(db: Session, access: TaskAccess, payload: TaskUpdate) -> Non
 def update_task(db: Session, access: TaskAccess, payload: TaskUpdate, now: datetime) -> Task:
     context, task = access.org, access.task
     fields = payload.model_fields_set
+    assignee_before = task.assigned_to
     claiming = (
         fields == {"assigned_to"}
         and payload.assigned_to == context.user.id
@@ -433,7 +438,17 @@ def update_task(db: Session, access: TaskAccess, payload: TaskUpdate, now: datet
             raise TaskValidationError(
                 "visibility", "Choose a visibility for a task with no department."
             )
-    return service.update_task(db, access, context.user, payload, now)
+    task = service.update_task(db, access, context.user, payload, now)
+    if task.assigned_to != assignee_before:
+        notify(
+            db,
+            [task.assigned_to],
+            "assigned",
+            actor_id=context.user.id,
+            organization_id=task.organization_id,
+            task_id=task.id,
+        )
+    return task
 
 
 def add_collaborator(db: Session, access: TaskAccess, user_id: int) -> Task:
@@ -456,6 +471,14 @@ def add_collaborator(db: Session, access: TaskAccess, user_id: int) -> Task:
     )
     db.commit()
     db.refresh(task)
+    notify(
+        db,
+        [user_id],
+        "collaborator_added",
+        actor_id=context.user.id,
+        organization_id=task.organization_id,
+        task_id=task.id,
+    )
     return task
 
 

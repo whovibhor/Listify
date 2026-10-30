@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckIcon, UserPlusIcon } from 'lucide-react'
+import { CheckIcon, UserPlusIcon, type LucideIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,10 +17,18 @@ interface PeoplePickerProps {
   selected: number[]
   onToggle: (userId: number) => void
   disabled?: boolean
+  icon?: LucideIcon
 }
 
 /** Searchable checklist of people. The chips showing who's chosen belong to the caller. */
-export function PeoplePicker({ label, people, selected, onToggle, disabled }: PeoplePickerProps) {
+export function PeoplePicker({
+  label,
+  people,
+  selected,
+  onToggle,
+  disabled,
+  icon: Icon = UserPlusIcon,
+}: PeoplePickerProps) {
   const [search, setSearch] = useState('')
   const term = search.trim().toLowerCase()
   const visible = people.filter((person) => person.name.toLowerCase().includes(term))
@@ -29,7 +37,7 @@ export function PeoplePicker({ label, people, selected, onToggle, disabled }: Pe
     <Popover>
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" size="sm" disabled={disabled}>
-          <UserPlusIcon data-icon="inline-start" />
+          <Icon data-icon="inline-start" />
           {label}
         </Button>
       </PopoverTrigger>
