@@ -79,8 +79,40 @@ export interface Member {
   job_title: string | null
   status: 'active' | 'suspended' | 'removed'
   joined_at: string
-  roles: { key: string; name: string; department_id: number | null }[]
+  roles: MemberRole[]
   departments: { id: number; name: string }[]
+  /** What the signed-in user may do to this member. The server checks each action again. */
+  actions: MemberAction[]
+}
+
+export interface MemberRole {
+  key: string
+  name: string
+  department_id: number | null
+}
+
+export type MemberAction =
+  | 'change_roles'
+  | 'suspend'
+  | 'reactivate'
+  | 'remove'
+  | 'transfer'
+  | 'add_department'
+  | 'leave_department'
+  | 'make_owner'
+
+export type ImpactAction = 'suspend' | 'remove' | 'transfer' | 'leave_department'
+
+export interface MemberImpact {
+  action: ImpactAction
+  member_name: string
+  departments_losing: { id: number; name: string }[]
+  departments_gaining: { id: number; name: string }[]
+  departments_keeping: { id: number; name: string }[]
+  roles_ending: MemberRole[]
+  keeps_every_department: boolean
+  sole_manager_of: { id: number; name: string }[]
+  pending_requests: number
 }
 
 export type AssignableRole = 'member' | 'team_lead' | 'department_manager' | 'admin'

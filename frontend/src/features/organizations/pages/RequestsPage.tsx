@@ -35,13 +35,9 @@ import {
   type MembershipRequest,
 } from '@/features/organizations/types'
 import { useOrg } from '@/features/organizations/use-current-org'
-import { ApiError } from '@/lib/api-client'
+import { errorText } from '@/lib/api-client'
 import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
-
-function errorText(error: Error) {
-  return error instanceof ApiError && error.details[0] ? error.details[0].message : error.message
-}
 
 function ApproveDialog({ request, onClose }: { request: MembershipRequest; onClose: () => void }) {
   const org = useOrg()

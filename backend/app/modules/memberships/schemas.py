@@ -6,6 +6,17 @@ from app.common.schemas import ApiModel, InputModel, UtcDateTime
 from app.modules.memberships.models import MembershipStatus, RequestStatus
 
 AssignableRole = Literal["member", "team_lead", "department_manager", "admin"]
+MemberAction = Literal[
+    "change_roles",
+    "suspend",
+    "reactivate",
+    "remove",
+    "transfer",
+    "add_department",
+    "leave_department",
+    "make_owner",
+]
+ImpactAction = Literal["suspend", "remove", "transfer", "leave_department"]
 
 
 class JoinRequestCreate(InputModel):
@@ -75,6 +86,63 @@ class MemberRead(ApiModel):
     joined_at: UtcDateTime
     roles: list[MemberRole]
     departments: list[MemberDepartment]
+    # What the current user may do to this member; the server still checks each action.
+    actions: list[MemberAction]
+
+
+class DepartmentRoleChoice(InputModel):
+    department_id: int
+    role_key: Literal["team_lead", "department_manager"]
+
+
+class MemberRolesUpdate(InputModel):
+    """The complete set of roles the member should have afterwards."""
+
+    organization_role: Literal["member", "admin"]
+    department_roles: list[DepartmentRoleChoice] = Field(default_factory=list, max_length=100)
+
+    @field_validator("department_roles", mode="after")
+    @classmethod
+    def one_role_per_department(
+        cls, value: list[DepartmentRoleChoice]
+    ) -> list[DepartmentRoleChoice]:
+        if len({choice.department_id for choice in value}) != len(value):
+            raise ValueError("Choose one role per department.")
+        return value
+
+
+class MemberActionNote(InputModel):
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class MemberTransfer(InputModel):
+    from_department_id: int
+    to_department_id: int
+
+
+class MemberDepartmentAdd(InputModel):
+    department_id: int
+
+
+class OwnershipTransfer(InputModel):
+    """High impact, so the Owner re-enters their password."""
+
+    membership_id: int
+    password: str = Field(min_length=1, max_length=128)
+
+
+class MemberImpact(ApiModel):
+    """What a change would do, shown before the administrator confirms it (PRD §6.7)."""
+
+    action: ImpactAction
+    member_name: str
+    departments_losing: list[MemberDepartment]
+    departments_gaining: list[MemberDepartment]
+    departments_keeping: list[MemberDepartment]
+    roles_ending: list[MemberRole]
+    keeps_every_department: bool
+    sole_manager_of: list[MemberDepartment]
+    pending_requests: int
 
 
 class InvitationCreate(InputModel):

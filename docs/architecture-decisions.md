@@ -58,7 +58,7 @@ Format: each ADR states context, decision and consequences. Status is **Accepted
   - Organization scope is always taken from the route + verified membership, never from request bodies.
 - **Consequences:** Every endpoint test suite includes a forbidden/cross-tenant case. Unauthorized object access returns **404** (not 403) to avoid confirming existence across tenants; 403 is used when the resource is visible but the action isn't permitted.
 
-## ADR-011 Predefined roles and baseline permission matrix (proposed; finalized in M4)
+## ADR-011 Predefined roles and baseline permission matrix (finalized in M4)
 
 | Permission | Owner | Admin | Dept Manager* | Team Lead* | Member |
 |---|:-:|:-:|:-:|:-:|:-:|
@@ -191,3 +191,15 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 - **Decision:** every org route takes `OrgCtx`, built from the URL and an active membership (ADR-010). Roles and permissions are read from the database; `permissions/catalog.py` mirrors the seed and a test fails if they drift. Department-scoped roles add to the base Member role and apply only to their department.
 - **Department visibility:** administrators see all departments; other members see only their own (BR-006), so a department's existence isn't disclosed to the rest of the organization.
 - **Direct invitations bypass the discoverable check** because an administrator chose that person. Join requests require a discoverable organization.
+
+## ADR-026 Member management rules (Phase 4)
+
+- **One rule table:** `memberships/policies.py` decides what the current user may do to each member. The API enforces it, and the same result goes to the UI as `actions`, so buttons and enforcement can't disagree. Previews run the same checks as the action.
+- **The Owner is protected:** only the Owner touches the Owner's membership, and only their own departments. The Owner's role changes only through ownership transfer, so an organization always has exactly one Owner. Admins can manage other Admins.
+- **No self-lockout:** nobody can suspend, remove or re-role themselves.
+- **Ownership transfer needs the Owner's password** (rate limited) and makes the old Owner an Admin. The new Owner keeps any department roles.
+- **Suspended members keep roles and departments** so reactivation is exact, and can't change state until reactivated (except removal). Removed members lose both; the row stays as history.
+- **A transfer is confirmed by the administrator who starts it.** That confirmation is the approval FR-ORG-08 asks for; there is no second approver. The person arrives as a plain member of the new department, and roles limited to the old department end. Organization-wide roles keep their access, which the preview states.
+- **Department Managers don't manage members.** `member.manage` and `role.assign` stay with Owner and Admin (ADR-011), so a manager's reach stays limited to approving requests and editing their own department.
+- **Revocation needs no session work:** access is read from the database on every request, so a change applies from the person's next request and their session keeps working for personal tasks. In the SPA, any organization 403 or 404 reloads the user's organizations, so navigation and pages follow (PRD §13).
+- **Concurrency:** member changes hold a row lock on the organization. The lock is taken after ending the read snapshot from loading `OrgContext`, because InnoDB's repeatable read would otherwise show pre-lock data.

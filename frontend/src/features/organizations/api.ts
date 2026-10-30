@@ -10,10 +10,12 @@ import type {
   AssignableRole,
   AuditEntry,
   Department,
+  ImpactAction,
   Invitation,
   InvitationCreated,
   InvitationPreview,
   Member,
+  MemberImpact,
   MembershipRequest,
   MyJoinRequest,
   MyOrganization,
@@ -23,10 +25,11 @@ import type {
 } from '@/features/organizations/types'
 import type { Page } from '@/features/tasks/types'
 import { api } from '@/lib/api-client'
+import { MY_ORGANIZATIONS_QUERY_KEY } from '@/lib/query-keys'
 
 export const orgKeys = {
   all: ['organizations'] as const,
-  mine: ['organizations', 'mine'] as const,
+  mine: MY_ORGANIZATIONS_QUERY_KEY,
   myRequests: ['organizations', 'my-requests'] as const,
   discover: (q: string) => ['organizations', 'discover', q] as const,
   joinInfo: (id: number) => ['organizations', 'join-info', id] as const,
@@ -34,6 +37,9 @@ export const orgKeys = {
   departments: (id: number, archived: boolean) =>
     ['organizations', id, 'departments', archived] as const,
   members: (id: number, params: object) => ['organizations', id, 'members', params] as const,
+  // Outside the organization's key on purpose: a preview must not refetch once it's been acted on.
+  impact: (id: number, membershipId: number, params: object) =>
+    ['member-impact', id, membershipId, params] as const,
   requests: (id: number, status?: RequestStatus) =>
     ['organizations', id, 'requests', status] as const,
   invitations: (id: number) => ['organizations', id, 'invitations'] as const,
@@ -177,7 +183,13 @@ export function useSetDepartmentArchived(organizationId: number) {
 
 export function useMembers(
   organizationId: number,
-  params: { q?: string; department_id?: number; page?: number; page_size?: number } = {},
+  params: {
+    q?: string
+    department_id?: number
+    status?: 'active' | 'suspended'
+    page?: number
+    page_size?: number
+  } = {},
 ) {
   return useQuery({
     queryKey: orgKeys.members(organizationId, params),
@@ -185,6 +197,88 @@ export function useMembers(
       api.get<Page<Member>>(`/organizations/${organizationId}/members`, { query: params }),
     placeholderData: keepPreviousData,
   })
+}
+
+function useMemberChange<Input, Output>(
+  organizationId: number,
+  mutationFn: (input: Input) => Promise<Output>,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: () => refreshOrganization(queryClient, organizationId),
+  })
+}
+
+export function useMemberImpact(
+  organizationId: number,
+  membershipId: number,
+  params: { action: ImpactAction; from_department_id?: number; to_department_id?: number },
+  { enabled = true } = {},
+) {
+  return useQuery({
+    queryKey: orgKeys.impact(organizationId, membershipId, params),
+    queryFn: () =>
+      api.get<MemberImpact>(`/organizations/${organizationId}/members/${membershipId}/impact`, {
+        query: params,
+      }),
+    enabled,
+    gcTime: 0,
+  })
+}
+
+export function useChangeMemberRoles(organizationId: number, membershipId: number) {
+  return useMemberChange(
+    organizationId,
+    (input: {
+      organization_role: 'member' | 'admin'
+      department_roles: { department_id: number; role_key: 'team_lead' | 'department_manager' }[]
+    }) =>
+      api.patch<Member>(`/organizations/${organizationId}/members/${membershipId}/roles`, input),
+  )
+}
+
+/** The changes that go through an impact preview. */
+export function useConfirmMemberChange(
+  organizationId: number,
+  membershipId: number,
+  action: ImpactAction,
+) {
+  const member = `/organizations/${organizationId}/members/${membershipId}`
+  return useMemberChange(
+    organizationId,
+    (input: { reason: string | null; from_department_id?: number; to_department_id: number }) => {
+      if (action === 'suspend') return api.post(`${member}/suspend`, { reason: input.reason })
+      if (action === 'remove') return api.post(`${member}/remove`, { reason: input.reason })
+      if (action === 'transfer') {
+        return api.post(`${member}/transfer`, {
+          from_department_id: input.from_department_id,
+          to_department_id: input.to_department_id,
+        })
+      }
+      return api.delete(`${member}/departments/${input.from_department_id}`)
+    },
+  )
+}
+
+export function useReactivateMember(organizationId: number, membershipId: number) {
+  return useMemberChange(organizationId, () =>
+    api.post<Member>(`/organizations/${organizationId}/members/${membershipId}/reactivate`),
+  )
+}
+
+export function useAddMemberDepartment(organizationId: number, membershipId: number) {
+  return useMemberChange(organizationId, (departmentId: number) =>
+    api.post<Member>(`/organizations/${organizationId}/members/${membershipId}/departments`, {
+      department_id: departmentId,
+    }),
+  )
+}
+
+export function useTransferOwnership(organizationId: number) {
+  return useMemberChange(organizationId, (input: { membership_id: number; password: string }) =>
+    api.post<void>(`/organizations/${organizationId}/ownership-transfer`, input),
+  )
 }
 
 // --- Requests (approver side) ------------------------------------------------------------------

@@ -7,22 +7,33 @@ from app.common.mailer import Mailer, get_mailer
 from app.common.pagination import Page, PageParams, page_params
 from app.modules.audit_logs.models import AuditLog
 from app.modules.auth.dependencies import AppSettings, CurrentAuth, DbSession
-from app.modules.memberships import service
-from app.modules.memberships.models import RequestStatus
+from app.modules.memberships import management, service
+from app.modules.memberships.models import (
+    MembershipStatus,
+    OrganizationMembership,
+    RequestStatus,
+)
 from app.modules.memberships.schemas import (
     AuditLogRead,
+    ImpactAction,
     InvitationCreate,
     InvitationCreated,
     InvitationPreview,
     InvitationRead,
     JoinRequestCreate,
+    MemberActionNote,
+    MemberDepartmentAdd,
+    MemberImpact,
     MemberRead,
+    MemberRolesUpdate,
     MembershipRequestRead,
+    MemberTransfer,
     MyRequestRead,
+    OwnershipTransfer,
     RequestApprove,
     RequestReject,
 )
-from app.modules.permissions.service import OrgCtx
+from app.modules.permissions.service import OrgContext, OrgCtx
 from app.modules.users.models import User
 
 router = APIRouter(tags=["memberships"])
@@ -104,16 +115,121 @@ def list_members(
     paging: PageParams = Depends(page_params),
     q: Annotated[str | None, Query(max_length=100)] = None,
     department_id: int | None = None,
+    status_filter: Annotated[MembershipStatus | None, Query(alias="status")] = None,
 ) -> Page[MemberRead]:
     items, total = service.list_members(
         db,
         context,
         q=q.strip() if q else None,
         department_id=department_id,
+        status=status_filter,
         offset=paging.offset,
         limit=paging.page_size,
     )
     return Page[MemberRead](items=items, page=paging.page, page_size=paging.page_size, total=total)
+
+
+def _member(db: DbSession, context: OrgContext, membership: OrganizationMembership) -> MemberRead:
+    return service.to_member_reads(db, context, [membership])[0]
+
+
+@router.get(
+    "/organizations/{organization_id}/members/{membership_id}/impact",
+    response_model=MemberImpact,
+)
+def member_impact(
+    membership_id: int,
+    action: ImpactAction,
+    context: OrgCtx,
+    db: DbSession,
+    from_department_id: int | None = None,
+    to_department_id: int | None = None,
+) -> MemberImpact:
+    return management.member_impact(
+        db,
+        context,
+        membership_id,
+        action=action,
+        from_department_id=from_department_id,
+        to_department_id=to_department_id,
+    )
+
+
+@router.patch(
+    "/organizations/{organization_id}/members/{membership_id}/roles", response_model=MemberRead
+)
+def change_roles(
+    membership_id: int, payload: MemberRolesUpdate, context: OrgCtx, db: DbSession
+) -> MemberRead:
+    return _member(db, context, management.change_roles(db, context, membership_id, payload))
+
+
+@router.post(
+    "/organizations/{organization_id}/members/{membership_id}/suspend", response_model=MemberRead
+)
+def suspend_member(
+    membership_id: int, payload: MemberActionNote, context: OrgCtx, db: DbSession
+) -> MemberRead:
+    return _member(db, context, management.suspend_member(db, context, membership_id, payload))
+
+
+@router.post(
+    "/organizations/{organization_id}/members/{membership_id}/reactivate",
+    response_model=MemberRead,
+)
+def reactivate_member(membership_id: int, context: OrgCtx, db: DbSession) -> MemberRead:
+    return _member(db, context, management.reactivate_member(db, context, membership_id))
+
+
+@router.post(
+    "/organizations/{organization_id}/members/{membership_id}/remove",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def remove_member(
+    membership_id: int, payload: MemberActionNote, context: OrgCtx, db: DbSession
+) -> None:
+    management.remove_member(db, context, membership_id, payload)
+
+
+@router.post(
+    "/organizations/{organization_id}/members/{membership_id}/transfer", response_model=MemberRead
+)
+def transfer_member(
+    membership_id: int, payload: MemberTransfer, context: OrgCtx, db: DbSession
+) -> MemberRead:
+    return _member(db, context, management.transfer_member(db, context, membership_id, payload))
+
+
+@router.post(
+    "/organizations/{organization_id}/members/{membership_id}/departments",
+    response_model=MemberRead,
+)
+def add_department(
+    membership_id: int, payload: MemberDepartmentAdd, context: OrgCtx, db: DbSession
+) -> MemberRead:
+    return _member(
+        db, context, management.add_department(db, context, membership_id, payload.department_id)
+    )
+
+
+@router.delete(
+    "/organizations/{organization_id}/members/{membership_id}/departments/{department_id}",
+    response_model=MemberRead,
+)
+def leave_department(
+    membership_id: int, department_id: int, context: OrgCtx, db: DbSession
+) -> MemberRead:
+    return _member(
+        db, context, management.leave_department(db, context, membership_id, department_id)
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/ownership-transfer",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def transfer_ownership(payload: OwnershipTransfer, context: OrgCtx, db: DbSession) -> None:
+    management.transfer_ownership(db, context, payload)
 
 
 # --- Invitations -----------------------------------------------------------------------------

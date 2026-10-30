@@ -23,6 +23,8 @@ Derived from PRD §14 and the definition of done. Never report a test as passing
 - Time-dependent backend tests use the `frozen_now` fixture (20:00 UTC = 01:30 next day for the Asia/Kolkata test user).
 - E2E saves screenshots to `frontend/test-results/screens/` for visual review.
 - Warnings are fixed, not suppressed.
+- `tests/test_permissions.py` runs every role against every permission-guarded endpoint on the real API. Each new guarded endpoint adds a case there. That file alone uses cheap Argon2 settings, because each case signs up nine people.
+- Tests clear data with `DELETE`, not `TRUNCATE`, which costs about a second per test on InnoDB. Identifiers therefore keep rising between tests, so tests must not assume specific IDs.
 
 ## Running
 

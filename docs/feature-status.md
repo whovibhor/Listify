@@ -1,6 +1,6 @@
 # Listify — Feature Status
 
-**Last updated:** 2026-10-30 · **Current phase:** Phase 4 (Roles & permissions) — next up
+**Last updated:** 2026-10-30 · **Current phase:** Phase 5 (Department Work Boards) — next up
 
 This is the single list of what is **done** and what is **pending**, feature by feature. It is updated every time a feature is completed or changed. A feature is marked ✅ only after it works end-to-end (UI → API → MySQL) and its tests have been run and passed. Detailed plans live in [`implementation-roadmap.md`](implementation-roadmap.md).
 
@@ -16,7 +16,7 @@ Legend: ✅ done · 🟡 partly done · ⏳ pending · ⏸ deferred (later relea
 | Personal workspace (tasks, views, tags, subtasks, history) | ✅ Done |
 | Personal analytics & home page | ✅ Done |
 | Organizations, departments, membership | ✅ Done |
-| Roles & permissions | 🟡 Partly done (roles and permission checks work; changing roles, suspend/remove/transfer pending in Phase 4) |
+| Roles & permissions, member management | ✅ Done |
 | Department work boards (team tasks) | ⏳ Pending (Phase 5) |
 | Comments, update requests, attachments, inbox | ⏳ Pending (Phase 6) |
 | Team & organization dashboards | ⏳ Pending (Phase 7) |
@@ -78,33 +78,41 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 | Activity log of administrative actions (read-only) | `audit_logs` |
 | Five predefined roles and 20 permissions, checked on the server | `roles`, `permissions`, `role_permissions` |
 
+### Roles & member management
+| Feature | Stored in |
+|---|---|
+| Member panel: a member's roles, departments and the actions you're allowed to take | reads `organization_memberships`, `membership_roles`, `department_memberships` |
+| Change roles: Member or Admin, plus Team Lead or Department Manager per department | `membership_roles` |
+| Suspend (with an optional reason) and reactivate: roles and departments come back unchanged | `organization_memberships`, `audit_logs` |
+| Remove from the organization: all access ends, history stays | `organization_memberships`, `membership_roles`, `department_memberships`, `audit_logs` |
+| Move a member between departments; add to more departments; take out of a department | `department_memberships`, `membership_roles`, `organization_memberships` |
+| Impact preview before suspend, remove, move and take-out: departments, roles, departments left with no manager, waiting join requests | computed from the tables above |
+| Transfer ownership, confirmed with your password; the old Owner becomes Admin | `membership_roles`, `audit_logs`, `rate_limit_buckets` |
+| Filter the Members page by status | reads `organization_memberships` |
+| Losing access while a page is open: the next request fails and the page updates itself | — (reloads your organizations) |
+
 ### Quality (applies to everything above)
-- Responsive: all 15 pages checked at phone (375px), tablet (768px) and desktop (1280px) for overflow; screenshots reviewed.
-- Accessibility: automated WCAG 2.2 AA scans (axe) on sign-in, task pages, the task panel and all organization pages; keyboard and screen-reader labels.
-- Privacy: other users get "not found" for your tasks, tags and sessions. Outsiders and pending applicants get "not found" for everything in an organization. Organizations can never see personal tasks. All tested.
+- Responsive: all 15 pages, the member panel and the impact preview checked at phone (375px), tablet (768px) and desktop (1280px) for overflow; screenshots reviewed.
+- Accessibility: automated WCAG 2.2 AA scans (axe) on sign-in, task pages, the task panel, all organization pages, the member panel and its dialogs, plus one dark-mode scan; keyboard and screen-reader labels.
+- Privacy: other users get "not found" for your tasks, tags and sessions. Outsiders, pending applicants and suspended or removed members get "not found" for everything in an organization. Organizations can never see personal tasks. All tested.
+- Permissions: every role tested against every permission-guarded endpoint on the real API.
 
 ---
 
 ## ⏳ Pending
 
-### Phase 4 — Roles & permissions *(next)*
-- ✅ Owner, Admin, Department Manager, Team Lead, Member roles, enforced by the server
-- ✅ Navigation limited to what your role allows
-- ⏳ Change a member's role after they've joined
-- ⏳ Suspend, reactivate, remove and transfer members (with impact preview)
-- ⏳ Add a member to more departments after joining
-- ⏳ Transfer ownership of an organization
-
-### Phase 5 — Department work boards
+### Phase 5 — Department work boards *(next)*
 - ⏳ Kanban (drag and drop), List and Calendar views per department
 - ⏳ Team tasks with assignee, collaborators, visibility, organization tags
 - ⏳ "My Work" and "Team Tasks" views, search
+- ⏳ Impact preview also counts open assigned tasks; suspended or removed members' tasks are flagged for reassignment (Phase 4 has no organization tasks to count yet)
 
 ### Phase 6 — Collaboration
 - ⏳ Comments on tasks
 - ⏳ Progress update requests and responses
 - ⏳ File attachments (also enables profile avatars)
-- ⏳ Inbox with notifications and unread badges
+- ⏳ Inbox with notifications and unread badges, including telling people when their role, department or membership changes
+- ⏳ Impact preview also counts pending update requests
 
 ### Phase 7 — Team & organization dashboards
 - ⏳ Organization overview, department summary, member summary, CSV export
@@ -116,7 +124,7 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 
 ### Phase 9 — Production readiness
 - ⏳ Security review, backups + restore drill, monitoring, deployment runbook
-- ⏳ CI run on GitHub (workflow written; needs a GitHub remote)
+- ⏳ CI run on GitHub (workflow written and the repository is on GitHub; a passing run hasn't been confirmed)
 - ⏳ Privacy / data-retention policy
 
 ### Small gaps in finished areas
@@ -129,6 +137,7 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 ## Change log
 | Date | Change |
 |---|---|
+| 2026-10-30 | Phase 4 (roles & permissions, member management) completed. Shared red colour darkened in light mode and lightened in dark mode to meet the contrast standard. |
 | 2026-10-30 | Phase 3 (organizations, departments, membership) completed. Product renamed to **Listify** (new checklist logo, cookies and internal names updated). Borders removed from all cards; cards now separate by shadow on a tinted background. |
 | 2026-10-29 | Theme preference moved from browser-only to the database (`user_preferences`); My Day, My Tasks and Upcoming redesigned; responsive fixes (Home overflow on phones, full-width task panel on phones, priority icons, day-strip fade); "Done today" on My Day. |
 | 2026-10-29 | Phase 2 (personal workspace) completed. |

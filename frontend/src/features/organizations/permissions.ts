@@ -1,4 +1,4 @@
-import type { MyOrganization } from '@/features/organizations/types'
+import type { Member, MemberRole, MyOrganization } from '@/features/organizations/types'
 
 /**
  * UI hints only: these decide what to show. The server enforces every rule again (ADR-010).
@@ -22,6 +22,12 @@ const ROLE_LABELS: Record<string, string> = {
   department_manager: 'Department Manager',
   team_lead: 'Team Lead',
   member: 'Member',
+}
+
+/** "Team Lead · Sales" for a department role, "Admin" for an organization-wide one. */
+export function roleLabel(role: MemberRole, departments: Member['departments']) {
+  const department = departments.find((candidate) => candidate.id === role.department_id)
+  return department ? `${role.name} · ${department.name}` : role.name
 }
 
 /** The most senior role, for compact labels such as the workspace switcher. */

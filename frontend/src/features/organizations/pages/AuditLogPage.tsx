@@ -18,6 +18,7 @@ function describe(entry: AuditEntry): string {
   const details = entry.details ?? {}
   const who = typeof details.user_name === 'string' ? details.user_name : 'someone'
   const name = typeof details.name === 'string' ? details.name : ''
+  const department = typeof details.department === 'string' ? details.department : 'a department'
   const texts: Record<string, string> = {
     'organization.created': 'created the organization',
     'organization.updated': 'updated organization settings',
@@ -30,6 +31,14 @@ function describe(entry: AuditEntry): string {
     'invitation.created': `invited ${typeof details.email === 'string' ? details.email : 'someone by link'}`,
     'invitation.revoked': 'revoked an invitation',
     'invitation.accepted': 'accepted an invitation',
+    'member.roles_changed': `changed ${who}’s roles`,
+    'member.suspended': `suspended ${who}`,
+    'member.reactivated': `reactivated ${who}`,
+    'member.removed': `removed ${who}`,
+    'member.transferred': `moved ${who} from ${String(details.from_department)} to ${String(details.to_department)}`,
+    'member.department_added': `added ${who} to ${department}`,
+    'member.department_removed': `took ${who} out of ${department}`,
+    'organization.ownership_transferred': `transferred ownership to ${who}`,
   }
   return texts[entry.action] ?? entry.action.replaceAll('.', ' ')
 }

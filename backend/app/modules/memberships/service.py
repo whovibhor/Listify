@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import timedelta
 from urllib.parse import quote
 
@@ -21,6 +22,7 @@ from app.modules.memberships.models import (
     OrganizationMembership,
     RequestStatus,
 )
+from app.modules.memberships.policies import allowed_actions
 from app.modules.memberships.schemas import (
     InvitationCreate,
     InvitationPreview,
@@ -406,6 +408,7 @@ def list_members(
     *,
     q: str | None,
     department_id: int | None,
+    status: MembershipStatus | None,
     offset: int,
     limit: int,
 ) -> tuple[list[MemberRead], int]:
@@ -416,6 +419,8 @@ def list_members(
         OrganizationMembership.organization_id == organization_id,
         OrganizationMembership.status != MembershipStatus.REMOVED,
     ]
+    if status is not None:
+        conditions.append(OrganizationMembership.status == status)
     sees_everyone = context.can("member.manage") or context.can("member.approve")
     if not sees_everyone:
         visible = select(DepartmentMembership.user_id).where(
@@ -444,7 +449,13 @@ def list_members(
         )
     total = db.scalar(select(func.count()).select_from(statement.subquery())) or 0
     memberships = db.scalars(statement.order_by(User.name).offset(offset).limit(limit)).all()
+    return to_member_reads(db, context, memberships), total
 
+
+def to_member_reads(
+    db: Session, context: OrgContext, memberships: Sequence[OrganizationMembership]
+) -> list[MemberRead]:
+    organization_id = context.organization.id
     user_ids = [membership.user_id for membership in memberships]
     departments: dict[int, list[MemberDepartment]] = {}
     if user_ids:
@@ -477,9 +488,10 @@ def list_members(
                 for assignment in membership.roles
             ],
             departments=departments.get(membership.user_id, []),
+            actions=allowed_actions(context, membership),
         )
         for membership in memberships
-    ], total
+    ]
 
 
 # --- Invitations -----------------------------------------------------------------------------

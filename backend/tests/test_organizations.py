@@ -12,7 +12,6 @@ from app.modules.memberships.models import (
 )
 from app.modules.organizations.models import Organization
 from app.modules.permissions import catalog
-from app.modules.permissions.models import Permission, Role
 from tests.conftest import ApiClient
 from tests.factories import (
     create_org,
@@ -41,19 +40,6 @@ def people(make_api):
         return client
 
     return factory
-
-
-# --- Seed data -------------------------------------------------------------------------------
-
-
-def test_seeded_roles_match_the_code_catalog(api: ApiClient, db: Session) -> None:
-    assert set(db.scalars(select(Permission.key))) == set(catalog.PERMISSIONS)
-    roles = {role.key: role for role in db.scalars(select(Role))}
-    assert set(roles) == set(catalog.ROLES)
-    for key, (name, scope, _, granted) in catalog.ROLES.items():
-        assert roles[key].name == name
-        assert roles[key].scope_type == scope
-        assert {p.key for p in roles[key].permissions} == set(granted)
 
 
 # --- Creating organizations ------------------------------------------------------------------

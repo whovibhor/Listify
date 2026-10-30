@@ -1,5 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Browser, type Locator, type Page } from '@playwright/test'
 
+const LONG_MEMBER_NAME = 'Maximiliana Featherstonehaugh-Montgomery'
 const VIEWPORTS = [
   { name: 'phone', width: 375, height: 812 },
   { name: 'tablet', width: 768, height: 1024 },
@@ -78,7 +79,43 @@ async function seedData(page: Page) {
   return organization.id as number
 }
 
-test('every page fits phone, tablet and desktop widths', async ({ page }, testInfo) => {
+/** A second person, in every department, so the member sheet has real content to lay out. */
+async function addTeammate(browser: Browser, owner: Page, orgId: number) {
+  const csrf = (await owner.context().cookies()).find((c) => c.name === 'listify_csrf')?.value ?? ''
+  const headers = { 'X-CSRF-Token': csrf }
+  const invitation = await owner.request.post(`/api/v1/organizations/${orgId}/invitations`, {
+    data: { role_key: 'department_manager', department_id: await firstDepartment(owner, orgId) },
+    headers,
+  })
+  expect(invitation.ok(), await invitation.text()).toBe(true)
+  const { link } = await invitation.json()
+
+  const context = await browser.newContext({ baseURL: new URL(owner.url()).origin })
+  const teammate = await context.newPage()
+  await teammate.goto('/register')
+  await teammate.getByLabel('Full name').fill(LONG_MEMBER_NAME)
+  await teammate.getByLabel('Email').fill(`long.name.${Date.now()}@example-company.com`)
+  await teammate.getByLabel('Password', { exact: true }).fill('correct horse battery staple')
+  await teammate.getByRole('checkbox').check()
+  await teammate.getByRole('button', { name: 'Create account' }).click()
+  await expect(teammate.getByRole('heading', { name: /^Welcome, / })).toBeVisible()
+  await teammate.goto(new URL(link).pathname)
+  await teammate.getByRole('button', { name: 'Accept invitation' }).click()
+  await expect(teammate.getByRole('heading', { level: 1, name: /Northwind/ })).toBeVisible()
+  await context.close()
+}
+
+async function firstDepartment(owner: Page, orgId: number) {
+  const departments = await owner.request.get(`/api/v1/organizations/${orgId}/departments`)
+  return (await departments.json())[0].id as number
+}
+
+async function expectNoSideScroll(element: Locator, label: string) {
+  const overflow = await element.evaluate((node) => node.scrollWidth - node.clientWidth)
+  expect(overflow, `${label} scrolls sideways`).toBeLessThanOrEqual(0)
+}
+
+test('every page fits phone, tablet and desktop widths', async ({ browser, page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'viewports are set explicitly in this test')
   test.setTimeout(240_000)
 
@@ -90,6 +127,7 @@ test('every page fits phone, tablet and desktop widths', async ({ page }, testIn
   await page.getByRole('button', { name: 'Create account' }).click()
   await expect(page.getByRole('heading', { name: 'Welcome, Mary!' })).toBeVisible()
   const orgId = await seedData(page)
+  await addTeammate(browser, page, orgId)
   const pages = [
     ...PAGES,
     { path: '/organizations/new', heading: 'Create an organization', name: 'org-new' },
@@ -128,5 +166,24 @@ test('every page fits phone, tablet and desktop widths', async ({ page }, testIn
     await expect(page.getByRole('dialog')).toBeVisible()
     await page.waitForTimeout(400)
     await page.screenshot({ path: `test-results/screens/responsive-${viewport.name}-panel.png` })
+
+    // The member sheet and its impact preview at this width.
+    await page.goto(`/org/${orgId}/members`)
+    await page.getByRole('button', { name: `Manage ${LONG_MEMBER_NAME}` }).click()
+    const sheet = page.getByRole('dialog', { name: LONG_MEMBER_NAME })
+    await expect(sheet).toBeVisible()
+    await page.waitForTimeout(400)
+    await expectNoSideScroll(sheet, `member sheet at ${viewport.width}px`)
+    await page.screenshot({
+      path: `test-results/screens/responsive-${viewport.name}-member-sheet.png`,
+    })
+    await sheet.getByRole('button', { name: 'Remove from organization' }).click()
+    const dialog = page.getByRole('dialog', { name: /^Remove / })
+    await expect(dialog.getByText('Personal tasks')).toBeVisible()
+    await page.waitForTimeout(400)
+    await expectNoSideScroll(dialog, `impact preview at ${viewport.width}px`)
+    await page.screenshot({
+      path: `test-results/screens/responsive-${viewport.name}-member-impact.png`,
+    })
   }
 })

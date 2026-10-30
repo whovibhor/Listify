@@ -4,7 +4,7 @@ Task and work management for individuals and organizations: a private **Personal
 
 - Requirements: [`docs/WorkPulse_BRD_v1.docx`](docs/WorkPulse_BRD_v1.docx), [`docs/WorkPulse_PRD_v1.docx`](docs/WorkPulse_PRD_v1.docx)
 - Analysis and plan: [`docs/requirements-analysis.md`](docs/requirements-analysis.md), [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md), [`docs/architecture-decisions.md`](docs/architecture-decisions.md)
-- Status: **Phases 0–3 complete (foundation, accounts, personal workspace, organizations); Phase 4 (roles & permissions) next.** What's done and pending, feature by feature: [`docs/feature-status.md`](docs/feature-status.md). Phase tracker: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md) · history: [`docs/development-log.md`](docs/development-log.md).
+- Status: **Phases 0–4 complete (foundation, accounts, personal workspace, organizations, roles & member management); Phase 5 (Department Work Boards) next.** What's done and pending, feature by feature: [`docs/feature-status.md`](docs/feature-status.md). Phase tracker: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md) · history: [`docs/development-log.md`](docs/development-log.md).
 
 ## Repository layout
 

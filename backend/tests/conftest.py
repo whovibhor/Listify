@@ -13,9 +13,13 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.common.mailer import OutboxMailer, get_mailer
 from app.core.config import BACKEND_DIR, Settings, get_settings
+from app.db.base import Base
 from app.db.session import build_engine, get_db
 from app.main import create_app
 from app.modules.auth.tokens import CSRF_COOKIE, CSRF_HEADER
+
+# Migration-seeded reference data stays between tests; only user data is cleared.
+SEEDED_TABLES = {"roles", "permissions", "role_permissions"}
 
 
 @pytest.fixture
@@ -68,17 +72,11 @@ def db_sessionmaker(test_engine: Engine) -> Iterator[sessionmaker[Session]]:
     factory = sessionmaker(bind=test_engine, autoflush=False, expire_on_commit=False)
     yield factory
     with test_engine.begin() as connection:
-        tables = connection.execute(
-            text(
-                "SELECT table_name FROM information_schema.tables "
-                "WHERE table_schema = DATABASE() AND table_name NOT IN "
-                # Migration-seeded reference data stays; only user data is cleared.
-                "('alembic_version', 'roles', 'permissions', 'role_permissions')"
-            )
-        ).scalars()
         connection.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-        for table in tables:
-            connection.execute(text(f"TRUNCATE TABLE `{table}`"))
+        # DELETE, not TRUNCATE: TRUNCATE recreates each table, which costs about a second per test.
+        for table in Base.metadata.sorted_tables:
+            if table.name not in SEEDED_TABLES:
+                connection.execute(table.delete())
         connection.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
 
 

@@ -1,5 +1,47 @@
 # Listify — Development Log
 
+## 2026-10-30 — Phase 4 complete: roles, permissions and member management
+
+### Requested by the owner
+Start Phase 4.
+
+### Changes
+- **Backend:** `memberships/policies.py` (who may change whom) and `memberships/management.py` (roles, suspend, reactivate, remove, transfer, add/leave department, ownership, impact preview). `MemberRead` gained `actions`; the directory gained a `status` filter. No migration: the Phase 3 tables already hold all of this. Rules are in ADR-026.
+- **Frontend:** a member panel on the Members page with role, impact-preview and ownership dialogs; department names on role chips; a status filter; activity-log wording for every new action. A 403 or 404 from an organization request now reloads the user's organizations, so a page left open follows a change in access.
+- **Tests:** added a role × permission matrix (23 actions × 5 roles). Test cleanup moved from `TRUNCATE` to `DELETE`, which more than halved run time.
+
+### Tests executed (all actually run)
+| Suite | Result |
+|---|---|
+| Backend pytest (real MySQL) | **300 passed** (167 new, 115 of them the matrix) |
+| Frontend Vitest | **74 passed** (12 new) |
+| Playwright E2E | **19 passed, 1 skipped by design**. New: two-person journey through roles, departments, suspension on an open page, reactivation, ownership and removal; axe scans of the member panel and dialogs, including dark mode; panel and preview added to the 3-width responsive check |
+| Ruff, ESLint, Prettier, `tsc -b`, `vite build` | passed; no warnings |
+| `npm audit --omit=dev` | 0 vulnerabilities |
+| `alembic check` | clean; no schema change |
+| Visual review | member list, member panel and impact preview at phone and desktop widths |
+| Running dev servers | new routes present, 401 when signed out, health OK. The flows themselves were exercised by Playwright on `listify_test`, not on the development database |
+
+### Defects found and fixed during the phase
+- The shared red failed WCAG contrast on red buttons in both themes (4.33:1 light, 4.25:1 dark). No earlier scan had a red button on screen. Fixed at the token, so every red button benefits.
+- On phones, a long name in a dialog title ran under the close button, and the dialog focused the reason box, which would open the keyboard over the impact preview.
+- Member rows repeated the department name when a role chip already showed it.
+- `catalog.py` pointed at `tests/test_permissions.py`, which didn't exist. The file now exists and holds the seed check.
+
+### Decisions worth checking
+- A transfer is approved by the administrator who confirms it; there's no second approver.
+- Department Managers can't suspend, move or re-role people, following ADR-011.
+- There's no way yet for a member to leave an organization by themselves; an administrator has to remove them.
+
+### Known limitations
+- The impact preview has no task or update-request counts, because organization tasks don't exist until Phase 5. Reassignment of a departing member's tasks arrives with them.
+- People aren't told when their access changes until notifications arrive in Phase 6; they see the result on their next click.
+- The row lock has no automated concurrency test; the tests run one request at a time.
+- CI result unverified: GitHub has commit `3f22af5`, but `gh` isn't installed here, so no run could be checked. The local Phase 3 commit `248d1f2` isn't pushed, and Phase 4 isn't committed.
+
+### Next
+**Phase 5 — Department Work Boards.**
+
 ## 2026-10-30 — Phase 3 complete: organizations, departments & membership; rename; borderless cards
 
 ### Requested by the owner

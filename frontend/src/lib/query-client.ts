@@ -1,7 +1,7 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 
 import { ApiError } from '@/lib/api-client'
-import { ME_QUERY_KEY } from '@/lib/query-keys'
+import { ME_QUERY_KEY, MY_ORGANIZATIONS_QUERY_KEY } from '@/lib/query-keys'
 
 const MAX_RETRIES = 2
 
@@ -16,9 +16,27 @@ export function createQueryClient() {
     if (isUnauthenticated(error)) client.setQueryData(ME_QUERY_KEY, null)
   }
 
+  // A 403 or 404 can mean an administrator just changed this person's access while the page was
+  // open: reload what they may do, so navigation and OrganizationLayout follow (PRD §13).
+  const onAccessError = (error: unknown) => {
+    if (error instanceof ApiError && (error.status === 403 || error.status === 404)) {
+      void client.invalidateQueries({ queryKey: MY_ORGANIZATIONS_QUERY_KEY })
+    }
+  }
+
   const client: QueryClient = new QueryClient({
-    queryCache: new QueryCache({ onError: onAuthError }),
-    mutationCache: new MutationCache({ onError: onAuthError }),
+    queryCache: new QueryCache({
+      onError: (error, query) => {
+        onAuthError(error)
+        if (query.queryKey[0] === MY_ORGANIZATIONS_QUERY_KEY[0]) onAccessError(error)
+      },
+    }),
+    mutationCache: new MutationCache({
+      onError: (error) => {
+        onAuthError(error)
+        onAccessError(error)
+      },
+    }),
     defaultOptions: {
       queries: {
         staleTime: 30_000,

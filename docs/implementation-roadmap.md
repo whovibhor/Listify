@@ -14,8 +14,8 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 | 1 | Accounts & sign-in | ✅ Complete | 2026-10-29 |
 | 2 | Personal workspace | ✅ Complete | 2026-10-29 |
 | 3 | Organizations, departments & membership | ✅ Complete | 2026-10-30 |
-| 4 | Roles & permissions | 🚧 Next | — |
-| 5 | Department Work Boards | ⏳ Planned | — |
+| 4 | Roles & permissions | ✅ Complete | 2026-10-30 |
+| 5 | Department Work Boards | 🚧 Next | — |
 | 6 | Collaboration (comments, update requests, attachments, inbox) | ⏳ Planned | — |
 | 7 | Dashboards & reporting | ⏳ Planned | — |
 | 8 | Reminders & scheduled notifications | ⏳ Planned | — |
@@ -40,7 +40,7 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 - [x] Protected pages redirect to sign-in and return you where you were
 - [x] Brute-force protection (rate limits) on sign-in, registration, password reset and password change
 - [x] End-to-end browser tests (Playwright, desktop + mobile, with axe accessibility scans)
-- [x] GitHub Actions CI workflow written — **not yet executed** (the repository has no GitHub remote)
+- [x] GitHub Actions CI workflow written — **a passing run not yet confirmed** (the repository is now on GitHub)
 - Deferred: avatar upload (needs file storage, Phase 6); notification preferences (Phase 8); changing email address (not in the PRD)
 
 ### Phase 2 — Personal workspace ✅
@@ -63,12 +63,13 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 - [x] Members list; audit log of membership changes
 - Note: invitation emails use the development mailer (written to the backend log) until SMTP arrives in Phase 8. People see the outcome of their request on the Join page; in-app notifications arrive in Phase 6.
 
-### Phase 4 — Roles & permissions
+### Phase 4 — Roles & permissions ✅
 - [x] Predefined roles: Owner, Admin, Department Manager, Team Lead, Member (delivered early, needed by Phase 3)
 - [x] Navigation shows only what your role allows; the API enforces every rule (delivered early)
-- [ ] Change a member's role (with confirmation); department-scoped roles after joining
-- [ ] Suspend, reactivate, remove and transfer members with an impact preview
-- [ ] Add members to additional departments; transfer ownership
+- [x] Change a member's role (with confirmation); department-scoped roles after joining
+- [x] Suspend, reactivate, remove and transfer members with an impact preview
+- [x] Add members to additional departments; transfer ownership
+- Note: the impact preview covers departments, roles, departments left without a manager and waiting join requests. Task and update-request counts join it in Phases 5 and 6, when those records exist. Telling people about changes to their access arrives with notifications in Phase 6.
 
 ### Phase 5 — Department Work Boards
 - [ ] Department board in Kanban (drag-and-drop), List and Calendar views
@@ -76,6 +77,8 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 - [ ] Filters: assignee, creator, priority, status, due date, tags, overdue (kept in the URL)
 - [ ] Organization "My Work" and "Team Tasks" views; search
 - [ ] Visibility rules: Private / Department / Selected users / Organization
+- [ ] Impact preview counts open assigned tasks; suspended or removed assignees' tasks are flagged for reassignment
+- [ ] Task permissions added to the role × permission matrix test
 
 ### Phase 6 — Collaboration
 - [ ] Comments (edit/delete your own) and full activity timeline on tasks
@@ -159,7 +162,7 @@ Why this order: tasks core (M2) is built once in personal scope, then extended w
 ## M4 — Roles and permissions
 
 - **User sees:** Member detail with role chips, Change role dialog (confirmation), Suspend/Remove/Transfer with impact preview (open assigned tasks, pending update requests), navigation items appear only when permitted.
-- **Backend:** complete `modules/permissions` (ADR-010/011): effective-permission resolver incl. department-scoped roles, route dependencies, policy functions; `GET /organizations/{org}/me/permissions` for UI gating; `PATCH .../members/{id}/roles`, `POST .../members/{id}/suspend|reactivate|remove|transfer`.
+- **Backend:** complete `modules/permissions` (ADR-010/011): effective-permission resolver incl. department-scoped roles, route dependencies, policy functions; UI gating through `/me/organizations` (delivered in Phase 3, so no separate `me/permissions` route) and each member's `actions`; `PATCH .../members/{id}/roles`, `POST .../members/{id}/suspend|reactivate|remove|transfer`.
 - **Tests:** parametrized role × permission matrix against real endpoints; owner-only actions; admin cannot demote owner; dept manager limited to own department; suspended member's existing session gets 404/403 on next call (PRD §13.1); transfer revokes old department access unless another path exists.
 
 ## M5 — Department Work Boards

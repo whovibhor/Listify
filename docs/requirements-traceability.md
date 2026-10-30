@@ -63,9 +63,9 @@ Milestones (M0–M9) are defined in `implementation-roadmap.md`. Status values: 
 | FR-ORG-04 | P0 | Request membership; pending = no access | M3 | `test_pending_request_grants_nothing_until_approved` | Done |
 | FR-ORG-05 | P0 | Choose department; only open active depts | M3 | `test_only_open_active_departments_can_be_requested`, `test_department_is_required_when_some_are_open` | Done |
 | FR-ORG-06 | P0 | Approve/reject/amend atomically | M3 | `test_approval_is_atomic`, `test_approver_can_amend_department_and_role` | Done |
-| FR-ORG-07 | P1 | Suspend/remove member; prompt revocation | M4 | `test_suspended_member_requests_fail` | Planned |
-| FR-ORG-08 | P1 | Department transfer | M4 | `test_transfer_revokes_old_dept` | Planned |
-| PRD §5.4 | P0 | Permission-based RBAC, predefined roles | M3 (roles, checks), M4 (role changes) | `test_seeded_roles_match_the_code_catalog`, `test_members_cannot_administer`; `test_role_matrix_*` (M4) | In progress |
+| FR-ORG-07 | P1 | Suspend/remove member; prompt revocation | M4 | `test_suspended_member_requests_fail`, `test_removing_revokes_access_and_keeps_history`, `e2e/organizations.spec.ts` | Done |
+| FR-ORG-08 | P1 | Department transfer | M4 | `test_transfer_revokes_old_dept`, `test_transfer_leaves_org_wide_access_in_place` | Done |
+| PRD §5.4 | P0 | Permission-based RBAC, predefined roles | M3 (roles, checks), M4 (role changes) | `test_seeded_roles_match_the_code_catalog`, `test_role_permission_matrix` (task permissions join in M5) | Done |
 | PRD §5.5 | P0 | Work Boards: Kanban/List; filters; isolation | M5 | board tests | Planned |
 | PRD §5.5 | P1 | Calendar view | M5 | UI test | Planned |
 | PRD §5.6.1 | P0 | Task fields & validation | M2, M5 | schema tests | Planned |
@@ -77,7 +77,7 @@ Milestones (M0–M9) are defined in `implementation-roadmap.md`. Status values: 
 | PRD §5.8 | P1 | In-app notifications (no leakage) | M6, M8 | `test_notification_hidden_after_access_loss` | Planned |
 | PRD §5.6.1 | P1 | Attachments with per-download authz | M6 | `test_attachment_download_forbidden` | Planned |
 | PRD §5.9 | P0/P1 | Personal / dept / org / member dashboards | M2, M7 | metric fixture tests | Planned |
-| PRD §6.7 | P1 | Transfer/removal impact preview | M4 | `test_transfer_preview` | Planned |
+| PRD §6.7 | P1 | Transfer/removal impact preview | M4 (departments, roles, requests); M5/M6 (tasks, update requests, notifications) | `test_transfer_preview`, `test_preview_refuses_what_the_action_would_refuse` | Partly done |
 | PRD §7 | — | Switcher, task panel, states, confirmations, a11y | M0–M9 | RTL + Playwright | Planned |
 | PRD §13 | — | Edge cases 1–10 | M3–M8 | one test per edge case | Planned |
 

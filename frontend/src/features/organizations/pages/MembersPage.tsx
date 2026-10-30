@@ -1,39 +1,42 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
-import { ChevronLeftIcon, ChevronRightIcon, SearchIcon, UsersRoundIcon } from 'lucide-react'
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  SearchIcon,
+  Settings2Icon,
+  UsersRoundIcon,
+} from 'lucide-react'
 import { motion } from 'motion/react'
 
 import { NativeSelect } from '@/components/shared/NativeSelect'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState, ErrorState } from '@/components/shared/StatePanels'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { MemberAvatar } from '@/features/organizations/components/MemberAvatar'
+import { MemberSheet } from '@/features/organizations/components/MemberSheet'
 import { useDepartments, useMembers } from '@/features/organizations/api'
-import { can } from '@/features/organizations/permissions'
+import { can, roleLabel } from '@/features/organizations/permissions'
 import type { Member } from '@/features/organizations/types'
 import { useOrg } from '@/features/organizations/use-current-org'
 import { pageEnter } from '@/lib/motion'
+import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 25
 
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/)
-  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts.at(-1)?.[0] ?? '') : '')).toUpperCase()
-}
-
-function MemberRow({ member }: { member: Member }) {
+function MemberRow({ member, onManage }: { member: Member; onManage: () => void }) {
   const roles = member.roles.filter((role) => role.key !== 'member' || member.roles.length === 1)
+  // A department role's chip already names its department.
+  const departments = member.departments.filter(
+    (department) => !roles.some((role) => role.department_id === department.id),
+  )
   return (
     <li className="flex flex-col gap-2 rounded-xl bg-card p-3 shadow-card sm:flex-row sm:items-center sm:gap-4">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Avatar className="size-10">
-          <AvatarFallback className="bg-secondary text-sm font-semibold text-secondary-foreground">
-            {initials(member.name)}
-          </AvatarFallback>
-        </Avatar>
+        <MemberAvatar name={member.name} />
         <div className="min-w-0">
           <p className="truncate font-medium">{member.name}</p>
           <p className="truncate text-sm text-muted-foreground">
@@ -45,9 +48,11 @@ function MemberRow({ member }: { member: Member }) {
       <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
         {member.status === 'suspended' ? <Badge variant="destructive">Suspended</Badge> : null}
         {roles.map((role) => (
-          <Badge key={`${role.key}-${role.department_id}`}>{role.name}</Badge>
+          <Badge key={`${role.key}-${role.department_id}`}>
+            {roleLabel(role, member.departments)}
+          </Badge>
         ))}
-        {member.departments.map((department) => (
+        {departments.map((department) => (
           <Badge key={department.id} variant="secondary">
             {department.name}
           </Badge>
@@ -55,6 +60,18 @@ function MemberRow({ member }: { member: Member }) {
         <span className="text-xs text-muted-foreground sm:ml-2">
           Joined {format(new Date(member.joined_at), 'd MMM yyyy')}
         </span>
+        {member.actions.length > 0 ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="sm:ml-1"
+            aria-label={`Manage ${member.name}`}
+            onClick={onManage}
+          >
+            <Settings2Icon data-icon="inline-start" />
+            Manage
+          </Button>
+        ) : null}
       </div>
     </li>
   )
@@ -65,11 +82,14 @@ export function MembersPage() {
   const [text, setText] = useState('')
   const [q, setQ] = useState('')
   const [departmentId, setDepartmentId] = useState('')
+  const [status, setStatus] = useState<'' | 'active' | 'suspended'>('')
   const [page, setPage] = useState(1)
+  const [managingId, setManagingId] = useState<number | null>(null)
   const { data: departments = [] } = useDepartments(org.id)
   const { data, isPending, isError, error, refetch } = useMembers(org.id, {
     q: q || undefined,
     department_id: departmentId ? Number(departmentId) : undefined,
+    status: status || undefined,
     page,
     page_size: PAGE_SIZE,
   })
@@ -83,7 +103,9 @@ export function MembersPage() {
   }, [text])
 
   const pageCount = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
-  const seesEveryone = can(org, 'member.manage') || can(org, 'member.approve')
+  const managesMembers = can(org, 'member.manage')
+  const seesEveryone = managesMembers || can(org, 'member.approve')
+  const managing = data?.items.find((member) => member.membership_id === managingId) ?? null
 
   return (
     <motion.div {...pageEnter} className="space-y-5">
@@ -93,7 +115,14 @@ export function MembersPage() {
           seesEveryone ? 'Everyone in this organization.' : 'People in your departments.'
         }
       />
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_14rem]">
+      <div
+        className={cn(
+          'grid grid-cols-1 gap-2',
+          managesMembers
+            ? 'sm:grid-cols-[minmax(0,1fr)_12rem_10rem]'
+            : 'sm:grid-cols-[minmax(0,1fr)_14rem]',
+        )}
+      >
         <div className="relative">
           <SearchIcon
             aria-hidden
@@ -124,6 +153,20 @@ export function MembersPage() {
             </option>
           ))}
         </NativeSelect>
+        {managesMembers ? (
+          <NativeSelect
+            aria-label="Filter by status"
+            value={status}
+            onChange={(event) => {
+              setStatus(event.target.value as typeof status)
+              setPage(1)
+            }}
+          >
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+          </NativeSelect>
+        ) : null}
       </div>
 
       {isPending ? (
@@ -143,7 +186,11 @@ export function MembersPage() {
         <>
           <ul className="space-y-2">
             {data.items.map((member) => (
-              <MemberRow key={member.membership_id} member={member} />
+              <MemberRow
+                key={member.membership_id}
+                member={member}
+                onManage={() => setManagingId(member.membership_id)}
+              />
             ))}
           </ul>
           {pageCount > 1 ? (
@@ -175,6 +222,7 @@ export function MembersPage() {
           ) : null}
         </>
       )}
+      {managing ? <MemberSheet member={managing} onClose={() => setManagingId(null)} /> : null}
     </motion.div>
   )
 }

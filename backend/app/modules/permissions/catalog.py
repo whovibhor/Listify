@@ -85,5 +85,5 @@ ROLES: dict[str, tuple[str, str, str, frozenset[str]]] = {
     ),
 }
 
-# Owner is only ever granted by creating the organization (ownership transfer: Phase 4).
+# Owner is only ever granted by creating the organization or by transferring ownership.
 ASSIGNABLE_ROLES = (MEMBER, TEAM_LEAD, DEPARTMENT_MANAGER, ADMIN)

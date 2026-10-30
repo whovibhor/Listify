@@ -1,6 +1,6 @@
 # Listify — Database Design
 
-Status: **Phase 3 schema applied** (head revision `fa2cb7581b65`). Databases: `listify` (development) and `listify_test` (automated tests and E2E).
+Status: **Phase 3 schema applied** (head revision `fa2cb7581b65`; Phase 4 needed no schema change). Databases: `listify` (development) and `listify_test` (automated tests and E2E).
 
 ## Server and conventions
 
@@ -55,6 +55,8 @@ Enums are stored as VARCHAR + CHECK (not native `ENUM`) so later phases can add 
 | `membership_requests` | `organization_id`, `user_id`, `requested_department_id`, `job_title`, `note`, `status`, `pending_user_id`, review fields | composite FK; unique (`organization_id`, `pending_user_id`) | `pending_user_id` is a stored generated column (`user_id` while pending, else NULL): MySQL has no partial unique index, so this makes "one pending request per person" a database guarantee. |
 | `organization_invitations` | `organization_id`, `email`, `token_hash`, `role_id`, `department_id`, `expires_at`, `accepted_at`, `accepted_by`, `revoked_at` | `token_hash` unique; composite FK | Only the SHA-256 of the token is stored. |
 | `audit_logs` | `organization_id`, `actor_id`, `action`, `target_type`, `target_id`, `details`, `created_at` | index (`organization_id`, `created_at`) | Append-only: the API has no update or delete. |
+
+**Phase 4 uses these tables as they are.** Suspending changes only `organization_memberships.status`, so roles and departments survive for reactivation. Removing sets `status = removed` and deletes the member's `membership_roles` and `department_memberships` rows, so the membership row and `audit_logs` stay as history and rejoining starts clean. Ownership is a role row: a transfer swaps Owner and Admin in one transaction. Member changes take a row lock on the organization, so two administrators can't race each other into an invalid state.
 
 **Persistence rule:** every piece of user-entered data lives in MySQL. The browser keeps only a cached copy of the theme (to avoid a flash on load; the account value wins) and URL state for filters. See `feature-status.md` for the table behind each feature.
 

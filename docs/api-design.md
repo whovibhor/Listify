@@ -81,11 +81,25 @@ All `/organizations/{id}/…` routes resolve an `OrgContext` from the URL plus a
 | GET | `/organizations/{id}/membership-requests?status=` | `member.approve` (any scope) | Department managers see their departments only. |
 | POST | `…/membership-requests/{id}/approve` | `member.approve` for the target department; `role.assign` for non-Member roles | Body: `department_id` (amend), `role_key`. One transaction. Not `owner`. |
 | POST | `…/membership-requests/{id}/reject` | `member.approve` | Optional `note`, shown to the requester. |
-| GET | `/organizations/{id}/members?q=&department_id=&page=` | `member.view` | Admins/approvers: everyone. Others: their departments. |
+| GET | `/organizations/{id}/members?q=&department_id=&status=&page=` | `member.view` | Admins/approvers: everyone. Others: their departments. Each member carries `actions`, what the caller may do to them. |
 | POST / GET | `/organizations/{id}/invitations` | `member.manage` (+ `role.assign` for non-Member) | `email` optional (omit for a shareable link). `link` with the secret token is returned once only. Limit 50/h per user. |
 | DELETE | `…/invitations/{id}` | `member.manage` | Revoke a pending invitation. |
 | GET | `/invitations/{token}` · POST `/{token}/accept` | session | Preview / accept. Single-use; 400 `invitation_invalid`; 403 `invitation_email_mismatch`; 409 `already_member`. |
 | GET | `/organizations/{id}/audit-logs` | `organization.settings.update` | Paginated, read-only. |
+
+### Member management (Phase 4)
+
+`m` is a `membership_id`. Refusals: 404 for a member who isn't in this organization or was removed; 403 `forbidden` without the permission; 403 `owner_protected` when acting on the Owner; 403 `own_membership` for suspending, removing or re-roling yourself; 409 `member_state` when the member's status doesn't allow it. Rules: ADR-026.
+
+| Method | Path | Requires | Description |
+|---|---|---|---|
+| GET | `/organizations/{id}/members/{m}/impact?action=&from_department_id=&to_department_id=` | as the action | Preview for `suspend`, `remove`, `transfer`, `leave_department`. Applies the action's own checks and changes nothing. |
+| PATCH | `…/members/{m}/roles` | `role.assign` | Body is the complete result: `organization_role` (`member`\|`admin`), `department_roles[]`. A department role needs membership of that department. |
+| POST | `…/members/{m}/suspend` · `/remove` | `member.manage` | Optional `reason`, kept in the audit log. Remove answers 204. |
+| POST | `…/members/{m}/reactivate` | `member.manage` | Roles and departments return as they were. |
+| POST | `…/members/{m}/transfer` | `member.manage` | `from_department_id`, `to_department_id`. Roles limited to the old department end. 409 `already_in_department`. |
+| POST / DELETE | `…/members/{m}/departments` · `/{department_id}` | `member.manage` | Add to, or take out of, a department. |
+| POST | `/organizations/{id}/ownership-transfer` | Owner | `membership_id`, `password`. 204. 422 on a wrong password. Limit 10/h per user. |
 
 `UserRead` never includes password hashes, session tokens or internal flags. `TaskRead` includes server-computed `is_overdue` so every screen agrees on overdue state.
 
