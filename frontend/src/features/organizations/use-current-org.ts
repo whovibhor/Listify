@@ -6,7 +6,7 @@ import { useMyOrganizations } from '@/features/organizations/api'
 import type { MyOrganization } from '@/features/organizations/types'
 
 function isPersonalPath(pathname: string) {
-  return pathname === '/' || pathname.startsWith('/personal')
+  return pathname === '/' || pathname === '/inbox' || pathname.startsWith('/personal')
 }
 
 /** A fresh visit or sign-in to `/`, not someone choosing Personal: reopens the last workspace. */

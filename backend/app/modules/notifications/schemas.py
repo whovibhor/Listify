@@ -3,6 +3,8 @@ from typing import Any, Literal
 from app.common.schemas import ApiModel, UtcDateTime
 
 InboxFilter = Literal["all", "unread", "assignments", "update_requests"]
+# An organization's ID, "personal", or nothing for every workspace together.
+Workspace = int | Literal["personal"] | None
 
 
 class NotificationTask(ApiModel):
@@ -27,3 +29,5 @@ class NotificationRead(ApiModel):
 class InboxSummary(ApiModel):
     unread: int
     pending_update_requests: int
+    # What's waiting in the person's other workspaces, for the dot on the workspace button.
+    other_workspaces: int = 0

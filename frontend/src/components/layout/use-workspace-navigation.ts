@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 
 import { personalNavigation, type NavItem, type NavSection } from '@/components/layout/navigation'
-import { useInboxSummary } from '@/features/inbox/api'
+import { useWorkspaceInbox } from '@/features/inbox/use-workspace-inbox'
 import { useDepartments, useMembershipRequests } from '@/features/organizations/api'
 import { can, canAnywhere } from '@/features/organizations/permissions'
 import type { Department, MyOrganization } from '@/features/organizations/types'
@@ -48,7 +48,7 @@ function organizationSections(
     {
       items: [
         { label: 'Overview', to: base, icon: LayoutDashboardIcon, end: true },
-        { label: 'Inbox', to: '/inbox', icon: InboxIcon },
+        { label: 'Inbox', to: `${base}/inbox`, icon: InboxIcon },
         { label: 'Departments', to: `${base}/departments`, icon: Building2Icon, end: true },
         { label: 'Members', to: `${base}/members`, icon: UsersRoundIcon },
       ],
@@ -85,13 +85,14 @@ export function useWorkspaceNavigation(): NavSection[] {
     enabled: org ? canAnywhere(org, 'member.approve') : false,
   })
   const { data: departments = [] } = useDepartments(org?.id ?? 0, { enabled: org !== null })
-  const { data: inbox } = useInboxSummary()
+  const inbox = useWorkspaceInbox()
   const sections = org
     ? organizationSections(org, requests?.total ?? 0, departments)
     : personalNavigation
-  const waiting = (inbox?.unread ?? 0) + (inbox?.pending_update_requests ?? 0)
   return sections.map((section) => ({
     ...section,
-    items: section.items.map((item) => (item.to === '/inbox' ? { ...item, badge: waiting } : item)),
+    items: section.items.map((item) =>
+      item.to === inbox.path ? { ...item, badge: inbox.waiting } : item,
+    ),
   }))
 }

@@ -17,6 +17,7 @@ from app.modules.collaboration.schemas import (
     UpdateRequestRead,
     UpdateRequestRespond,
 )
+from app.modules.notifications.schemas import Workspace
 from app.modules.tasks import policies
 
 router = APIRouter(tags=["collaboration"])
@@ -140,5 +141,7 @@ def cancel_update(request_id: int, auth: CurrentAuth, db: DbSession) -> UpdateRe
 
 
 @router.get("/me/update-requests", response_model=list[PendingUpdateRequest])
-def my_update_requests(auth: CurrentAuth, db: DbSession) -> list[PendingUpdateRequest]:
-    return update_requests.list_pending_for_me(db, auth.user)
+def my_update_requests(
+    auth: CurrentAuth, db: DbSession, workspace: Workspace = None
+) -> list[PendingUpdateRequest]:
+    return update_requests.list_pending_for_me(db, auth.user, workspace)

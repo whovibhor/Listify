@@ -29,7 +29,7 @@ test('a team talks about a task, shares a file and asks for an update', async ({
   const taskPage = `/org/${orgId}/tasks?task=${task.id}`
 
   // The assignment reaches Amy's inbox, with a count on the bell.
-  await teammate.goto('/inbox')
+  await teammate.goto(`/org/${orgId}/inbox`)
   await expect(teammate.getByRole('link', { name: /Notifications, \d+ unread/ })).toBeVisible()
   await teammate.getByRole('button', { name: /assigned you a task/ }).click()
   const amyPanel = teammate.getByRole('dialog')
@@ -53,7 +53,7 @@ test('a team talks about a task, shares a file and asks for an update', async ({
   await expect(amyPanel.getByText('<b>Started</b> on this')).toBeVisible()
 
   // Olivia is told, downloads the real file, and asks for an update.
-  await owner.goto('/inbox')
+  await owner.goto(`/org/${orgId}/inbox`)
   await owner.getByRole('button', { name: /Amy Applicant commented/ }).click()
   const panel = owner.getByRole('dialog')
   await expect(panel.getByText('<b>Started</b> on this')).toBeVisible()
@@ -68,7 +68,7 @@ test('a team talks about a task, shares a file and asks for an update', async ({
   await expect(panel.getByText('Ready for Friday?')).toBeVisible()
 
   // Amy answers from the Inbox and changes the status at the same time.
-  await teammate.goto('/inbox')
+  await teammate.goto(`/org/${orgId}/inbox`)
   await teammate.getByRole('button', { name: 'Respond about Launch checklist' }).click()
   const respond = teammate.getByRole('dialog', { name: 'Respond to Olivia Owner' })
   await respond.getByLabel('Your update').fill('Yes, on track')
@@ -130,7 +130,7 @@ test('collaboration screens have no detectable accessibility violations', async 
     ).toEqual([])
   }
 
-  await teammate.goto('/inbox')
+  await teammate.goto(`/org/${orgId}/inbox`)
   await expect(teammate.getByRole('heading', { level: 1, name: 'Inbox' })).toBeVisible()
   await scan('inbox')
   await teammate.goto(`/org/${orgId}/tasks?task=${task.id}`)

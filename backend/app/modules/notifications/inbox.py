@@ -2,14 +2,21 @@
 
 from datetime import datetime
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import NotFoundError
 from app.db.base import utc_now
 from app.modules.collaboration.models import TaskUpdateRequest, UpdateRequestStatus
+from app.modules.memberships.models import MembershipStatus, OrganizationMembership
 from app.modules.notifications.models import Notification
-from app.modules.notifications.schemas import InboxFilter, InboxSummary, NotificationRead
+from app.modules.notifications.schemas import (
+    InboxFilter,
+    InboxSummary,
+    NotificationRead,
+    Workspace,
+)
+from app.modules.organizations.models import Organization, OrganizationStatus
 from app.modules.permissions.service import OrgContext, load_context
 from app.modules.tasks import policies
 from app.modules.tasks.models import Task
@@ -38,8 +45,44 @@ def visible_task_ids(db: Session, user: User, tasks: list[tuple[int, int]]) -> s
     return visible
 
 
-def _conditions(user: User, inbox_filter: InboxFilter) -> list:
-    conditions = [Notification.user_id == user.id]
+def _active_organizations(db: Session, user: User) -> list[int]:
+    return list(
+        db.scalars(
+            select(OrganizationMembership.organization_id)
+            .join(Organization, Organization.id == OrganizationMembership.organization_id)
+            .where(
+                OrganizationMembership.user_id == user.id,
+                OrganizationMembership.status == MembershipStatus.ACTIVE,
+                Organization.status == OrganizationStatus.ACTIVE,
+            )
+        )
+    )
+
+
+def _workspace_conditions(db: Session, user: User, workspace: Workspace) -> list:
+    """Notices from an organization the person can't open any more belong to Personal.
+
+    Otherwise someone removed or turned down could never read why.
+    """
+    if workspace is None:
+        return []
+    active = _active_organizations(db, user)
+    if workspace == "personal":
+        if not active:
+            return []
+        return [
+            or_(
+                Notification.organization_id.is_(None),
+                Notification.organization_id.not_in(active),
+            )
+        ]
+    if workspace not in active:
+        raise NotFoundError("Organization not found.")
+    return [Notification.organization_id == workspace]
+
+
+def _conditions(db: Session, user: User, inbox_filter: InboxFilter, workspace: Workspace) -> list:
+    conditions = [Notification.user_id == user.id, *_workspace_conditions(db, user, workspace)]
     if inbox_filter == "unread":
         conditions.append(Notification.read_at.is_(None))
     elif inbox_filter == "assignments":
@@ -50,9 +93,15 @@ def _conditions(user: User, inbox_filter: InboxFilter) -> list:
 
 
 def list_inbox(
-    db: Session, user: User, inbox_filter: InboxFilter, *, offset: int, limit: int
+    db: Session,
+    user: User,
+    inbox_filter: InboxFilter,
+    *,
+    workspace: Workspace = None,
+    offset: int,
+    limit: int,
 ) -> tuple[list[NotificationRead], int]:
-    conditions = _conditions(user, inbox_filter)
+    conditions = _conditions(db, user, inbox_filter, workspace)
     total = db.scalar(select(func.count()).select_from(Notification).where(*conditions)) or 0
     rows = db.scalars(
         select(Notification)
@@ -110,15 +159,23 @@ def list_inbox(
     return items, total
 
 
-def summary(db: Session, user: User) -> InboxSummary:
-    unread = (
-        db.scalar(
-            select(func.count())
-            .select_from(Notification)
-            .where(Notification.user_id == user.id, Notification.read_at.is_(None))
-        )
-        or 0
-    )
+def summary(db: Session, user: User, workspace: Workspace = None) -> InboxSummary:
+    active = _active_organizations(db, user)
+    if isinstance(workspace, int) and workspace not in active:
+        raise NotFoundError("Organization not found.")
+
+    def belongs(organization_id: int | None) -> bool:
+        if workspace is None:
+            return True
+        if workspace == "personal":
+            return organization_id not in active
+        return organization_id == workspace
+
+    unread_by_organization = db.execute(
+        select(Notification.organization_id, func.count())
+        .where(Notification.user_id == user.id, Notification.read_at.is_(None))
+        .group_by(Notification.organization_id)
+    ).all()
     pending = db.execute(
         select(Task.id, Task.organization_id)
         .join(TaskUpdateRequest, TaskUpdateRequest.task_id == Task.id)
@@ -128,8 +185,16 @@ def summary(db: Session, user: User) -> InboxSummary:
         )
     ).all()
     visible = visible_task_ids(db, user, [(row.id, row.organization_id) for row in pending])
+    waiting = [row.organization_id for row in pending if row.id in visible]
+    unread = sum(
+        count for organization_id, count in unread_by_organization if belongs(organization_id)
+    )
+    requests = sum(1 for organization_id in waiting if belongs(organization_id))
+    everything = sum(count for _, count in unread_by_organization) + len(waiting)
     return InboxSummary(
-        unread=unread, pending_update_requests=sum(1 for row in pending if row.id in visible)
+        unread=unread,
+        pending_update_requests=requests,
+        other_workspaces=everything - unread - requests,
     )
 
 
@@ -146,10 +211,14 @@ def mark_read(db: Session, user: User, notification_id: int, now: datetime | Non
         db.commit()
 
 
-def mark_all_read(db: Session, user: User) -> None:
+def mark_all_read(db: Session, user: User, workspace: Workspace = None) -> None:
     db.execute(
         update(Notification)
-        .where(Notification.user_id == user.id, Notification.read_at.is_(None))
+        .where(
+            Notification.user_id == user.id,
+            Notification.read_at.is_(None),
+            *_workspace_conditions(db, user, workspace),
+        )
         .values(read_at=utc_now())
     )
     db.commit()

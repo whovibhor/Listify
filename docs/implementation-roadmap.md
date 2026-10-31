@@ -18,7 +18,7 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 | 5 | Department Work Boards | ✅ Complete | 2026-10-30 |
 | 6 | Collaboration (comments, update requests, attachments, inbox) | ✅ Complete | 2026-10-30 |
 | 7 | Dashboards & reporting | ✅ Complete | 2026-10-30 |
-| UI | UI & journey rework (6 batches) | 🚧 In progress: Batch 1 done, Batch 2 next | — |
+| UI | UI & journey rework (6 batches) | 🚧 In progress: Batches 1 and 2 done, Batch 3 next | — |
 | 8 | Reminders & scheduled notifications | ⏳ After the rework | — |
 | Later | Agreed additions: time estimates, bulk actions, global search, recurring tasks and dependencies | ⏳ Planned | — |
 | 9 | Production readiness | ⏳ Planned | — |
@@ -113,11 +113,11 @@ Requested by the owner on 2026-10-31 after trying the app with sample data. Batc
 - [x] Last workspace reopens on a fresh visit or sign-in; Settings and Inbox stay in it
 - [x] Product renamed to Denote, including the MySQL databases
 
-**Batch 2 — Inbox per workspace**
-- [ ] Organization inbox at its own address, showing only that organization's notices
-- [ ] Personal inbox: personal notices, plus rejected, suspended and removed notices that have no organization page to open
-- [ ] Server filters lists, summary counts, update requests and Mark all as read by workspace; check whether `notifications` needs an index
-- [ ] Bell and sidebar count the current workspace; a dot on the header button shows unread in the other one
+**Batch 2 — Inbox per workspace ✅**
+- [x] Organization inbox at its own address, showing only that organization's notices
+- [x] Personal inbox: personal notices, plus rejected, suspended and removed notices that have no organization page to open
+- [x] Server filters lists, summary counts, update requests and Mark all as read by workspace; no new index needed (ADR-035)
+- [x] Bell and sidebar count the current workspace; a dot on the header button shows unread in the other one
 
 **Batch 3 — Department page**
 - [ ] Endpoint for a department summary that any member of the department can read, using `visible_tasks` so totals match the board and showing no per-person numbers

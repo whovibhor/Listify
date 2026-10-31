@@ -122,6 +122,25 @@ describe('header workspace button', () => {
   })
 })
 
+describe('waiting in another workspace', () => {
+  it("marks the workspace button, not this workspace's bell", async () => {
+    mockApi(
+      signedInRoutes({
+        'GET /me/organizations': [makeOrg()],
+        'GET /inbox/summary': { unread: 0, pending_update_requests: 0, other_workspaces: 4 },
+      }),
+    )
+    renderApp('/')
+
+    expect(
+      await screen.findByRole('link', {
+        name: 'Switch to Acme, new items waiting in another workspace',
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Notifications' })).toBeInTheDocument()
+  })
+})
+
 describe('Organizations settings', () => {
   it('lists your organizations and keeps Create and Join here', async () => {
     mockApi(signedInRoutes({ 'GET /me/organizations': [makeOrg()], ...orgRoutes }))
@@ -255,7 +274,7 @@ describe('sidebar', () => {
     mockApi(
       signedInRoutes({
         'GET /me': { ...testUser, sidebar_collapsed: true },
-        'GET /inbox/summary': { unread: 3, pending_update_requests: 0 },
+        'GET /inbox/summary': { unread: 3, pending_update_requests: 0, other_workspaces: 0 },
       }),
     )
     renderApp('/')

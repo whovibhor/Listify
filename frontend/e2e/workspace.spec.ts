@@ -18,9 +18,10 @@ test('the workspace stays where you left it', async ({ browser }, testInfo) => {
   await expect(page.getByRole('button', { name: 'Join or create organization' })).toHaveCount(0)
   await expect.poll(() => savedWorkspace(page)).toBe(orgId)
 
-  // The bell leads outside the workspace's address, but not out of the workspace.
+  // The bell opens this workspace's inbox, without leaving the workspace.
   await page.getByRole('link', { name: 'Notifications' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Inbox' })).toBeVisible()
+  expect(new URL(page.url()).pathname).toBe(`/org/${orgId}/inbox`)
   await expect(page.getByRole('link', { name: 'Switch to Personal' })).toBeVisible()
 
   // Coming back to the app reopens the organization.

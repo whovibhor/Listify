@@ -1,5 +1,8 @@
 export type InboxFilter = 'all' | 'unread' | 'assignments' | 'update_requests'
 
+/** An organization's ID, or Personal. */
+export type InboxWorkspace = number | 'personal'
+
 export interface InboxNotification {
   id: number
   type: string
@@ -16,6 +19,8 @@ export interface InboxNotification {
 export interface InboxSummary {
   unread: number
   pending_update_requests: number
+  /** What's waiting in the person's other workspaces. */
+  other_workspaces: number
 }
 
 /** "Mia assigned you", then the task title, or the whole sentence for membership changes. */

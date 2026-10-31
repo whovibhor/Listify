@@ -173,6 +173,9 @@ def test_inbox_costs_the_same_however_many_notifications_there_are(
     assert many == few
     assert many <= 14  # includes 2 to find what's shared with a non-Owner, once per request
 
+    scoped = cost(statements, lambda: team.eng.get("/api/v1/inbox", params={"workspace": team.id}))
+    assert scoped <= many + 1  # the workspace check
+
 
 def test_a_signed_in_request_stays_cheap(team: Team, statements: list[str]) -> None:
     assert cost(statements, lambda: team.owner.get("/api/v1/me")) <= 3

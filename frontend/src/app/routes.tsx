@@ -97,6 +97,12 @@ const organizationRoutes: RouteObject[] = [
         }),
       },
       {
+        path: 'inbox',
+        lazy: async () => ({
+          Component: (await import('@/features/inbox/pages/InboxPage')).InboxPage,
+        }),
+      },
+      {
         path: 'departments',
         lazy: async () => ({
           Component: (await import('@/features/organizations/pages/DepartmentsPage'))

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { BellIcon, CheckCheckIcon, ChevronLeftIcon, ChevronRightIcon, LockIcon } from 'lucide-react'
 import { motion } from 'motion/react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -17,6 +17,7 @@ import {
   describeNotification,
   type InboxFilter,
   type InboxNotification,
+  type InboxWorkspace,
 } from '@/features/inbox/types'
 import { errorText } from '@/lib/api-client'
 import { pageEnter } from '@/lib/motion'
@@ -32,16 +33,24 @@ const TABS: { value: InboxFilter; label: string }[] = [
 // These people aren't members now, so there's no organization page to open.
 const NO_PAGE = new Set(['membership_rejected', 'membership_removed', 'membership_suspended'])
 
-function link(item: InboxNotification) {
+function link(item: InboxNotification, workspace: InboxWorkspace) {
+  // Personal holds notices from organizations the person can't open any more.
+  if (workspace === 'personal') return null
   if (item.task) return `/org/${item.task.organization_id}/tasks?task=${item.task.id}`
   if (item.organization_id && !NO_PAGE.has(item.type)) return `/org/${item.organization_id}`
   return null
 }
 
-function NotificationRow({ item }: { item: InboxNotification }) {
+function NotificationRow({
+  item,
+  workspace,
+}: {
+  item: InboxNotification
+  workspace: InboxWorkspace
+}) {
   const navigate = useNavigate()
   const markRead = useMarkRead()
-  const target = link(item)
+  const target = link(item, workspace)
 
   const open = () => {
     if (!item.read) markRead.mutate(item.id)
@@ -88,8 +97,8 @@ function NotificationRow({ item }: { item: InboxNotification }) {
   )
 }
 
-function UpdatesToAnswer() {
-  const { data = [] } = useMyUpdateRequests()
+function UpdatesToAnswer({ workspace }: { workspace: InboxWorkspace }) {
+  const { data = [] } = useMyUpdateRequests(workspace)
   const [responding, setResponding] = useState<PendingUpdateRequest | null>(null)
   if (data.length === 0) return null
   return (
@@ -130,19 +139,29 @@ function UpdatesToAnswer() {
   )
 }
 
+/** One workspace's inbox: `/inbox` for Personal, `/org/:id/inbox` for an organization. */
 export function InboxPage() {
+  const organizationId = useParams().organizationId
+  const workspace: InboxWorkspace = organizationId ? Number(organizationId) : 'personal'
   const [filter, setFilter] = useState<InboxFilter>('all')
   const [page, setPage] = useState(1)
-  const { data, isPending, isError, error, refetch } = useInbox(filter, page)
-  const { data: summary } = useInboxSummary()
-  const markAll = useMarkAllRead()
+  const { data, isPending, isError, error, refetch } = useInbox(workspace, filter, page)
+  const { data: summary } = useInboxSummary(workspace)
+  const markAll = useMarkAllRead(workspace)
   const pageCount = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1
+  const personal = workspace === 'personal'
+  // Assignments and update requests only happen inside an organization.
+  const tabs = personal ? TABS.slice(0, 2) : TABS
 
   return (
     <motion.div {...pageEnter} className="mx-auto max-w-3xl space-y-5">
       <PageHeader
         title="Inbox"
-        description="Assignments, update requests and changes that involve you."
+        description={
+          personal
+            ? 'Updates about organizations you’ve left or asked to join.'
+            : 'Assignments, update requests and changes that involve you.'
+        }
         actions={
           summary && summary.unread > 0 ? (
             <Button
@@ -159,12 +178,12 @@ export function InboxPage() {
           ) : null
         }
       />
-      <UpdatesToAnswer />
+      <UpdatesToAnswer workspace={workspace} />
       <nav
         aria-label="Inbox filter"
         className="flex max-w-full flex-wrap gap-1 rounded-lg bg-muted p-1"
       >
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.value}
             type="button"
@@ -192,13 +211,17 @@ export function InboxPage() {
         <EmptyState
           icon={BellIcon}
           title={filter === 'unread' ? 'You’re all caught up' : 'Nothing here yet'}
-          description="New assignments, mentions and update requests will appear here."
+          description={
+            personal
+              ? 'Your organizations’ notices are in their own inboxes.'
+              : 'New assignments, mentions and update requests will appear here.'
+          }
         />
       ) : (
         <>
           <ul className="space-y-2">
             {data.items.map((item) => (
-              <NotificationRow key={item.id} item={item} />
+              <NotificationRow key={item.id} item={item} workspace={workspace} />
             ))}
           </ul>
           {pageCount > 1 ? (

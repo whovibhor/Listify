@@ -285,7 +285,7 @@ describe('inbox', () => {
   }
   const inboxRoutes = {
     'GET /inbox': emptyPage([item]),
-    'GET /inbox/summary': { unread: 1, pending_update_requests: 0 },
+    'GET /inbox/summary': { unread: 1, pending_update_requests: 0, other_workspaces: 0 },
     'GET /me/update-requests': [],
   }
 
@@ -293,7 +293,7 @@ describe('inbox', () => {
     const api = mockApi(
       signedInRoutes({ ...routes, ...inboxRoutes, 'POST /notifications/3/read': noContent }),
     )
-    const { user, router } = renderApp('/inbox')
+    const { user, router } = renderApp('/org/7/inbox')
     await user.click(await screen.findByRole('button', { name: /Lee Lead assigned you/ }))
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/org/7/tasks'))
@@ -312,16 +312,16 @@ describe('inbox', () => {
         'POST /notifications/3/read': noContent,
       }),
     )
-    const { user, router } = renderApp('/inbox')
+    const { user, router } = renderApp('/org/7/inbox')
     const row = await screen.findByRole('button', { name: /You no longer have access/ })
     expect(row).not.toHaveTextContent('Lee Lead')
     await user.click(row)
-    expect(router.state.location.pathname).toBe('/inbox')
+    expect(router.state.location.pathname).toBe('/org/7/inbox')
   })
 
   it('shows the unread count on the bell', async () => {
     mockApi(signedInRoutes({ ...routes, ...inboxRoutes }))
-    renderApp('/inbox')
+    renderApp('/org/7/inbox')
     expect(await screen.findByRole('link', { name: 'Notifications, 1 unread' })).toBeInTheDocument()
   })
 
@@ -341,19 +341,82 @@ describe('inbox', () => {
         'POST /notifications/read-all': noContent,
       }),
     )
-    const { user } = renderApp('/inbox')
+    const { user } = renderApp('/org/7/inbox')
     expect(await screen.findByText('Waiting for your update')).toBeInTheDocument()
     await user.click(await screen.findByRole('button', { name: 'Mark all as read' }))
-    await waitFor(() => expect(lastCall(api, 'POST', '/notifications/read-all')).toBeDefined())
+    await waitFor(() =>
+      expect(lastCall(api, 'POST', '/notifications/read-all')?.query.get('workspace')).toBe('7'),
+    )
   })
 
   it('filters by kind', async () => {
     const api = mockApi(signedInRoutes({ ...routes, ...inboxRoutes }))
-    const { user } = renderApp('/inbox')
+    const { user } = renderApp('/org/7/inbox')
     await user.click(await screen.findByRole('button', { name: 'Assignments' }))
     await waitFor(() =>
       expect(lastCall(api, 'GET', '/inbox')?.query.get('filter')).toBe('assignments'),
     )
+  })
+
+  it('asks only for this workspace', async () => {
+    const api = mockApi(signedInRoutes({ ...routes, ...inboxRoutes }))
+    renderApp('/org/7/inbox')
+
+    await screen.findByRole('button', { name: /Lee Lead assigned you/ })
+    expect(lastCall(api, 'GET', '/inbox')?.query.get('workspace')).toBe('7')
+    expect(lastCall(api, 'GET', '/inbox/summary')?.query.get('workspace')).toBe('7')
+    expect(lastCall(api, 'GET', '/me/update-requests')?.query.get('workspace')).toBe('7')
+  })
+
+  it('stays in the organization, with its sidebar, on the bell and the Inbox link', async () => {
+    mockApi(signedInRoutes({ ...routes, ...inboxRoutes }))
+    const { user, router } = renderApp('/org/7/tasks')
+
+    await user.click(await screen.findByRole('link', { name: 'Notifications, 1 unread' }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/org/7/inbox'))
+    expect(await screen.findByRole('link', { name: 'Switch to Personal' })).toBeInTheDocument()
+    const nav = screen.getAllByRole('navigation', { name: 'Main' })[0]
+    expect(within(nav).getByRole('link', { name: /team tasks/i })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: /inbox/i })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+
+  it('keeps Personal apart: no organization page to open from there', async () => {
+    const api = mockApi(
+      signedInRoutes({
+        ...routes,
+        ...inboxRoutes,
+        'GET /inbox': emptyPage([
+          {
+            ...item,
+            type: 'membership_approved',
+            task: null,
+            data: { organization_name: 'Old Org' },
+          },
+        ]),
+        'POST /notifications/3/read': noContent,
+      }),
+    )
+    const { user, router } = renderApp('/inbox')
+
+    await user.click(await screen.findByRole('button', { name: /join Old Org/ }))
+
+    await waitFor(() => expect(lastCall(api, 'POST', '/notifications/3/read')).toBeDefined())
+    expect(router.state.location.pathname).toBe('/inbox')
+    expect(lastCall(api, 'GET', '/inbox')?.query.get('workspace')).toBe('personal')
+    expect(screen.getByRole('link', { name: 'Switch to Acme' })).toBeInTheDocument()
+  })
+
+  it('offers only the filters that apply in Personal', async () => {
+    mockApi(signedInRoutes({ ...routes, ...inboxRoutes, 'GET /inbox': emptyPage() }))
+    renderApp('/inbox')
+
+    expect(await screen.findByRole('button', { name: 'Unread' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Assignments' })).not.toBeInTheDocument()
+    expect(await screen.findByText(/notices are in their own inboxes/)).toBeInTheDocument()
   })
 
   it('never falls back to raw type names', () => {

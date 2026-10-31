@@ -13,7 +13,14 @@ from app.modules.collaboration.models import TaskAttachment, TaskUpdateRequest
 from app.modules.notifications.models import Notification
 from app.modules.tasks.models import Task, TaskActivity
 from tests.conftest import ApiClient
-from tests.factories import create_task, register, request_to_join
+from tests.factories import (
+    create_org,
+    create_task,
+    departments_of,
+    join_as,
+    register,
+    request_to_join,
+)
 from tests.test_organization_tasks import Team
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
@@ -674,3 +681,116 @@ def test_update_requests_have_a_database_guard(team: Team, assigned: dict[str, A
     db.rollback()
     row = db.scalar(select(TaskUpdateRequest))
     assert row is not None and row.pending_recipient_id == team.ids["Eve Eng"]
+
+
+# --- Inbox per workspace -----------------------------------------------------------------------
+
+
+def second_organization(team: Team, client: ApiClient) -> int:
+    """Puts `client` in another organization, which leaves them one notice there."""
+    other_owner = team.person("Oscar Other")
+    other = create_org(other_owner, "Other Org", departments=("Ops",))
+    join_as(other_owner, client, other["id"], departments_of(other_owner, other["id"])["Ops"])
+    return other["id"]
+
+
+def summary(client: ApiClient, **params: Any) -> dict[str, int]:
+    response = client.get("/api/v1/inbox/summary", params=params)
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def test_each_organization_has_its_own_inbox(team: Team) -> None:
+    other = second_organization(team, team.eng)
+    team.eng_task(team.owner, assigned_to=team.ids["Eve Eng"])
+
+    assert types(team.eng, workspace=team.id) == ["assigned"]
+    assert types(team.eng, workspace=other) == ["membership_approved"]
+    assert types(team.eng, workspace="personal") == []
+    assert sorted(types(team.eng)) == ["assigned", "membership_approved"]
+
+
+def test_counts_cover_the_workspace_and_say_what_waits_elsewhere(team: Team) -> None:
+    other = second_organization(team, team.eng)
+    task = team.eng_task(team.owner, assigned_to=team.ids["Eve Eng"])
+    ask(team.lead, task, team.ids["Eve Eng"])
+
+    assert summary(team.eng, workspace=team.id) == {
+        "unread": 2,
+        "pending_update_requests": 1,
+        "other_workspaces": 1,
+    }
+    assert summary(team.eng, workspace=other) == {
+        "unread": 1,
+        "pending_update_requests": 0,
+        "other_workspaces": 3,
+    }
+    assert summary(team.eng, workspace="personal") == {
+        "unread": 0,
+        "pending_update_requests": 0,
+        "other_workspaces": 4,
+    }
+
+
+def test_mark_all_as_read_stays_in_its_workspace(team: Team) -> None:
+    other = second_organization(team, team.eng)
+    team.eng_task(team.owner, assigned_to=team.ids["Eve Eng"])
+
+    response = team.eng.post("/api/v1/notifications/read-all", params={"workspace": team.id})
+
+    assert response.status_code == 204
+    assert summary(team.eng, workspace=team.id)["unread"] == 0
+    assert summary(team.eng, workspace=other)["unread"] == 1
+
+
+def test_update_requests_are_listed_for_their_own_workspace(team: Team) -> None:
+    other = second_organization(team, team.eng)
+    task = team.eng_task(team.owner, assigned_to=team.ids["Eve Eng"])
+    ask(team.lead, task, team.ids["Eve Eng"])
+
+    def listed(workspace: int | str) -> int:
+        response = team.eng.get("/api/v1/me/update-requests", params={"workspace": workspace})
+        return len(response.json())
+
+    assert listed(team.id) == 1
+    assert listed(other) == 0
+    assert listed("personal") == 0
+
+
+def test_notices_from_a_lost_organization_move_to_personal(team: Team) -> None:
+    team.eng_task(team.owner, title="Confidential merger", assigned_to=team.ids["Eve Eng"])
+    member = f"{team.base}/members/{team.membership_ids['Eve Eng']}"
+
+    team.owner.post(f"{member}/suspend", json={})
+
+    response = team.eng.get("/api/v1/inbox", params={"workspace": "personal"})
+    assert {item["type"] for item in response.json()["items"]} == {
+        "assigned",
+        "membership_suspended",
+    }
+    assert "Confidential merger" not in response.text
+    assert summary(team.eng, workspace="personal")["unread"] == 2
+
+    team.owner.post(f"{member}/reactivate")
+    assert types(team.eng, workspace="personal") == []
+    assert "membership_suspended" in types(team.eng, workspace=team.id)
+
+
+def test_a_declined_applicant_reads_the_answer_in_personal(team: Team, person) -> None:
+    applicant = person("Dee Declined")
+    request = request_to_join(applicant, team.id, team.engineering).json()
+
+    team.owner.post(f"{team.base}/membership-requests/{request['id']}/reject", json={})
+
+    assert types(applicant, workspace="personal") == ["membership_rejected"]
+
+
+def test_an_inbox_is_only_open_to_members_of_that_workspace(team: Team, person) -> None:
+    stranger = person("Sue Stranger")
+    params = {"workspace": team.id}
+
+    assert stranger.get("/api/v1/inbox", params=params).status_code == 404
+    assert stranger.get("/api/v1/inbox/summary", params=params).status_code == 404
+    assert stranger.post("/api/v1/notifications/read-all", params=params).status_code == 404
+    assert stranger.get("/api/v1/me/update-requests", params=params).json() == []
+    assert stranger.get("/api/v1/inbox", params={"workspace": "nowhere"}).status_code == 422

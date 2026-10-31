@@ -150,10 +150,12 @@ Each route checks access to the task on every call, so anything tied to a task i
 | GET / POST | `/tasks/{id}/update-requests` | can view / `task.request_update` | `recipient_id` must be the assignee or a collaborator; optional `respond_by` date. 409 `update_request_pending`. |
 | POST | `/update-requests/{id}/respond` | the recipient | `response_note`, optional `status`. 409 `update_request_closed`. |
 | POST | `/update-requests/{id}/cancel` | the requester, or `task.request_update` | |
-| GET | `/me/update-requests` | session | Requests waiting for you, on tasks you can still see. |
-| GET | `/inbox?filter=` | session | `all`, `unread`, `assignments`, `update_requests`. A task you can't see comes back with `accessible: false` and no details. |
-| GET | `/inbox/summary` | session | `unread`, `pending_update_requests`. |
-| POST | `/notifications/{id}/read` · `/notifications/read-all` | session | Your own only. |
+| GET | `/me/update-requests?workspace=` | session | Requests waiting for you, on tasks you can still see. |
+| GET | `/inbox?filter=&workspace=` | session | `all`, `unread`, `assignments`, `update_requests`. A task you can't see comes back with `accessible: false` and no details. |
+| GET | `/inbox/summary?workspace=` | session | `unread`, `pending_update_requests`, and `other_workspaces` for what's waiting elsewhere. |
+| POST | `/notifications/{id}/read` · `/notifications/read-all?workspace=` | session | Your own only. |
+
+`workspace` is an organization ID or `personal`; leaving it out means every workspace. An organization you aren't an active member of answers 404, except `/me/update-requests`, which lists nothing. Notices from an organization you can no longer open count as `personal`.
 
 `UserRead` never includes password hashes, session tokens or internal flags. `TaskRead` includes server-computed `is_overdue` so every screen agrees on overdue state.
 

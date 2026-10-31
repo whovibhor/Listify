@@ -100,7 +100,7 @@ export function signedInRoutes(extra: Record<string, Handler | unknown> = {}) {
     'GET /me/tasks': emptyPage(),
     'GET /me/tags': [],
     'GET /me/organizations': [],
-    'GET /inbox/summary': { unread: 0, pending_update_requests: 0 },
+    'GET /inbox/summary': { unread: 0, pending_update_requests: 0, other_workspaces: 0 },
     ...extra,
   }
 }

@@ -281,7 +281,16 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 
 ## ADR-034 Remembering the workspace
 
-- **Three kinds of page.** `/org/:id/*` is that organization, and `/` and `/personal/*` are Personal. Everything else, such as Settings, belongs to neither and keeps the workspace in `user_preferences.last_organization_id`. Without this, those pages flipped the sidebar to Personal.
+- **Three kinds of page.** `/org/:id/*` is that organization, and `/`, `/inbox` and `/personal/*` are Personal. Everything else, such as Settings, belongs to neither and keeps the workspace in `user_preferences.last_organization_id`. Without this, those pages flipped the sidebar to Personal.
 - **The choice is saved in MySQL,** like the theme, so it follows the person to other devices. The server rejects an organization the person isn't an active member of, and the client still checks membership before using it, because they may have been removed since.
 - **`/` only redirects on a fresh visit or sign-in,** detected by React Router's `default` location key or `resumeWorkspace` state. A redirect on every visit would bounce people straight back out of Personal when they chose it. `useRememberWorkspace` skips saving during that moment, or it would overwrite the organization with Personal first.
 - **The sidebar names the current workspace.** The header button only offers the one you can swap to, so without this nothing would say where you are.
+
+## ADR-035 Inbox per workspace
+
+- **Each workspace has its own inbox** (owner's choice, over one shared inbox). `/org/:id/inbox` shows that organization's notices, and `/inbox` is Personal. The bell and sidebar count the workspace you're in.
+- **The filter is decided when reading, from who you are now.** Every notification records its organization, so nothing is stored about which inbox it belongs in. Notices from an organization you aren't an active member of appear in Personal, so someone removed, suspended or turned down can still read why. They move back if the membership returns. Task details stay hidden as before.
+- **Every notification today belongs to an organization,** because personal tasks don't create any. So Personal is usually empty for active members, and it offers only the All and Unread filters.
+- **`other_workspaces` drives a dot, not a number,** on the header button, so a badge in one workspace is never mistaken for that workspace's count.
+- **`workspace` is optional on the API,** and leaving it out means everything together. The app always sends it.
+- **No new index.** With 100,000 notices for one person, spread over two organizations, the list took about 1 ms and the counts at most 144 ms, using the existing indexes. Nobody should reach that size once Phase 8 cleans up old notifications.

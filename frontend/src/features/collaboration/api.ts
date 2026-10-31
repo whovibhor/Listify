@@ -7,6 +7,7 @@ import type {
   UpdateRequest,
 } from '@/features/collaboration/types'
 import { inboxKeys } from '@/features/inbox/api'
+import type { InboxWorkspace } from '@/features/inbox/types'
 import { invalidateTaskData, taskKeys } from '@/features/tasks/api'
 import type { TaskStatus } from '@/features/tasks/task-meta'
 import { api } from '@/lib/api-client'
@@ -15,7 +16,7 @@ export const collaborationKeys = {
   comments: (taskId: number) => ['tasks', 'comments', taskId] as const,
   attachments: (taskId: number) => ['tasks', 'attachments', taskId] as const,
   updates: (taskId: number) => ['tasks', 'update-requests', taskId] as const,
-  myUpdates: ['tasks', 'my-update-requests'] as const,
+  myUpdates: (workspace: InboxWorkspace) => ['tasks', 'my-update-requests', workspace] as const,
 }
 
 function refreshTask(queryClient: QueryClient, taskId: number) {
@@ -106,10 +107,10 @@ export function useUpdateRequests(taskId: number) {
   })
 }
 
-export function useMyUpdateRequests({ enabled = true } = {}) {
+export function useMyUpdateRequests(workspace: InboxWorkspace, { enabled = true } = {}) {
   return useQuery({
-    queryKey: collaborationKeys.myUpdates,
-    queryFn: () => api.get<PendingUpdateRequest[]>('/me/update-requests'),
+    queryKey: collaborationKeys.myUpdates(workspace),
+    queryFn: () => api.get<PendingUpdateRequest[]>('/me/update-requests', { query: { workspace } }),
     enabled,
   })
 }

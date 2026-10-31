@@ -173,6 +173,7 @@ test('every page fits phone, tablet and desktop widths', async ({ browser, page 
     { path: `/org/${orgId}/departments`, heading: 'Departments', name: 'org-departments' },
     { path: `/org/${orgId}/members`, heading: 'Members', name: 'org-members' },
     { path: '/inbox', heading: 'Inbox', name: 'inbox' },
+    { path: `/org/${orgId}/inbox`, heading: 'Inbox', name: 'org-inbox' },
     { path: `/org/${orgId}/my-work`, heading: 'My Work', name: 'org-my-work' },
     { path: `/org/${orgId}/tasks`, heading: 'Team Tasks', name: 'org-team-tasks' },
     { path: board, heading: departmentName, name: 'org-board' },

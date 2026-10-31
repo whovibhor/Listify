@@ -1,6 +1,6 @@
 # Denote — Feature Status
 
-**Last updated:** 2026-10-31 · **Current work:** UI & journey rework, Batch 2 (inbox per workspace) next · Phase 8 follows the rework
+**Last updated:** 2026-10-31 · **Current work:** UI & journey rework, Batch 3 (department page) next · Phase 8 follows the rework
 
 This is the single list of what is **done** and what is **pending**, feature by feature. It is updated every time a feature is completed or changed. A feature is marked ✅ only after it works end-to-end (UI → API → MySQL) and its tests have been run and passed. Detailed plans live in [`implementation-roadmap.md`](implementation-roadmap.md).
 
@@ -20,7 +20,7 @@ Legend: ✅ done · 🟡 partly done · ⏳ pending · ⏸ deferred (later relea
 | Department work boards (team tasks) | ✅ Done |
 | Comments, update requests, attachments, inbox | ✅ Done |
 | Team & organization dashboards | ✅ Done |
-| UI & journey rework | 🟡 In progress: Batch 1 of 6 done |
+| UI & journey rework | 🟡 In progress: Batches 1 and 2 of 6 done |
 | Reminders, notifications, email | ⏳ Pending (Phase 8) |
 | Production readiness (deploy, backups, monitoring) | ⏳ Pending (Phase 9) |
 
@@ -70,7 +70,7 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 | Organization settings: profile, searchable by name, require task review | `organizations` |
 | Departments: create, edit, archive/restore, open or closed to join requests | `departments` |
 | Header workspace button: one click between Personal and your organization, a list if you have several, role-based navigation | reads `organization_memberships`, `membership_roles` |
-| Reopens the workspace you last used; pages such as Settings and Inbox stay in it | `user_preferences` |
+| Reopens the workspace you last used; pages such as Settings stay in it | `user_preferences` |
 | Collapsible sidebar with an icon rail, saved to your account | `user_preferences` |
 | Create and Join: in the header until you've joined an organization, then only in Account settings > Organizations | reads `organization_memberships` |
 | Find an organization by name (only ones that opted in) | reads `organizations` |
@@ -122,9 +122,10 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 | File attachments up to 10 MB: PDF, images, text, CSV, Word, Excel, PowerPoint, ZIP. Drag and drop or pick files | `task_attachments`, files in `backend/storage/` |
 | Request an update from the assignee or a collaborator, with an optional answer-by date | `task_update_requests` |
 | Respond from the Inbox or the task, optionally changing the task's status | `task_update_requests`, `tasks` |
-| Inbox: All, Unread, Assignments and Update requests, plus a list of updates waiting for you | `notifications`, `task_update_requests` |
+| Inbox: All, Unread, Assignments and Update requests, plus a list of updates waiting for you. Each organization has its own inbox | `notifications`, `task_update_requests` |
+| Personal inbox: notices from organizations you've left, were turned down by or are suspended from | `notifications` |
 | Notifications for assignments, collaborators, comments, mentions, update requests, join decisions, and changes to your role, departments or membership | `notifications` |
-| Unread count on the bell and in the sidebar, refreshed every minute | reads `notifications` |
+| Unread count on the bell and in the sidebar for the current workspace, refreshed every minute, and a dot on the workspace button when another workspace has something waiting | reads `notifications` |
 | Items you can no longer see show "You no longer have access", with no task details | worked out when read |
 | Impact preview also counts update requests waiting for that person; removing them closes those requests | `task_update_requests` |
 
@@ -153,12 +154,6 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 
 ### UI & journey rework *(next)*
 The agreed plan, with the owner's decisions, is in [`implementation-roadmap.md`](implementation-roadmap.md). These existing features will change:
-
-**Batch 2: Inbox per workspace**
-- ⏳ Organization inbox with its own address, showing only that organization's notices
-- ⏳ Personal inbox for personal notices, plus rejected, suspended and removed notices
-- ⏳ Lists, unread counts, update requests and Mark all as read filtered by workspace
-- ⏳ Bell and sidebar show the current workspace; a dot on the header button shows unread in the other one
 
 **Batch 3: Department page**
 - ⏳ Full department page: description, managers, team totals, trend, and members with roles and job titles
@@ -226,6 +221,7 @@ The agreed plan, with the owner's decisions, is in [`implementation-roadmap.md`]
 ## Change log
 | Date | Change |
 |---|---|
+| 2026-10-31 | Inbox per workspace: each organization has its own inbox and counts, Personal keeps notices from organizations you can't open any more, and a dot shows when another workspace has something waiting. Clicking Inbox no longer jumps to Personal. |
 | 2026-10-31 | Renamed the product from Listify to Denote: interface, emails, cookies, logs, config, packages, docs and the MySQL databases (`denote`, `denote_test`). Everyone signs in once more. |
 | 2026-10-31 | App shell rework: System Status removed from Home, workspace button moved to the header, collapsible sidebar, new sidebar order, Create and Join moved to Account settings, last workspace remembered. |
 | 2026-10-31 | Sample data added to Shoolini University for hands-on testing: 16 more members and 131 tasks with history. See the README. |

@@ -16,6 +16,7 @@ from app.modules.collaboration.schemas import (
     UpdateRequestRespond,
 )
 from app.modules.notifications.inbox import visible_task_ids
+from app.modules.notifications.schemas import Workspace
 from app.modules.notifications.service import notify
 from app.modules.permissions.service import load_context
 from app.modules.tasks import organization as organization_tasks
@@ -191,9 +192,14 @@ def cancel(db: Session, user: User, request_id: int) -> UpdateRequestRead:
     return _to_read(request, access, user)
 
 
-def list_pending_for_me(db: Session, user: User) -> list[PendingUpdateRequest]:
+def list_pending_for_me(
+    db: Session, user: User, workspace: Workspace = None
+) -> list[PendingUpdateRequest]:
     """Filtered at read time: a request on a task they can no longer see simply isn't listed."""
-    requests = db.scalars(
+    # Requests only exist on organization tasks, so Personal never has any.
+    if workspace == "personal":
+        return []
+    statement = (
         select(TaskUpdateRequest)
         .where(
             TaskUpdateRequest.recipient_id == user.id,
@@ -201,7 +207,12 @@ def list_pending_for_me(db: Session, user: User) -> list[PendingUpdateRequest]:
         )
         .order_by(TaskUpdateRequest.created_at.desc())
         .limit(100)
-    ).all()
+    )
+    if workspace is not None:
+        statement = statement.join(Task, Task.id == TaskUpdateRequest.task_id).where(
+            Task.organization_id == workspace
+        )
+    requests = db.scalars(statement).all()
     tasks = {
         task.id: task
         for task in db.scalars(

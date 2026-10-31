@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useMe, useUpdatePreferences } from '@/features/auth/api'
-import { useInboxSummary } from '@/features/inbox/api'
+import { useWorkspaceInbox } from '@/features/inbox/use-workspace-inbox'
 import { primaryRoleLabel } from '@/features/organizations/permissions'
 import {
   useActiveOrganization,
@@ -97,8 +97,7 @@ function SidebarToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
 
 export function AppShell() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const { data: inbox } = useInboxSummary()
-  const unread = (inbox?.unread ?? 0) + (inbox?.pending_update_requests ?? 0)
+  const { path: inboxPath, waiting: unread } = useWorkspaceInbox()
   const { data: user } = useMe()
   const savePreferences = useUpdatePreferences()
   const active = useActiveOrganization()
@@ -191,7 +190,7 @@ export function AppShell() {
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" asChild>
                   <Link
-                    to="/inbox"
+                    to={inboxPath}
                     className="relative"
                     aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
                   >

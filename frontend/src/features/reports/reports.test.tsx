@@ -396,7 +396,10 @@ describe('Member summary', () => {
     renderApp(`/org/7/reports/members/${testUser.id}`)
 
     expect(await screen.findByText('Update requests')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /update requests/i })).toHaveAttribute('href', '/inbox')
+    expect(screen.getByRole('link', { name: /update requests/i })).toHaveAttribute(
+      'href',
+      '/org/7/inbox',
+    )
     expect(screen.getByRole('list', { name: 'Open tasks by department' })).toBeInTheDocument()
     expect(screen.queryByText('On-time rate')).toBeNull()
     expect(screen.getByText('These are counts of work.')).toBeInTheDocument()

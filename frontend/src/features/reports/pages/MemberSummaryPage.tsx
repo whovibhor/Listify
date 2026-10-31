@@ -105,7 +105,7 @@ export function MemberSummaryPage() {
                 value={data.counts.pending_update_requests}
                 icon={MessageCircleQuestionIcon}
                 definition={data.definitions.pending_update_requests}
-                to={data.is_self ? '/inbox' : undefined}
+                to={data.is_self ? `/org/${org.id}/inbox` : undefined}
               />
             </div>
           </div>

@@ -18,16 +18,40 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useWorkspaceInbox } from '@/features/inbox/use-workspace-inbox'
 import { useMyOrganizations } from '@/features/organizations/api'
 import type { MyOrganization } from '@/features/organizations/types'
 import { useActiveOrganization } from '@/features/organizations/use-current-org'
 
-function SwapLink({ to, icon: Icon, label }: { to: string; icon: LucideIcon; label: string }) {
+const WAITING_ELSEWHERE = ', new items waiting in another workspace'
+
+/** Says something is waiting in a workspace you're not looking at. */
+function WaitingDot() {
   return (
-    <Button variant="outline" size="sm" className="max-w-full min-w-0" asChild>
-      <Link to={to} aria-label={`Switch to ${label}`}>
+    <span
+      aria-hidden
+      className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-primary ring-2 ring-background"
+    />
+  )
+}
+
+function SwapLink({
+  to,
+  icon: Icon,
+  label,
+  waiting,
+}: {
+  to: string
+  icon: LucideIcon
+  label: string
+  waiting: boolean
+}) {
+  return (
+    <Button variant="outline" size="sm" className="relative max-w-full min-w-0" asChild>
+      <Link to={to} aria-label={`Switch to ${label}${waiting ? WAITING_ELSEWHERE : ''}`}>
         <Icon data-icon="inline-start" />
         <span className="truncate">{label}</span>
+        {waiting ? <WaitingDot /> : null}
       </Link>
     </Button>
   )
@@ -62,9 +86,11 @@ function StartOrganizationMenu() {
 function WorkspaceMenu({
   organizations,
   active,
+  waiting,
 }: {
   organizations: MyOrganization[]
   active: MyOrganization | null
+  waiting: boolean
 }) {
   const navigate = useNavigate()
   const current = active?.name ?? 'Personal'
@@ -74,8 +100,8 @@ function WorkspaceMenu({
         <Button
           variant="outline"
           size="sm"
-          className="max-w-full min-w-0"
-          aria-label={`Switch workspace, current: ${current}`}
+          className="relative max-w-full min-w-0"
+          aria-label={`Switch workspace, current: ${current}${waiting ? WAITING_ELSEWHERE : ''}`}
         >
           {active ? (
             <Building2Icon data-icon="inline-start" />
@@ -84,6 +110,7 @@ function WorkspaceMenu({
           )}
           <span className="truncate">{current}</span>
           <ChevronDownIcon data-icon="inline-end" />
+          {waiting ? <WaitingDot /> : null}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
@@ -119,16 +146,22 @@ function WorkspaceMenu({
 export function WorkspaceButton() {
   const { data: organizations } = useMyOrganizations()
   const active = useActiveOrganization()
+  const waiting = useWorkspaceInbox().otherWorkspaces > 0
 
   if (!organizations) return null
   if (organizations.length === 0) return <StartOrganizationMenu />
   if (organizations.length > 1) {
-    return <WorkspaceMenu organizations={organizations} active={active} />
+    return <WorkspaceMenu organizations={organizations} active={active} waiting={waiting} />
   }
   const organization = organizations[0]
   return active ? (
-    <SwapLink to="/" icon={UserRoundIcon} label="Personal" />
+    <SwapLink to="/" icon={UserRoundIcon} label="Personal" waiting={waiting} />
   ) : (
-    <SwapLink to={`/org/${organization.id}`} icon={Building2Icon} label={organization.name} />
+    <SwapLink
+      to={`/org/${organization.id}`}
+      icon={Building2Icon}
+      label={organization.name}
+      waiting={waiting}
+    />
   )
 }

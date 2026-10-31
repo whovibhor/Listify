@@ -1,5 +1,31 @@
 # Denote — Development Log
 
+## 2026-10-31 — UI rework, Batch 2: inbox per workspace
+
+### Requested by the owner
+Clicking Inbox in an organization jumped to the Personal workspace. The owner chose separate inboxes per workspace over one shared inbox.
+
+### Changes
+- **Pages:** `/org/:id/inbox` is the organization's inbox, and `/inbox` is Personal. The sidebar Inbox link, the bell and the Member summary tile all go to the current workspace's inbox.
+- **API:** `/inbox`, `/inbox/summary`, `/notifications/read-all` and `/me/update-requests` accept `workspace`. The summary gained `other_workspaces`. See ADR-035.
+- **Personal inbox:** shows notices from organizations the person can no longer open, so someone removed, suspended or turned down can still read why. They move back if the membership returns. Task details stay hidden.
+- **Counts:** the bell and sidebar show the current workspace, and a dot on the header button says another workspace has something waiting.
+- **Personal only offers All and Unread,** with its own empty message, because assignments and update requests only happen in organizations. Rows there no longer link to an organization page the person can't open.
+- **No new index:** with 100,000 notices for one person, the list took about 1 ms and counts at most 144 ms.
+
+### Checks (all actually run)
+| Check | Result |
+|---|---|
+| Backend tests | 656 passed |
+| Frontend tests | 144 passed |
+| Ruff, ESLint, Prettier, TypeScript, Alembic check | Clean |
+| E2E, desktop: collaboration and workspace specs | 4 passed |
+| Real app as Admin, Member and a suspended member | Inboxes add up, the dot appears, no details leak, nothing overflows on a phone, no errors |
+
+### Known limitations
+- The full E2E suite wasn't run, by the owner's rule for smaller changes. The responsive spec, which now includes the organization inbox, wasn't run either. The phone width was checked by hand.
+- Today every notification belongs to an organization, so Personal stays empty for active members.
+
 ## 2026-10-31 — Renamed from Listify to Denote
 
 ### Requested by the owner
