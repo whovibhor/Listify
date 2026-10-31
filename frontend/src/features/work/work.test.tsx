@@ -134,7 +134,7 @@ function renderBoard(tasks: Task[], extra: Record<string, unknown> = {}, boardOv
       ...extra,
     }),
   )
-  return { api, ...renderApp('/org/7/departments/3') }
+  return { api, ...renderApp('/org/7/boards/3') }
 }
 
 describe('department board', () => {
@@ -233,7 +233,7 @@ describe('department board', () => {
           ),
       }),
     )
-    renderApp('/org/7/departments/3')
+    renderApp('/org/7/boards/3')
     expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
   })
 
@@ -266,7 +266,7 @@ describe('list and calendar', () => {
         'GET /organizations/7/tasks': emptyPage([makeTask()]),
       }),
     )
-    const { user, router } = renderApp('/org/7/departments/3?layout=list')
+    const { user, router } = renderApp('/org/7/boards/3?layout=list')
     await user.click(await screen.findByRole('button', { name: 'Deadline' }))
 
     await waitFor(() => expect(router.state.location.search).toContain('sort=-due'))
@@ -285,7 +285,7 @@ describe('list and calendar', () => {
         'GET /organizations/7/tasks': emptyPage([task]),
       }),
     )
-    const { user } = renderApp('/org/7/departments/3?layout=calendar&month=2026-12')
+    const { user } = renderApp('/org/7/boards/3?layout=calendar&month=2026-12')
 
     const day = await screen.findByTestId('day-2026-12-01')
     expect(await within(day).findByRole('button', { name: /Late night/ })).toBeInTheDocument()
@@ -359,7 +359,7 @@ describe('task panel on organization work', () => {
         ...extra,
       }),
     )
-    return { api, ...renderApp('/org/7/departments/3?task=1') }
+    return { api, ...renderApp('/org/7/boards/3?task=1') }
   }
 
   it('shows who’s on the task and only archives, never deletes', async () => {
@@ -455,7 +455,7 @@ describe('My Work and Team Tasks', () => {
     expect(await within(nav).findByRole('link', { name: 'Team Tasks' })).toBeInTheDocument()
     expect(await within(nav).findByRole('link', { name: 'Engineering' })).toHaveAttribute(
       'href',
-      '/org/7/departments/3',
+      '/org/7/boards/3',
     )
   })
 })

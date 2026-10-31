@@ -110,7 +110,19 @@ const organizationRoutes: RouteObject[] = [
         }),
       },
       {
+        path: 'departments/members',
+        lazy: async () => ({
+          Component: (await import('@/features/organizations/pages/MembersPage')).MembersPage,
+        }),
+      },
+      {
         path: 'departments/:departmentId',
+        lazy: async () => ({
+          Component: (await import('@/features/organizations/pages/DepartmentPage')).DepartmentPage,
+        }),
+      },
+      {
+        path: 'boards/:departmentId',
         lazy: async () => ({
           Component: (await import('@/features/work/pages/DepartmentBoardPage'))
             .DepartmentBoardPage,
@@ -147,12 +159,7 @@ const organizationRoutes: RouteObject[] = [
           Component: (await import('@/features/reports/pages/MemberSummaryPage')).MemberSummaryPage,
         }),
       },
-      {
-        path: 'members',
-        lazy: async () => ({
-          Component: (await import('@/features/organizations/pages/MembersPage')).MembersPage,
-        }),
-      },
+      { path: 'members', element: <Navigate to="../departments/members" replace /> },
       {
         path: 'requests',
         lazy: async () => ({

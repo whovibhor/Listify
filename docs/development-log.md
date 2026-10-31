@@ -1,5 +1,33 @@
 # Denote — Development Log
 
+## 2026-10-31 — UI rework, Batch 3: department page
+
+### Requested by the owner
+Keep a department button in the sidebar, but make it open a full page with the department's summary and member details. Remove the separate Members button for everyone. Regular members see team totals, with no one person's numbers.
+
+### Changes
+- **Department page** at `/org/:id/departments/:id`: description, manager, team totals, 30-day trend, and members with roles and job titles. Backed by a new `/departments/{id}/summary` endpoint, open to the same people as the board. See ADR-036.
+- **Sidebar:** Owner and Admin keep Departments. Everyone else gets Department, which goes straight to their own page. Someone in two departments sees Departments and a switcher, and someone in none sees an empty state.
+- **Members item removed.** Owners and Admins use a new All members tab on Departments, because someone in no department would otherwise appear nowhere. `/org/:id/members` still works and redirects.
+- **Boards** moved to `/org/:id/boards/:id`. Old links with board settings are sent on, and the board gained a link back to its department.
+- **Not in the plan, needed so nobody loses anything:** Department Managers keep Edit and Archive, which now sit on their department page, because they no longer see the list where those buttons were.
+
+### Problems found while testing
+- A new test passed alone but failed in the full run, because it read the sidebar link the moment the redirect finished. It now waits for the link to update. Three full runs in a row then passed.
+
+### Checks (all actually run)
+| Check | Result |
+|---|---|
+| Backend tests | 661 passed |
+| Frontend tests | 158 passed |
+| Ruff, ESLint, Prettier, TypeScript, Alembic check | Clean |
+| Full E2E, desktop and mobile | 38 passed, 2 skipped by design. First complete run since the rework began, so it also covers Batches 1 and 2 |
+| Real app as Admin, Department Manager, Team Lead, Member and someone in two departments | Right buttons for each role, old links redirect, no sideways overflow from 320 to 1280 px, no errors |
+
+### Known limitations
+- Two people can see different totals for one department if one of them can't see a private task. This is deliberate, so totals always match their board.
+- A bare old board link, with no settings on it, now opens the department page instead of the board.
+
 ## 2026-10-31 — UI rework, Batch 2: inbox per workspace
 
 ### Requested by the owner

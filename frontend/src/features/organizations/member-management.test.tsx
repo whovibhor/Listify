@@ -109,9 +109,16 @@ describe('members list', () => {
         ...routes,
         'GET /me/organizations': [{ ...org, permissions: ['member.view'] }],
         'GET /organizations/7/members': emptyPage([{ ...mia, actions: [] }]),
+        'GET /organizations/7/departments/3/summary': {
+          department: department(3, 'Sales'),
+          managers: [],
+          counts: { open: 0, overdue: 0, blocked: 0, completed: 0, created: 0 },
+          trend: [],
+          definitions: {},
+        },
       }),
     )
-    renderApp('/org/7/members')
+    renderApp('/org/7/departments/3')
     expect(await screen.findByText('Mia Member')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Manage/ })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Filter by status')).not.toBeInTheDocument()

@@ -267,7 +267,7 @@ describe('sidebar', () => {
 
     await user.click(within(rail).getByRole('button', { name: 'Boards' }))
     await user.click(await screen.findByRole('menuitem', { name: 'Sales' }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/org/7/departments/3'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/org/7/boards/3'))
   })
 
   it('opens collapsed when that was saved, and shows waiting items as a dot', async () => {

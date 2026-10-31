@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  Building2Icon,
   CalendarDaysIcon,
   ChartPieIcon,
   KanbanIcon,
@@ -76,6 +77,12 @@ export function DepartmentBoardPage() {
         }
         actions={
           <>
+            <Button variant="outline" asChild>
+              <Link to={`/org/${org.id}/departments/${departmentId}`}>
+                <Building2Icon data-icon="inline-start" />
+                Department
+              </Link>
+            </Button>
             {can(org, 'report.view_department', departmentId) ? (
               <Button variant="outline" asChild>
                 <Link to={`/org/${org.id}/reports/departments/${departmentId}`}>

@@ -678,3 +678,74 @@ def test_now_is_used_for_overdue_not_the_end_of_the_period(team: Team) -> None:
     body = organization(team, start="2026-09-01", end="2026-09-30")
     assert body["counts"]["overdue"] == 1
     assert body["period"]["generated_at"] == "2026-10-29T20:00:00Z"
+
+
+# --- Department summary ------------------------------------------------------------------------
+
+
+def department_summary(team: Team, client: ApiClient, department_id: int | None = None):
+    return client.get(f"{team.base}/departments/{department_id or team.engineering}/summary")
+
+
+def test_a_member_reads_team_totals_and_nobody_elses_numbers(team: Team) -> None:
+    team.eng_task(assigned_to=team.ids["Eve Eng"])
+    blocked = team.eng_task(assigned_to=team.ids["Ed Eng"])
+    block(team, blocked)
+
+    response = department_summary(team, team.eng)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["counts"]["open"] == 2
+    assert body["counts"]["blocked"] == 1
+    assert set(body) == {"period", "department", "managers", "counts", "trend", "definitions"}
+    assert "Ed Eng" not in response.text
+    assert "Eve Eng" not in response.text
+
+
+def test_the_summary_is_open_to_the_same_people_as_the_board(team: Team, person) -> None:
+    assert department_summary(team, team.owner).status_code == 200
+    assert department_summary(team, team.admin, team.sales_department).status_code == 200
+    assert department_summary(team, team.manager).status_code == 200
+    assert department_summary(team, team.sales).status_code == 404
+    assert department_summary(team, team.eng, team.sales_department).status_code == 404
+    assert department_summary(team, team.owner, 999_999).status_code == 404
+
+    other_owner = person("Oscar Other")
+    create_org(other_owner, "Other Org")
+    assert department_summary(team, other_owner).status_code == 404
+
+
+def test_summary_totals_agree_with_what_the_reader_can_see(team: Team) -> None:
+    team.eng_task(title="Shared with the department")
+    team.eng_task(title="Between two people", visibility="private", assigned_to=team.ids["Ed Eng"])
+
+    def open_for(client: ApiClient) -> int:
+        return department_summary(team, client).json()["counts"]["open"]
+
+    assert open_for(team.owner) == 2
+    assert open_for(team.eng2) == 2
+    assert open_for(team.eng) == 1
+    assert len(team.board_titles(team.eng)) == 1
+
+
+def test_summary_names_active_managers_and_counts_active_members(team: Team) -> None:
+    body = department_summary(team, team.eng).json()
+    assert [manager["name"] for manager in body["managers"]] == ["Max Manager"]
+    assert body["department"]["member_count"] == 5
+
+    member = f"{team.base}/members/{team.membership_ids['Max Manager']}"
+    team.owner.post(f"{member}/suspend", json={})
+
+    body = department_summary(team, team.eng).json()
+    assert body["managers"] == []
+    assert body["department"]["member_count"] == 4
+
+
+def test_an_archived_department_keeps_its_summary(team: Team) -> None:
+    team.owner.post(f"{team.base}/departments/{team.engineering}/archive")
+
+    response = department_summary(team, team.eng)
+
+    assert response.status_code == 200
+    assert response.json()["department"]["status"] == "archived"

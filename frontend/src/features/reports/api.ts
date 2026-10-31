@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 
 import type {
   DepartmentDashboard,
+  DepartmentSummary,
   DepartmentWorkload,
   MemberActivity,
   MemberSummary,
@@ -16,7 +17,7 @@ export interface ReportRange {
 }
 
 // Under 'dashboard', so that changing a task refreshes these with the personal dashboard.
-const reportKeys = {
+export const reportKeys = {
   organization: (orgId: number) => ['dashboard', 'organization', orgId] as const,
 }
 
@@ -56,6 +57,14 @@ export function useDepartmentDashboard(orgId: number, departmentId: number, rang
         },
       ),
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useDepartmentSummary(orgId: number, departmentId: number) {
+  return useQuery({
+    queryKey: [...reportKeys.organization(orgId), 'department-summary', departmentId],
+    queryFn: () =>
+      api.get<DepartmentSummary>(`/organizations/${orgId}/departments/${departmentId}/summary`),
   })
 }
 

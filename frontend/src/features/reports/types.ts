@@ -1,3 +1,4 @@
+import type { Department } from '@/features/organizations/types'
 import type { TaskPriority, TaskStatus } from '@/features/tasks/task-meta'
 
 export interface ReportPeriod {
@@ -25,6 +26,15 @@ export interface TrendPoint {
   date: string
   completed: number
   created: number
+}
+
+export interface DepartmentSummary {
+  period: ReportPeriod
+  department: Department
+  managers: { id: number; name: string }[]
+  counts: ReportCounts
+  trend: TrendPoint[]
+  definitions: Record<string, string>
 }
 
 export interface DepartmentWorkload {

@@ -21,6 +21,7 @@ from app.modules.collaboration.models import TaskUpdateRequest, UpdateRequestSta
 from app.modules.dashboards.schemas import (
     AssigneeWorkload,
     DepartmentDashboard,
+    DepartmentSummary,
     DepartmentWorkload,
     MemberActivity,
     MemberDepartmentWorkload,
@@ -36,10 +37,14 @@ from app.modules.dashboards.schemas import (
 )
 from app.modules.memberships.models import (
     DepartmentMembership,
+    MembershipRole,
     MembershipStatus,
     OrganizationMembership,
 )
 from app.modules.organizations.models import Department, DepartmentStatus
+from app.modules.organizations.schemas import DepartmentRead
+from app.modules.permissions.catalog import DEPARTMENT_MANAGER
+from app.modules.permissions.models import Role
 from app.modules.permissions.service import OrgContext
 from app.modules.tasks import policies
 from app.modules.tasks.models import OPEN_STATUSES, Task, TaskPriority, TaskStatus
@@ -512,6 +517,83 @@ def department_dashboard(
                 Task.completed_at.desc(), Task.id.desc()
             ),
         ),
+        definitions=_DEPARTMENT_DEFINITIONS,
+    )
+
+
+def _department_members(db: Session, context: OrgContext, department_id: int) -> int:
+    return (
+        db.scalar(
+            select(func.count())
+            .select_from(DepartmentMembership)
+            .join(
+                OrganizationMembership,
+                (OrganizationMembership.user_id == DepartmentMembership.user_id)
+                & (OrganizationMembership.organization_id == DepartmentMembership.organization_id),
+            )
+            .where(
+                DepartmentMembership.department_id == department_id,
+                OrganizationMembership.organization_id == context.organization.id,
+                OrganizationMembership.status == MembershipStatus.ACTIVE,
+            )
+        )
+        or 0
+    )
+
+
+def _department_managers(db: Session, context: OrgContext, department_id: int) -> list[PersonRef]:
+    rows = db.execute(
+        select(User.id, User.name)
+        .join(OrganizationMembership, OrganizationMembership.user_id == User.id)
+        .join(MembershipRole, MembershipRole.membership_id == OrganizationMembership.id)
+        .join(Role, Role.id == MembershipRole.role_id)
+        .where(
+            OrganizationMembership.organization_id == context.organization.id,
+            OrganizationMembership.status == MembershipStatus.ACTIVE,
+            MembershipRole.department_id == department_id,
+            Role.key == DEPARTMENT_MANAGER,
+        )
+        .order_by(User.name)
+    ).all()
+    return [PersonRef(id=row.id, name=row.name) for row in rows]
+
+
+def department_summary(
+    db: Session, context: OrgContext, department_id: int, now: datetime
+) -> DepartmentSummary:
+    """For everyone in the department, unlike the report, so it holds only team totals.
+
+    Same people as the board (BR-006). Counts stay within what the reader can see, so they always
+    agree with the board in front of them.
+    """
+    department = db.scalar(
+        select(Department).where(
+            Department.id == department_id,
+            Department.organization_id == context.organization.id,
+        )
+    )
+    if department is None or not (
+        department_id in context.department_ids or context.can("task.view_all")
+    ):
+        raise NotFoundError("Department not found.")
+
+    period = report_range(context, None, None, now)
+    data = _report_data(
+        db,
+        department_scope(context, department_id),
+        period,
+        now,
+        open_group=Task.department_id,
+        completed_group=Task.completed_department_id,
+    )
+    return DepartmentSummary(
+        period=_period_meta(context, period, now),
+        department=DepartmentRead.model_validate(department).model_copy(
+            update={"member_count": _department_members(db, context, department_id)}
+        ),
+        managers=_department_managers(db, context, department_id),
+        counts=_counts(data),
+        trend=_trend(data, period),
         definitions=_DEPARTMENT_DEFINITIONS,
     )
 

@@ -75,6 +75,7 @@ Every number comes from `visible_tasks`, so a report can't count a task its read
 |---|---|---|---|
 | GET | `/organizations/{id}/dashboard?start&end` | `report.view_organization` | Counts, on-time rate, daily trend, workload by department, `definitions`. |
 | GET | `/organizations/{id}/reports/departments?start&end` | `report.view_department` somewhere | The departments you can report on, with their counts. |
+| GET | `/organizations/{id}/departments/{dept}/summary` | department member or `task.view_all` | Department details, managers, totals and a 30-day trend, for tasks the reader can see. No per-person numbers. Non-members get 404. |
 | GET | `/organizations/{id}/departments/{dept}/dashboard?start&end` | `report.view_department` there | Adds by status, by assignee, and overdue, blocked and recent task lists (10 each). 403 for your own department without the permission, 404 for anyone else's. |
 | GET | `/organizations/{id}/reports/members?start&end&page&page_size` | `report.view_organization` | Paginated, by name. |
 | GET | `/organizations/{id}/members/{user}/summary?start&end` | yourself, or `report.view_department` in a department they belong to | 403 for a colleague you can see, 404 otherwise. |

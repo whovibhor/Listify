@@ -1,6 +1,6 @@
 # Denote — Feature Status
 
-**Last updated:** 2026-10-31 · **Current work:** UI & journey rework, Batch 3 (department page) next · Phase 8 follows the rework
+**Last updated:** 2026-10-31 · **Current work:** UI & journey rework, Batch 4 (boards and task lists) next · Phase 8 follows the rework
 
 This is the single list of what is **done** and what is **pending**, feature by feature. It is updated every time a feature is completed or changed. A feature is marked ✅ only after it works end-to-end (UI → API → MySQL) and its tests have been run and passed. Detailed plans live in [`implementation-roadmap.md`](implementation-roadmap.md).
 
@@ -20,7 +20,7 @@ Legend: ✅ done · 🟡 partly done · ⏳ pending · ⏸ deferred (later relea
 | Department work boards (team tasks) | ✅ Done |
 | Comments, update requests, attachments, inbox | ✅ Done |
 | Team & organization dashboards | ✅ Done |
-| UI & journey rework | 🟡 In progress: Batches 1 and 2 of 6 done |
+| UI & journey rework | 🟡 In progress: Batches 1 to 3 of 6 done |
 | Reminders, notifications, email | ⏳ Pending (Phase 8) |
 | Production readiness (deploy, backups, monitoring) | ⏳ Pending (Phase 9) |
 
@@ -68,7 +68,9 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 |---|---|
 | Create an organization (you become Owner) with profile, website, location, timezone | `organizations`, `organization_memberships`, `membership_roles` |
 | Organization settings: profile, searchable by name, require task review | `organizations` |
-| Departments: create, edit, archive/restore, open or closed to join requests | `departments` |
+| Departments: create, edit, archive/restore, open or closed to join requests. Department Managers do this from their department page | `departments` |
+| Department page: description, manager, team totals, 30-day trend and members with roles and job titles. Everyone in the department can open it, and it shows no one person's numbers | computed from `tasks`, reads `departments`, `membership_roles` |
+| Sidebar: Departments for Owner and Admin, Department for everyone else, who go straight to their own page, with a switcher if they're in two | reads `department_memberships` |
 | Header workspace button: one click between Personal and your organization, a list if you have several, role-based navigation | reads `organization_memberships`, `membership_roles` |
 | Reopens the workspace you last used; pages such as Settings stay in it | `user_preferences` |
 | Collapsible sidebar with an icon rail, saved to your account | `user_preferences` |
@@ -78,7 +80,7 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 | Review requests: approve, decline with a reason, change department or role before approving | `membership_requests`, `organization_memberships`, `department_memberships`, `membership_roles` |
 | Invitations: by email or one-time link, with role, department and 7-day expiry; revoke | `organization_invitations` |
 | Accept an invitation from its link | `organization_invitations`, `organization_memberships`, `department_memberships`, `membership_roles` |
-| Members directory: search, filter by department (admins see everyone, others their departments) | reads `organization_memberships`, `department_memberships` |
+| All members tab on Departments for Owner and Admin: search, filter by department. Everyone else sees colleagues on their department page | reads `organization_memberships`, `department_memberships` |
 | Activity log of administrative actions (read-only) | `audit_logs` |
 | Five predefined roles and 20 permissions, checked on the server | `roles`, `permissions`, `role_permissions` |
 
@@ -92,7 +94,7 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 | Move a member between departments; add to more departments; take out of a department | `department_memberships`, `membership_roles`, `organization_memberships` |
 | Impact preview before suspend, remove, move and take-out: departments, roles, departments left with no manager, waiting join requests | computed from the tables above |
 | Transfer ownership, confirmed with your password; the old Owner becomes Admin | `membership_roles`, `audit_logs`, `rate_limit_buckets` |
-| Filter the Members page by status | reads `organization_memberships` |
+| Filter All members by status | reads `organization_memberships` |
 | Losing access while a page is open: the next request fails and the page updates itself | — (reloads your organizations) |
 
 ### Department work boards & team tasks
@@ -155,13 +157,6 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 ### UI & journey rework *(next)*
 The agreed plan, with the owner's decisions, is in [`implementation-roadmap.md`](implementation-roadmap.md). These existing features will change:
 
-**Batch 3: Department page**
-- ⏳ Full department page: description, managers, team totals, trend, and members with roles and job titles
-- ⏳ Regular members see team totals only, with no per-person numbers
-- ⏳ Sidebar: Departments for Owner and Admin, Department for everyone else
-- ⏳ Members item removed from the sidebar for everyone; All members becomes a tab on Departments for Owner and Admin
-- ⏳ Boards move to their own address, and old links redirect
-
 **Batch 4: Boards and task lists**
 - ⏳ Board columns: Not Started, In Progress, In Review, Completed
 - ⏳ Blocked and Cancelled hidden by default, with toggles that show their counts
@@ -221,6 +216,7 @@ The agreed plan, with the owner's decisions, is in [`implementation-roadmap.md`]
 ## Change log
 | Date | Change |
 |---|---|
+| 2026-10-31 | Department page added. The Members sidebar item is gone: Owners and Admins use the All members tab on Departments. Boards moved to `/org/:id/boards/:id`, and old links still work. |
 | 2026-10-31 | Inbox per workspace: each organization has its own inbox and counts, Personal keeps notices from organizations you can't open any more, and a dot shows when another workspace has something waiting. Clicking Inbox no longer jumps to Personal. |
 | 2026-10-31 | Renamed the product from Listify to Denote: interface, emails, cookies, logs, config, packages, docs and the MySQL databases (`denote`, `denote_test`). Everyone signs in once more. |
 | 2026-10-31 | App shell rework: System Status removed from Home, workspace button moved to the header, collapsible sidebar, new sidebar order, Create and Join moved to Account settings, last workspace remembered. |

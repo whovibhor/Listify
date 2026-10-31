@@ -149,7 +149,7 @@ export function OrganizationOverviewPage() {
           label={canManage ? 'Members' : 'People in your departments'}
           value={memberTotal}
           icon={UsersRoundIcon}
-          to={`${base}/members`}
+          to={canManage ? `${base}/departments/members` : `${base}/departments`}
         />
         <StatTile
           label={canManage ? 'Departments' : 'Your departments'}

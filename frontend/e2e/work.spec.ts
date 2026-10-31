@@ -38,7 +38,7 @@ test('a team plans work on a board, and access follows the rules', async ({
   const orgId = await createOrganization(owner, orgName, false)
   await inviteToDepartment(owner, teammate, orgId, 'Engineering')
   const engineering = await departmentId(owner, orgId, 'Engineering')
-  const boardUrl = `/org/${orgId}/departments/${engineering}`
+  const boardUrl = `/org/${orgId}/boards/${engineering}`
 
   // Owner creates a task for Amy, from the board.
   await owner.goto(boardUrl)
@@ -79,7 +79,7 @@ test('a team plans work on a board, and access follows the rules', async ({
 
   // She can't reach another department's board.
   const sales = await departmentId(owner, orgId, 'Sales')
-  await teammate.goto(`/org/${orgId}/departments/${sales}`)
+  await teammate.goto(`/org/${orgId}/boards/${sales}`)
   await expect(teammate.getByRole('heading', { name: 'Page not found' })).toBeVisible()
 
   // Dragging works on desktop. Phones use the same menu a keyboard user would.
@@ -161,7 +161,7 @@ test('work pages have no detectable accessibility violations', async ({ browser 
     ).toEqual([])
   }
 
-  const board = `/org/${orgId}/departments/${engineering}`
+  const board = `/org/${orgId}/boards/${engineering}`
   for (const path of [
     board,
     `${board}?layout=list`,

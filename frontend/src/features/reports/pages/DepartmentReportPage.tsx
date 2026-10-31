@@ -68,8 +68,8 @@ export function DepartmentReportPage() {
             onTime={data.on_time}
             definitions={data.definitions}
             links={{
-              open: `${base}/departments/${departmentId}`,
-              overdue: `${base}/departments/${departmentId}?overdue=true`,
+              open: `${base}/boards/${departmentId}`,
+              overdue: `${base}/boards/${departmentId}?overdue=true`,
             }}
           />
           <ReportCard title="Tasks per day" description={data.definitions.trend}>

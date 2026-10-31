@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.common.schemas import UtcDateTime
 from app.modules.memberships.models import MembershipStatus
+from app.modules.organizations.schemas import DepartmentRead
 from app.modules.tasks.models import TaskPriority, TaskStatus
 from app.modules.tasks.schemas import DepartmentRef, PersonRef
 
@@ -113,6 +114,17 @@ class DepartmentDashboard(BaseModel):
     overdue_tasks: list[ReportTask]
     blocked_tasks: list[ReportTask]
     recent_completions: list[ReportTask]
+    definitions: dict[str, str]
+
+
+class DepartmentSummary(BaseModel):
+    """What anyone in a department may see: team totals, never one person's numbers."""
+
+    period: ReportPeriod
+    department: DepartmentRead
+    managers: list[PersonRef]
+    counts: ReportCounts
+    trend: list[TrendPoint]
     definitions: dict[str, str]
 
 

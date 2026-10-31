@@ -9,6 +9,7 @@ from app.modules.auth.dependencies import CurrentAuth, DbSession
 from app.modules.dashboards import export, organization, service
 from app.modules.dashboards.schemas import (
     DepartmentDashboard,
+    DepartmentSummary,
     DepartmentWorkload,
     MemberActivity,
     MemberSummary,
@@ -63,6 +64,14 @@ def department_dashboard(
     now = utc_now()
     period = organization.report_range(context, start, end, now)
     return organization.department_dashboard(db, context, department_id, period, now)
+
+
+@router.get(
+    "/organizations/{organization_id}/departments/{department_id}/summary",
+    response_model=DepartmentSummary,
+)
+def department_summary(department_id: int, context: OrgCtx, db: DbSession) -> DepartmentSummary:
+    return organization.department_summary(db, context, department_id, utc_now())
 
 
 @router.get("/organizations/{organization_id}/reports/members", response_model=Page[MemberActivity])

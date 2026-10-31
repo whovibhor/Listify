@@ -294,3 +294,12 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 - **`other_workspaces` drives a dot, not a number,** on the header button, so a badge in one workspace is never mistaken for that workspace's count.
 - **`workspace` is optional on the API,** and leaving it out means everything together. The app always sends it.
 - **No new index.** With 100,000 notices for one person, spread over two organizations, the list took about 1 ms and the counts at most 144 ms, using the existing indexes. Nobody should reach that size once Phase 8 cleans up old notifications.
+
+## ADR-036 Department page
+
+- **The summary is a separate endpoint, not the report.** `report.view_department` stays with Team Leads and above, because the report shows work per person. `/departments/{id}/summary` is open to the same people as the board and returns only team totals, so colleagues never see each other's numbers.
+- **Totals use `visible_tasks`,** like every report (ADR-030), so they match the board in front of the reader. The trade-off is that two people can see different totals for one department, when one of them can't see a private task.
+- **Owners and Admins are defined as `department.create` or `member.manage`,** the same test `list_departments` uses. Everyone else has `/departments` send them to their own department, and `/members` send them there too.
+- **All members moved under Departments,** at `/departments/members`, instead of disappearing with the sidebar item. Department pages alone can't replace it, because someone in no department, such as an Owner, would appear nowhere.
+- **Editing and archiving moved with the people.** Department Managers hold `department.update` and used to do this from the list they no longer see, so `DepartmentControls` is on both the list and the department page.
+- **Boards moved to `/boards/:id`,** because the department page took their address. Old links that carried board settings, such as `?layout=list`, are sent on to the board. A bare old link now opens the department page, which has an Open board button.

@@ -162,7 +162,7 @@ test('every page fits phone, tablet and desktop widths', async ({ browser, page 
   const [firstDepartment] = await (
     await page.request.get(`/api/v1/organizations/${orgId}/departments`)
   ).json()
-  const board = `/org/${orgId}/departments/${firstDepartment.id}`
+  const board = `/org/${orgId}/boards/${firstDepartment.id}`
   const me = await (await page.request.get('/api/v1/me')).json()
   const departmentName: string = firstDepartment.name
   const pages = [
@@ -171,6 +171,11 @@ test('every page fits phone, tablet and desktop widths', async ({ browser, page 
     { path: '/organizations/join', heading: 'Join an organization', name: 'org-join' },
     { path: `/org/${orgId}`, heading: /Northwind/, name: 'org-overview' },
     { path: `/org/${orgId}/departments`, heading: 'Departments', name: 'org-departments' },
+    {
+      path: `/org/${orgId}/departments/${firstDepartment.id}`,
+      heading: departmentName,
+      name: 'org-department',
+    },
     { path: `/org/${orgId}/members`, heading: 'Members', name: 'org-members' },
     { path: '/inbox', heading: 'Inbox', name: 'inbox' },
     { path: `/org/${orgId}/inbox`, heading: 'Inbox', name: 'org-inbox' },

@@ -23,6 +23,7 @@ import type {
   OrganizationPublic,
   RequestStatus,
 } from '@/features/organizations/types'
+import { reportKeys } from '@/features/reports/api'
 import type { Page } from '@/features/tasks/types'
 import { api } from '@/lib/api-client'
 import { MY_ORGANIZATIONS_QUERY_KEY } from '@/lib/query-keys'
@@ -49,6 +50,7 @@ export const orgKeys = {
 function refreshOrganization(queryClient: QueryClient, id: number) {
   void queryClient.invalidateQueries({ queryKey: orgKeys.scoped(id) })
   void queryClient.invalidateQueries({ queryKey: orgKeys.mine })
+  void queryClient.invalidateQueries({ queryKey: reportKeys.organization(id) })
 }
 
 // --- My organizations --------------------------------------------------------------------------

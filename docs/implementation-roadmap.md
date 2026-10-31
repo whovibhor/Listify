@@ -18,7 +18,7 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 | 5 | Department Work Boards | ✅ Complete | 2026-10-30 |
 | 6 | Collaboration (comments, update requests, attachments, inbox) | ✅ Complete | 2026-10-30 |
 | 7 | Dashboards & reporting | ✅ Complete | 2026-10-30 |
-| UI | UI & journey rework (6 batches) | 🚧 In progress: Batches 1 and 2 done, Batch 3 next | — |
+| UI | UI & journey rework (6 batches) | 🚧 In progress: Batches 1 to 3 done, Batch 4 next | — |
 | 8 | Reminders & scheduled notifications | ⏳ After the rework | — |
 | Later | Agreed additions: time estimates, bulk actions, global search, recurring tasks and dependencies | ⏳ Planned | — |
 | 9 | Production readiness | ⏳ Planned | — |
@@ -119,13 +119,13 @@ Requested by the owner on 2026-10-31 after trying the app with sample data. Batc
 - [x] Server filters lists, summary counts, update requests and Mark all as read by workspace; no new index needed (ADR-035)
 - [x] Bell and sidebar count the current workspace; a dot on the header button shows unread in the other one
 
-**Batch 3 — Department page**
-- [ ] Endpoint for a department summary that any member of the department can read, using `visible_tasks` so totals match the board and showing no per-person numbers
-- [ ] Department page: description, managers, totals, trend, members with roles and job titles
-- [ ] Sidebar: Departments for Owner and Admin; Department for Managers, Team Leads and Members
-- [ ] A selector for people in two departments, and an empty state for people in none
-- [ ] Members item removed for everyone; All members tab on Departments for Owner and Admin, because the Owner may be in no department
-- [ ] Boards move to `/org/:id/boards/:id`; old links redirect
+**Batch 3 — Department page ✅**
+- [x] Endpoint for a department summary that any member of the department can read, using `visible_tasks` so totals match the board and showing no per-person numbers
+- [x] Department page: description, managers, totals, trend, members with roles and job titles
+- [x] Sidebar: Departments for Owner and Admin; Department for Managers, Team Leads and Members
+- [x] A selector for people in two departments, and an empty state for people in none
+- [x] Members item removed for everyone; All members tab on Departments for Owner and Admin, because the Owner may be in no department
+- [x] Boards move to `/org/:id/boards/:id`; old links redirect
 
 **Batch 4 — Boards and task lists**
 - [ ] Column order: Not Started, In Progress, In Review, Completed; In Review still appears only where review is on

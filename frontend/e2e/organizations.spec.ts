@@ -39,8 +39,8 @@ test('request to join, approval, and what each person can then do', async ({
   await applicant.goto(`/org/${orgId}/settings`)
   await expect(applicant.getByText("You don't have access to this page")).toBeVisible()
   await applicant.goto(`/org/${orgId}/departments`)
-  await expect(applicant.getByRole('heading', { name: 'Sales', level: 2 })).toBeVisible()
-  await expect(applicant.getByRole('heading', { name: 'Engineering', level: 2 })).toBeHidden()
+  await expect(applicant.getByRole('heading', { name: 'Sales', level: 1 })).toBeVisible()
+  await expect(applicant.getByRole('heading', { name: 'Engineering', level: 1 })).toBeHidden()
 
   // Owner sees the new member and the audit trail.
   await owner.goto(`/org/${orgId}/members`)
@@ -128,8 +128,8 @@ test('roles, departments, suspension, ownership and removal', async ({ browser }
   await moveDialog.getByRole('button', { name: 'Move member' }).click()
   await expect(sheet.getByText('Department Manager · Sales')).toHaveCount(0)
   await teammate.goto(`/org/${orgId}/departments`)
-  await expect(teammate.getByRole('heading', { name: 'Engineering', level: 2 })).toBeVisible()
-  await expect(teammate.getByRole('heading', { name: 'Sales', level: 2 })).toBeHidden()
+  await expect(teammate.getByRole('heading', { name: 'Engineering', level: 1 })).toBeVisible()
+  await expect(teammate.getByRole('heading', { name: 'Sales', level: 1 })).toBeHidden()
 
   // Suspending reaches a page that's already open, on its next request.
   await teammate.goto(`/org/${orgId}/members`)

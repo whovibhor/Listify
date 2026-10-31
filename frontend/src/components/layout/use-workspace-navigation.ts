@@ -10,13 +10,12 @@ import {
   ScrollTextIcon,
   SettingsIcon,
   UserPlusIcon,
-  UsersRoundIcon,
 } from 'lucide-react'
 
 import { personalNavigation, type NavItem, type NavSection } from '@/components/layout/navigation'
 import { useWorkspaceInbox } from '@/features/inbox/use-workspace-inbox'
 import { useDepartments, useMembershipRequests } from '@/features/organizations/api'
-import { can, canAnywhere } from '@/features/organizations/permissions'
+import { can, canAnywhere, isOrganizationAdmin } from '@/features/organizations/permissions'
 import type { Department, MyOrganization } from '@/features/organizations/types'
 import { useActiveOrganization } from '@/features/organizations/use-current-org'
 
@@ -49,8 +48,11 @@ function organizationSections(
       items: [
         { label: 'Overview', to: base, icon: LayoutDashboardIcon, end: true },
         { label: 'Inbox', to: `${base}/inbox`, icon: InboxIcon },
-        { label: 'Departments', to: `${base}/departments`, icon: Building2Icon, end: true },
-        { label: 'Members', to: `${base}/members`, icon: UsersRoundIcon },
+        {
+          label: isOrganizationAdmin(org) || departments.length > 1 ? 'Departments' : 'Department',
+          to: `${base}/departments`,
+          icon: Building2Icon,
+        },
       ],
     },
     ...(departments.length
@@ -60,7 +62,7 @@ function organizationSections(
             railIcon: KanbanIcon,
             items: departments.map((department) => ({
               label: department.name,
-              to: `${base}/departments/${department.id}`,
+              to: `${base}/boards/${department.id}`,
               icon: KanbanIcon,
             })),
           },
