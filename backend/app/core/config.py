@@ -8,6 +8,7 @@ from sqlalchemy.engine import URL
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 INSECURE_DEFAULT_SECRET = "change-me-in-local-env"  # noqa: S105 - sentinel, rejected in production
+MIN_DB_CONNECTIONS = 40
 
 
 class Settings(BaseSettings):
@@ -30,6 +31,15 @@ class Settings(BaseSettings):
     db_user: str = "listify_app"
     db_password: SecretStr = SecretStr("")
     db_test_name: str | None = None
+    # FastAPI runs these routes on 40 threads, and fewer connections than that stalls under load:
+    # requests hold connections while waiting for threads, and threads wait for those connections.
+    db_pool_size: int = Field(default=20, ge=1)
+    db_max_overflow: int = Field(default=20, ge=0)
+    db_pool_timeout_seconds: int = Field(default=10, ge=1)
+    # Requests let in at once per server process. Kept below the 40 threads and connections, so
+    # that uploads and health checks, which skip the line, always have some (ADR-032).
+    max_concurrent_requests: int = Field(default=35, ge=1)
+    request_wait_seconds: int = Field(default=30, ge=1)
 
     # Comma-separated in the environment, e.g. FRONTEND_ORIGINS=http://localhost:5173
     frontend_origins: Annotated[list[str], NoDecode] = Field(
@@ -78,6 +88,10 @@ class Settings(BaseSettings):
             problems.append("COOKIE_SECURE cannot be false in production")
         if not self.rate_limits_enabled:
             problems.append("RATE_LIMITS_ENABLED cannot be false in production")
+        if self.db_pool_size + self.db_max_overflow < MIN_DB_CONNECTIONS:
+            problems.append(f"DB_POOL_SIZE + DB_MAX_OVERFLOW must be {MIN_DB_CONNECTIONS} or more")
+        if self.max_concurrent_requests >= MIN_DB_CONNECTIONS:
+            problems.append(f"MAX_CONCURRENT_REQUESTS must be below {MIN_DB_CONNECTIONS}")
         if problems:
             raise ValueError("Invalid production configuration: " + "; ".join(problems))
         return self

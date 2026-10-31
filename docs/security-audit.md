@@ -275,6 +275,10 @@ Failed logins, lockouts, password changes and sessions being signed out appear n
 
 **Added since the audit (Phase 6):** uploads have type, content and size checks, and every download is authorized. Notifications store no task details, so they can't show any to someone who has lost access. These were tested, but not independently reviewed. Attachments still need virus scanning and storage outside the application server before launch.
 
+**Changed since the audit (2026-10-31):** `visible_tasks`, the rule protecting private work, was rewritten for speed (ADR-033). The visibility matrix passes both ways of checking, but this hasn't been independently reviewed, so include it in the penetration test.
+
+**Added since the audit (database work, 2026-10-31):** a slow-upload freeze was found and fixed: any signed-in user could stall the app with about 40 paused uploads. A request limiter now keeps overloads from taking the app down, and it was designed so that slow clients can't hold its slots. Tested on a real server, but not independently reviewed. Blocking abusive clients outright still belongs at the proxy in Phase 9.
+
 **Added since the audit (Phase 7):** reports and CSV exports follow `visible_tasks`, and exports neutralise spreadsheet formulas, are rate limited and are audited. Tested, but not independently reviewed.
 
 ---

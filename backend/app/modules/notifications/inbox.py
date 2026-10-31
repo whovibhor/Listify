@@ -64,7 +64,12 @@ def list_inbox(
 
     task_ids = {row.task_id for row in rows if row.task_id is not None}
     tasks = (
-        {task.id: task for task in db.scalars(select(Task).where(Task.id.in_(task_ids)))}
+        {
+            task.id: task
+            for task in db.execute(
+                select(Task.id, Task.title, Task.organization_id).where(Task.id.in_(task_ids))
+            )
+        }
         if task_ids
         else {}
     )

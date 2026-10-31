@@ -5,7 +5,7 @@ request body. No active membership → 404, so outsiders can't confirm an organi
 """
 
 from dataclasses import dataclass, field
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends
 from sqlalchemy import select
@@ -33,6 +33,9 @@ class OrgContext:
     department_ids: set[int] = field(default_factory=set)
     org_permissions: set[str] = field(default_factory=set)
     department_permissions: dict[int, set[str]] = field(default_factory=dict)
+    db: Session | None = None
+    # Worked out by `policies.visible_tasks` the first time it's needed.
+    shared_task_ids: dict[Any, list[int] | None] = field(default_factory=dict)
 
     @property
     def role_keys(self) -> list[str]:
@@ -83,7 +86,7 @@ def load_context(db: Session, user: User, organization_id: int) -> OrgContext:
     ):
         raise NotFoundError("Organization not found.")
 
-    context = OrgContext(user=user, organization=organization, membership=membership)
+    context = OrgContext(user=user, organization=organization, membership=membership, db=db)
     context.department_ids = set(
         db.scalars(
             select(DepartmentMembership.department_id).where(

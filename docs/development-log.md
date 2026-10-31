@@ -1,5 +1,97 @@
 # Listify — Development Log
 
+## 2026-10-31 — Database optimization, steps 2 and 3
+
+### Requested by the owner
+Apply steps 2 and 3 of the audit together, then test both at once.
+
+### Changes
+- **Migration `630c0a73320e`:** adds `ix_tasks_org_default_sort`, removes `workspace_type` from the three report indexes, and drops `ix_organization_invitations_organization_id`. Applied to `listify` and `listify_test`; round-tripped on `listify_test` only.
+- **Visibility:** `visible_tasks` looks up what's shared with a person once per request, falling back to the old check above 1,000 entries. Rules are in ADR-033.
+- No API or data changes.
+
+### Tests executed (all actually run)
+| Suite | Result |
+|---|---|
+| Backend pytest (real MySQL) | **645 passed** (8 new), run as two sets. Two test-only failures were fixed and their files rerun |
+| Frontend Vitest | **131 passed** |
+| Playwright E2E | **35 passed, 1 skipped by design** (desktop 18, mobile 17) |
+| Ruff | passed |
+| Migrations | upgrade → downgrade → upgrade on `listify_test`; `alembic check` clean on both databases |
+| Regression checks | Changing the sort, or removing collaborator access, each made the new tests fail. Both restored |
+| Measurements | Each page compared with and without the sort index on seeded data, with matching totals. Results are in the audit |
+
+### Known limitations
+- A search matching nothing is about 120 ms slower, and page 1,500 about 70 ms slower.
+- Sorts other than the default still sort every matching task.
+- A full-year organization report still takes about 780 ms at this size.
+- The rewritten visibility rule hasn't been independently reviewed.
+
+## 2026-10-31 — Request limiter
+
+### Requested by the owner
+Add the request limiter recommended after step 1 (audit R-15).
+
+### Changes
+- **Limiter:** `RequestLimitMiddleware` runs 35 requests per server process at once, and replies 503 `server_busy` after 30 seconds of waiting. New settings: `MAX_CONCURRENT_REQUESTS`, `REQUEST_WAIT_SECONDS`. Rules are in ADR-032.
+- **Uploads:** they now give back their database connection before waiting for the file.
+- No schema changes. The API gains one new error response.
+
+### Tests executed (all actually run)
+| Suite | Result |
+|---|---|
+| Backend pytest (real MySQL) | **637 passed** (17 new), run as two sets |
+| Frontend Vitest | **131 passed** |
+| Playwright E2E | **35 passed, 1 skipped by design** (desktop 18, mobile 17) |
+| Ruff, Prettier | passed |
+| Limiter tests | Removing each of four protections made its test fail; all four restored |
+| Load test on seeded data | No errors from 10 to 400 requests in flight, 108–136 requests/s, one server process |
+| Paused clients on a real server | 45 uploads, 45 downloads and 100 sign-in forms each held no connections, and `GET /me` took 7–11 ms |
+
+### Defects found and fixed during the work
+- 45 paused uploads held all 40 connections and froze the app, with `GET /me` failing after 10 seconds. Any signed-in user could have caused this.
+- The first limiter design would have let slow clients hold its slots, which needs no sign-in. It was changed before being built.
+
+### Known limitations
+- The limit is per server process.
+- Under extreme load, requests wait longer: about 5.6 seconds at 400 in flight. The 503 path was tested directly, not reached by the load test.
+- Uploads skip the limiter, so a very large burst of them can still take connections briefly while signing in.
+- A proxy should still cut off abusive clients in production (Phase 9). Nothing here closes a connection that stays paused forever.
+- Team Tasks is still slow on very large organizations. That's step 2.
+
+## 2026-10-31 — Database optimization, step 1
+
+### Requested by the owner
+Audit the database for optimization opportunities without breaking anything, then apply step 1. The audit is in `database-optimization-audit.md`.
+
+### Changes
+- **Connections:** the pool grew from 15 to 40 per server process, with a 10-second wait. Production refuses to start below 40. New settings: `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_TIMEOUT_SECONDS`.
+- **Queries:** subtasks now load in one batch, preferences only when read, members in one query, a subtask's people in one batch, and the Inbox reads only what it needs.
+- **Tests:** `test_query_counts.py` guards busy pages. Undoing each fix makes it fail, which was checked one at a time.
+- No schema or API changes.
+
+### Tests executed (all actually run)
+| Suite | Result |
+|---|---|
+| Backend pytest (real MySQL) | **620 passed** (12 new), run as two sets; the query-count and collaboration tests were rerun after the final Inbox change |
+| Frontend Vitest | **131 passed** |
+| Playwright E2E | **35 passed, 1 skipped by design** (desktop 18, mobile 17) before the final Inbox change; the Inbox journey was rerun afterwards |
+| Ruff, Prettier | passed; ESLint and `tsc -b` passed on the files changed |
+| Measurements | Repeated on the seeded data with the real code; results are in the audit |
+
+### Defects found and fixed during this work
+- The query-count test found that task detail ran one query per subtask, which the audit had missed.
+- Batching subtasks added a query to the Inbox, so it now reads only the task fields it needs.
+- Two chart page tests failed on a slow first run, because the chart library took longer to load than the test waits. It now loads before those tests start. This wasn't reproduced on demand, so the cause is likely rather than proven.
+
+### Corrections
+- The audit said the stall under load only happens below 40 connections. It also happens at 140 requests in flight with 40 connections, and the audit now says so.
+- A first round of measurements was thrown away, because seeding had failed and the tables were nearly empty.
+
+### Known limitations
+- The app still stalls at 140 requests in flight on one server process. A request limiter fixed this in a trial (audit R-15), but isn't built.
+- Team Tasks is still slow on very large organizations. That's step 2.
+
 ## 2026-10-30 — Phase 7 complete: dashboards and reports
 
 ### Requested by the owner

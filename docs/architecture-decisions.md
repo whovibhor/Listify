@@ -251,3 +251,28 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 - **Permissions:** report access uses the existing `report.*` permissions. Exporting needs the same permission as reading that report, not a separate one.
 - **CSV:** cells starting with a formula character are prefixed with a quote mark, including full-width forms. Exports are refused rather than cut short when too large, because a silently partial file would mislead. Each export is audited, recording counts and dates but no task data.
 - **No caching.** PRD §10 says to add caching only after measuring slow queries. The one report over target is a rare view, so nothing is cached.
+
+## ADR-031 Database connections and query cost
+
+- **Pool:** 20 connections plus 20 overflow per server process, and a 10-second wait. Production refuses to start below 40 in total, because a smaller pool stalled at 100 requests in flight. Migrations use no pool. Server processes × 40 must stay under MySQL's `max_connections`.
+- **The pool only raises the limit.** The same stall returned at about 140 requests in flight, because each request keeps its connection while it waits for a thread. ADR-032 removes it.
+- **Relationship loading:** `Task.subtasks` sets `join_depth=1`, because `selectin` is otherwise skipped on a table linked to itself. `User.preferences` loads only when read.
+- **Query cost is tested.** `tests/test_query_counts.py` requires busy pages to run the same number of queries as data grows. A new page that loads lists belongs there too.
+
+## ADR-032 Request limiter and slow clients
+
+- **35 requests per server process run at once** (`MAX_CONCURRENT_REQUESTS`), below the 40 threads and 40 connections, so that exempt requests always have some. Others wait in the event loop, holding no thread or connection.
+- **Waiting ends after 30 seconds** (`REQUEST_WAIT_SECONDS`) with a 503 `server_busy` and `Retry-After`, because a clear refusal beats a request hanging until something times out.
+- **A slot covers only the work.** A request takes one after its body has arrived and gives it back when its response starts, so a slow client can't hold a slot while sending or receiving. Otherwise anyone could block the API with slow requests, without signing in.
+- **Bodies were already held in memory** before this, capped at 1 MB by the size limit, so reading them first adds no memory risk. The limiter sits inside the size limit for that reason.
+- **Exempt:** health checks, which must answer during an overload, and file uploads, which can legitimately take minutes.
+- **Uploads give their connection back before reading the file.** Sign-in runs first and opens a connection, and 45 paused uploads held all 40 and froze the app. Sign-in stays first, so that strangers can't make the server hold 10 MB.
+- **Per process:** with several server processes, the total allowed is the limit times the number of processes.
+
+## ADR-033 Faster task lists
+
+- **`visible_tasks` compares with lists instead of checking each row.** For non-Owners, the tasks shared with them are fetched once per request, only if the request needs them, and only for that organization. Over 1,000 entries (`MAX_LISTED_SHARES`), it falls back to checking each row. Both ways must give the same answer, and the visibility matrix runs both.
+- **`organization_id` alone now scopes a task,** because the table's checks stop a personal task from having one. That removed `workspace_type` from the filter and from the report indexes.
+- **The default sort has its own index,** `ix_tasks_org_default_sort`. It's built on expressions that must match `order_by("due")` exactly, or MySQL silently ignores it, so `tests/test_indexes.py` checks the real query plan. Changing that sort means changing the index too.
+- **Autogenerate can't compare expression indexes,** so `alembic/env.py` skips this one and migrations manage it by hand.
+- **Accepted trade-off:** rare searches matching nothing and very deep pages are slightly slower, because MySQL walks the index further. Everyday lists gain far more.

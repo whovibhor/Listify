@@ -32,10 +32,20 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def include_name(name: str | None, type_: str, _parent_names: dict) -> bool:
+    # Built on expressions, which autogenerate can't compare. Only migrations manage it.
+    return not (type_ == "index" and name == "ix_tasks_org_default_sort")
+
+
 def run_migrations_online() -> None:
     engine = build_engine(test=use_test_db, poolclass=pool.NullPool)
     with engine.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+            include_name=include_name,
+        )
         with context.begin_transaction():
             context.run_migrations()
 

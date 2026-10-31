@@ -4,7 +4,7 @@ from urllib.parse import quote
 
 from sqlalchemy import case, delete, func, select, update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager
 
 from app.common import rate_limit
 from app.common.mailer import EmailMessage, Mailer
@@ -466,7 +466,12 @@ def list_members(
             User.name.like(pattern, escape="\\") | User.email.like(pattern, escape="\\")
         )
     total = db.scalar(select(func.count()).select_from(statement.subquery())) or 0
-    memberships = db.scalars(statement.order_by(User.name).offset(offset).limit(limit)).all()
+    memberships = db.scalars(
+        statement.options(contains_eager(OrganizationMembership.user))
+        .order_by(User.name)
+        .offset(offset)
+        .limit(limit)
+    ).all()
     return to_member_reads(db, context, memberships), total
 
 

@@ -1,7 +1,9 @@
 import pytest
 from pydantic import ValidationError
+from sqlalchemy.pool import NullPool
 
-from app.core.config import Settings
+from app.core.config import MIN_DB_CONNECTIONS, Settings, get_settings
+from app.db.session import build_engine
 
 
 def test_frontend_origins_accepts_comma_separated_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -72,3 +74,33 @@ def test_database_url_uses_test_db_name_when_requested() -> None:
     )
     assert settings.database_url(test=True).database == "listify_test"
     assert settings.database_url().database == "listify"
+
+
+def test_production_refuses_too_few_database_connections() -> None:
+    """Below 40, requests and threads end up waiting for each other under load (ADR-031)."""
+    with pytest.raises(ValidationError) as exc_info:
+        Settings(_env_file=None, app_env="production", db_pool_size=10, db_max_overflow=10)
+
+    assert "DB_POOL_SIZE + DB_MAX_OVERFLOW" in str(exc_info.value)
+
+
+def test_default_pool_covers_every_request_thread() -> None:
+    settings = Settings(_env_file=None, app_env="test")
+
+    assert settings.db_pool_size + settings.db_max_overflow >= MIN_DB_CONNECTIONS
+
+
+def test_engine_uses_the_pool_settings() -> None:
+    settings = get_settings()
+    engine = build_engine()
+
+    assert engine.pool.size() == settings.db_pool_size
+    assert engine.pool.timeout() == settings.db_pool_timeout_seconds
+    engine.dispose()
+
+
+def test_migrations_can_still_run_without_a_pool() -> None:
+    engine = build_engine(poolclass=NullPool)
+
+    assert isinstance(engine.pool, NullPool)
+    engine.dispose()

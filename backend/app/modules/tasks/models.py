@@ -192,7 +192,6 @@ class Task(TimestampMixin, Base):
             "status",
             "department_id",
             "due_at",
-            "workspace_type",
         ),
         Index(
             "ix_tasks_report_completed",
@@ -202,7 +201,6 @@ class Task(TimestampMixin, Base):
             "status",
             "completed_department_id",
             "due_at",
-            "workspace_type",
         ),
         Index(
             "ix_tasks_report_created",
@@ -210,7 +208,6 @@ class Task(TimestampMixin, Base):
             "parent_task_id",
             "created_at",
             "department_id",
-            "workspace_type",
         ),
         MYSQL_TABLE_ARGS,
     )
@@ -267,8 +264,11 @@ class Task(TimestampMixin, Base):
     archived_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
 
     tags: Mapped[list[Tag]] = relationship(secondary=task_tags, lazy="selectin", order_by=Tag.name)
+    # join_depth because a table linked to itself is otherwise skipped by selectin, leaving one
+    # query per task. Depth 1 is all there is: subtasks can't have their own subtasks.
     subtasks: Mapped[list["Task"]] = relationship(
         lazy="selectin",
+        join_depth=1,
         order_by=lambda: (Task.sort_order, Task.id),
         cascade="all, delete-orphan",
         passive_deletes=True,

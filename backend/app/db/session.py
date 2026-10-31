@@ -15,6 +15,16 @@ SESSION_SQL_MODE = (
 
 def build_engine(*, test: bool = False, poolclass: type[Pool] | None = None) -> Engine:
     settings = get_settings()
+    # Migrations pass a NullPool, which keeps no connections and takes no size options.
+    pool_options = (
+        {}
+        if poolclass
+        else {
+            "pool_size": settings.db_pool_size,
+            "max_overflow": settings.db_max_overflow,
+            "pool_timeout": settings.db_pool_timeout_seconds,
+        }
+    )
     engine = create_engine(
         settings.database_url(test=test),
         pool_pre_ping=True,
@@ -24,6 +34,7 @@ def build_engine(*, test: bool = False, poolclass: type[Pool] | None = None) -> 
         # Outside development, values in failed statements (password hashes, tokens) stay out of
         # error logs.
         hide_parameters=settings.app_env != "development",
+        **pool_options,
     )
 
     @event.listens_for(engine, "connect")

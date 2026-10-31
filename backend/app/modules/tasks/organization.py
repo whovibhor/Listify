@@ -110,6 +110,9 @@ def to_read(access: TaskAccess, now: datetime, *, flagged: bool) -> TaskRead:
 def to_detail(db: Session, access: TaskAccess, now: datetime) -> TaskDetail:
     task = access.task
     flagged = _flagged(db, [task])
+    if task.subtasks:
+        # Fills in each subtask's people at once, rather than one query per subtask below.
+        db.scalars(select(Task).where(Task.parent_task_id == task.id).options(*_READ_OPTIONS)).all()
     subtasks = [
         to_read(TaskAccess(task=child, root=task, context=access.context), now, flagged=False)
         for child in task.subtasks

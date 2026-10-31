@@ -184,7 +184,6 @@ class OrganizationInvitation(Base):
             ["departments.organization_id", "departments.id"],
             name="fk_organization_invitations_department",
         ),
-        Index("ix_organization_invitations_organization_id", "organization_id"),
         MYSQL_TABLE_ARGS,
     )
 

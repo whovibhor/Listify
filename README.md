@@ -67,6 +67,8 @@ copy .env.example .env          # then edit DB_* values and SESSION_SECRET
 | `SESSION_IDLE_MINUTES`, `SESSION_ABSOLUTE_MINUTES` | session idle timeout / maximum lifetime | `720`, `10080` |
 | `PASSWORD_RESET_TTL_MINUTES` | reset-link lifetime | `60` |
 | `COOKIE_SECURE` | force `Secure` cookies (defaults to on only in production) | *(unset)* |
+| `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_TIMEOUT_SECONDS` | Database connections per server process. The first two must total at least 40 (ADR-031) | `20`, `20`, `10` |
+| `MAX_CONCURRENT_REQUESTS`, `REQUEST_WAIT_SECONDS` | Requests let in at once per server process, and how long others wait before a "server busy" reply (ADR-032) | `35`, `30` |
 | `STORAGE_DIR` | Where attachments are saved. Back this folder up with the database | `backend/storage` (default) |
 | `MAIL_BACKEND` | `console` (dev: emails, including reset links, are written to the backend log) or `smtp` (Phase 8) | `console` |
 

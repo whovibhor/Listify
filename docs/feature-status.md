@@ -1,6 +1,6 @@
 # Listify — Feature Status
 
-**Last updated:** 2026-10-30 · **Current phase:** Phase 8 (Reminders & scheduled notifications) — next up
+**Last updated:** 2026-10-31 · **Current phase:** Phase 8 (Reminders & scheduled notifications) — next up
 
 This is the single list of what is **done** and what is **pending**, feature by feature. It is updated every time a feature is completed or changed. A feature is marked ✅ only after it works end-to-end (UI → API → MySQL) and its tests have been run and passed. Detailed plans live in [`implementation-roadmap.md`](implementation-roadmap.md).
 
@@ -184,6 +184,9 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 ## Change log
 | Date | Change |
 |---|---|
+| 2026-10-31 | Database speed, steps 2 and 3: Team Tasks is about four times faster at 100,000 tasks, using a new sort index and a quicker sharing check. Report indexes are smaller. No visible feature changes. |
+| 2026-10-31 | Request limiter: the app stays up under heavy load, with a "server busy" reply after 30 seconds. Fixed a freeze caused by slow uploads. |
+| 2026-10-31 | Database speed, step 1: a larger connection pool, far fewer queries on busy pages, and tests that keep it that way. No visible feature changes. |
 | 2026-10-30 | Phase 7 (reports) completed: organization, department and member reports, date ranges, CSV export. Three new indexes on `tasks`, no new tables. |
 | 2026-10-30 | Phase 6 (collaboration) completed: comments, attachments, update requests, notifications and the Inbox. |
 | 2026-10-30 | Fixed a Phase 2 bug: a subtask entered while the previous one was still saving was silently lost. |

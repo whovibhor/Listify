@@ -1,6 +1,6 @@
 # Listify — Database Design
 
-Status: **Phase 7 schema applied** (head revision `7918315c68c9`; Phases 4 and 7 added no tables). Databases: `listify` (development) and `listify_test` (automated tests and E2E).
+Status: **Database optimization applied** (head revision `630c0a73320e`; Phases 4 and 7 added no tables). Databases: `listify` (development) and `listify_test` (automated tests and E2E).
 
 ## Server and conventions
 
@@ -81,15 +81,16 @@ Downgrade note: organization tasks and organization tags can't exist in the olde
 | `task_update_requests` | `task_id`, `requester_id`, `recipient_id`, `message`, `respond_by`, `status`, `pending_recipient_id`, `response_note`, `responded_at` | unique (`task_id`, `pending_recipient_id`) | `pending_recipient_id` is a stored generated column, the same pattern as `membership_requests`, so the database allows one open request per person per task. |
 | `notifications` | `user_id`, `type`, `actor_id`, `organization_id`, `task_id`, `data`, `read_at` | indexes on (`user_id`, `read_at`, `created_at`) and (`user_id`, `created_at`) | Holds references, never a task title or comment text, so an old row can't leak anything. `data` is only facts about the recipient's own membership. |
 
-## Phase 7 indexes (revision `7918315c68c9`)
+## Reporting and list indexes (revisions `7918315c68c9`, `630c0a73320e`)
 
 Reports added no tables. Three indexes on `tasks` hold every column an Owner's report reads, so MySQL doesn't have to open each task row. Without them, a 30-day organization report on 100,000 tasks took about 500 ms; with them, about 290 ms.
 
 | Index | Columns | Used for |
 |---|---|---|
-| `ix_tasks_report_open` | `organization_id`, `parent_task_id`, `archived_at`, `status`, `department_id`, `due_at`, `workspace_type` | Open work |
-| `ix_tasks_report_completed` | `organization_id`, `parent_task_id`, `completed_at`, `status`, `completed_department_id`, `due_at`, `workspace_type` | Completions in a period |
-| `ix_tasks_report_created` | `organization_id`, `parent_task_id`, `created_at`, `department_id`, `workspace_type` | Tasks created in a period |
+| `ix_tasks_report_open` | `organization_id`, `parent_task_id`, `archived_at`, `status`, `department_id`, `due_at` | Open work |
+| `ix_tasks_report_completed` | `organization_id`, `parent_task_id`, `completed_at`, `status`, `completed_department_id`, `due_at` | Completions in a period |
+| `ix_tasks_report_created` | `organization_id`, `parent_task_id`, `created_at`, `department_id` | Tasks created in a period |
+| `ix_tasks_org_default_sort` | `organization_id`, `parent_task_id`, `archived_at`, `due_at` is empty, `due_at`, priority rank, `id` | The default task list order (ADR-033) |
 
 **Files aren't in the database,** so a backup must include `backend/storage/` as well as MySQL.
 

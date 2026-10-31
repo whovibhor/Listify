@@ -141,8 +141,14 @@ VISIBILITY_CASES = {
 ACTORS = ("owner", "admin", "manager", "lead", "eng", "eng2", "sales", "other_department")
 
 
+@pytest.mark.parametrize("sharing", ["listed", "too many to list"])
 @pytest.mark.parametrize("visibility", VISIBILITY_CASES)
-def test_visibility_matrix(team: Team, visibility: str) -> None:
+def test_visibility_matrix(
+    team: Team, visibility: str, sharing: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Both ways of checking what's shared with someone must agree, person by person."""
+    if sharing == "too many to list":
+        monkeypatch.setattr("app.modules.tasks.policies.MAX_LISTED_SHARES", 0)
     other_department = team.join("Oli Other", department=team.sales_department)
     fields: dict[str, Any] = {}
     if visibility == "selected":
@@ -175,6 +181,41 @@ def test_visibility_matrix(team: Team, visibility: str) -> None:
         assert client.get(task_url(task)).status_code == (200 if allowed else 404), name
         assert ("Secret plan" in team.titles(client)) is allowed, name
         assert ("Secret plan" in team.titles(client, q="Secret")) is allowed, name
+
+
+def test_access_ends_the_moment_a_collaborator_is_removed(team: Team) -> None:
+    task = team.create(
+        team.eng, title="Shared for now", department_id=team.engineering, visibility="private"
+    )
+    sam = team.ids["Sam Sales"]
+    added = team.eng.post(task_url(task, "/collaborators"), json={"user_id": sam})
+    assert added.status_code == 200, added.text
+    assert "Shared for now" in team.titles(team.sales)
+
+    removed = team.eng.delete(task_url(task, f"/collaborators/{sam}"))
+
+    assert removed.status_code == 200, removed.text
+    assert "Shared for now" not in team.titles(team.sales)
+    assert team.sales.get(task_url(task)).status_code == 404
+
+
+def test_sharing_in_one_organization_means_nothing_in_another(team: Team, person) -> None:
+    """Someone's shared tasks are looked up per organization, so lists can't cross over."""
+    other_owner = person("Pat Owner")
+    other = create_org(other_owner, "Elsewhere")
+    other_engineering = departments_of(other_owner, other["id"])["Engineering"]
+    join_as(other_owner, team.eng, other["id"], other_engineering)
+    theirs = other_owner.post(
+        f"/api/v1/organizations/{other['id']}/tasks",
+        json={"title": "Elsewhere's plan", "visibility": "private"},
+    ).json()
+    added = other_owner.post(
+        task_url(theirs, "/collaborators"), json={"user_id": team.ids["Eve Eng"]}
+    )
+    assert added.status_code == 200, added.text
+
+    assert "Elsewhere's plan" not in team.titles(team.eng)
+    assert "Elsewhere's plan" not in team.titles(team.owner)
 
 
 def test_private_task_hidden_on_board(team: Team) -> None:

@@ -28,33 +28,51 @@ from app.modules.tasks.models import (
 )
 from app.modules.users.models import User
 
+SharingLink = type[TaskCollaborator] | type[TaskVisibilityGrant]
+# Beyond this, listing what's shared stops being the quick option, so each task is checked instead.
+MAX_LISTED_SHARES = 1000
+
 
 def personal_tasks_of(user: User) -> ColumnElement[bool]:
     """WHERE clause selecting exactly the personal tasks `user` may see."""
     return and_(Task.workspace_type == WorkspaceType.PERSONAL, Task.owner_user_id == user.id)
 
 
+def _shared_task_ids(context: OrgContext, link: SharingLink) -> list[int] | None:
+    """This organization's tasks linked to the member, or None if too many to list."""
+    if link not in context.shared_task_ids:
+        ids = list(
+            context.db.scalars(
+                select(link.task_id)
+                .join(Task, Task.id == link.task_id)
+                .where(
+                    link.user_id == context.user.id,
+                    Task.organization_id == context.organization.id,
+                )
+                .limit(MAX_LISTED_SHARES + 1)
+            )
+        )
+        context.shared_task_ids[link] = None if len(ids) > MAX_LISTED_SHARES else ids
+    return context.shared_task_ids[link]
+
+
+def _is_shared(context: OrgContext, link: SharingLink) -> ColumnElement[bool] | None:
+    """Comparing with a short list is far quicker than a lookup for every task in the table."""
+    ids = _shared_task_ids(context, link)
+    if ids is None:
+        return exists().where(link.task_id == Task.id, link.user_id == context.user.id)
+    return Task.id.in_(ids) if ids else None
+
+
 def visible_tasks(context: OrgContext) -> ColumnElement[bool]:
     """WHERE clause selecting exactly the organization tasks this member may see."""
-    in_organization = and_(
-        Task.workspace_type == WorkspaceType.ORGANIZATION,
-        Task.organization_id == context.organization.id,
-    )
+    # organization_id is enough: the table's checks stop a personal task from having one.
+    in_organization = Task.organization_id == context.organization.id
     if context.can("task.view_all"):
         return in_organization
 
     user_id = context.user.id
-    paths: list[ColumnElement[bool]] = [
-        Task.created_by == user_id,
-        Task.assigned_to == user_id,
-        exists().where(TaskCollaborator.task_id == Task.id, TaskCollaborator.user_id == user_id),
-        and_(
-            Task.visibility == TaskVisibility.SELECTED,
-            exists().where(
-                TaskVisibilityGrant.task_id == Task.id, TaskVisibilityGrant.user_id == user_id
-            ),
-        ),
-    ]
+    paths: list[ColumnElement[bool]] = [Task.created_by == user_id, Task.assigned_to == user_id]
     if context.can("task.view_organization"):
         paths.append(Task.visibility == TaskVisibility.ORGANIZATION)
     if context.department_ids and context.can("task.view_department"):
@@ -64,6 +82,12 @@ def visible_tasks(context: OrgContext) -> ColumnElement[bool]:
                 Task.department_id.in_(list(context.department_ids)),
             )
         )
+    is_collaborator = _is_shared(context, TaskCollaborator)
+    if is_collaborator is not None:
+        paths.append(is_collaborator)
+    is_granted = _is_shared(context, TaskVisibilityGrant)
+    if is_granted is not None:
+        paths.append(and_(Task.visibility == TaskVisibility.SELECTED, is_granted))
     return and_(in_organization, or_(*paths))
 
 

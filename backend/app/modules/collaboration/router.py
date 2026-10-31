@@ -78,6 +78,9 @@ async def upload_attachment(
     storage: Storage,
 ) -> AttachmentRead:
     """The request body is the file itself. Its size is capped before this runs (S-09)."""
+    # Signing the user in opened a connection. Give it back before waiting on the client, or
+    # a few dozen slow uploads would hold every connection and stall the whole app (ADR-032).
+    await run_in_threadpool(db.commit)
     content = await request.body()
     return await run_in_threadpool(
         attachments.add_attachment, db, auth.user, task_id, filename, content, storage

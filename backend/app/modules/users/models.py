@@ -28,8 +28,9 @@ class User(TimestampMixin, Base):
     password_changed_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False)
     last_login_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
 
+    # Loaded only when read: most queries that load a user just want their name.
     preferences: Mapped["UserPreferences | None"] = relationship(
-        lazy="selectin", uselist=False, cascade="all, delete-orphan", passive_deletes=True
+        uselist=False, cascade="all, delete-orphan", passive_deletes=True
     )
 
     @property

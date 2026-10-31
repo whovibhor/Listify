@@ -5,7 +5,11 @@ from app.api.v1.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import REQUEST_ID_HEADER, RequestContextMiddleware, configure_logging
-from app.core.middleware import BodySizeLimitMiddleware, SecurityHeadersMiddleware
+from app.core.middleware import (
+    BodySizeLimitMiddleware,
+    RequestLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
 
 API_PREFIX = "/api/v1"
 
@@ -24,6 +28,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     # Innermost, so refusals still carry CORS, security headers and a request ID.
+    app.add_middleware(
+        RequestLimitMiddleware,
+        limit=settings.max_concurrent_requests,
+        wait_seconds=settings.request_wait_seconds,
+    )
     app.add_middleware(BodySizeLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,

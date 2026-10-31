@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type { MyOrganization } from '@/features/organizations/types'
 import type {
@@ -10,6 +10,9 @@ import type {
 import { emptyPage, mockApi, signedInRoutes, testUser } from '@/test/mock-api'
 import { jsonResponse, renderApp } from '@/test/render'
 
+// These pages load the chart library on demand. On a slow first run that alone can outlast a
+// test's wait for the page, so it's loaded before the tests start.
+beforeAll(() => import('recharts'), 30_000)
 afterEach(() => vi.unstubAllGlobals())
 
 const REPORTS = ['report.view_personal', 'report.view_department', 'report.view_organization']
