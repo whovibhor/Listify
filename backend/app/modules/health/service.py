@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from app.db.session import get_engine
 
-logger = logging.getLogger("listify.health")
+logger = logging.getLogger("denote.health")
 
 
 class DependencyStatus(BaseModel):

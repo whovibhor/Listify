@@ -1,7 +1,7 @@
 [project]
-name = "listify-backend"
+name = "denote-backend"
 version = "0.1.0"
-description = "Listify API — FastAPI modular monolith"
+description = "Denote API — FastAPI modular monolith"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.162,<1.0",

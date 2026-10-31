@@ -1,4 +1,4 @@
-# Listify — Requirements Traceability Matrix
+# Denote — Requirements Traceability Matrix
 
 Milestones (M0–M9) are defined in `implementation-roadmap.md`. Status values: **Planned**, **In progress**, **Done**, **Deferred**. Test IDs are planned names; they become real file paths as milestones are implemented.
 

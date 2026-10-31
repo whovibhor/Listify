@@ -36,7 +36,7 @@ export function errorText(error: Error) {
   return error instanceof ApiError && error.details[0] ? error.details[0].message : error.message
 }
 
-const CSRF_COOKIE = 'listify_csrf'
+const CSRF_COOKIE = 'denote_csrf'
 const CSRF_HEADER = 'X-CSRF-Token'
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 

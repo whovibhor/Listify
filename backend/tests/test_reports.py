@@ -613,7 +613,7 @@ def test_export_holds_the_reports_rows_as_safe_text(team: Team, db: Session) -> 
     assert response.headers["content-type"].startswith("text/csv")
     assert (
         (response.headers["content-disposition"])
-        == 'attachment; filename="listify-tasks-2026-10-01-to-2026-10-30.csv"'
+        == 'attachment; filename="denote-tasks-2026-10-01-to-2026-10-30.csv"'
     )
     assert response.content.startswith(b"\xef\xbb\xbf")
     body = organization(team)

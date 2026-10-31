@@ -16,7 +16,7 @@ export const testUser: User = {
 
 export const healthyResponse = {
   status: 'ok',
-  service: 'Listify API',
+  service: 'Denote API',
   version: '0.1.0',
   environment: 'test',
   checks: { database: { status: 'ok', latency_ms: 1 } },

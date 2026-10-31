@@ -1,4 +1,4 @@
-# Listify — Security Audit and Improvement Plan
+# Denote — Security Audit and Improvement Plan
 
 **Date:** 2026-10-30 · **Covers:** everything built so far, Phases 0–5 (frontend, backend, database, configuration, dependencies, repository) · **Status (updated 2026-10-30):** 16 fixed, 2 partly fixed, 6 kept as they are by the owner's decision, 4 waiting on features that don't exist yet.
 
@@ -21,7 +21,7 @@ Each fix has a regression test in `backend/tests/test_security_fixes.py`, named 
 | S-12 | Removing someone clears their collaborator and "Selected people" entries |
 | S-13 | Creator rights only apply while you're in the task's department. Past creators can still read their tasks |
 | S-15 | Line breaks and control characters are refused in names and titles, and control characters in descriptions. Passwords are untouched |
-| S-17 | A `listify.security` log records sign-ins, failures, limits, password changes and session sign-outs, without passwords or typed emails |
+| S-17 | A `denote.security` log records sign-ins, failures, limits, password changes and session sign-outs, without passwords or typed emails |
 | S-18 | The assignee can't approve their own review. Owners and Admins are exempt, so a one-person organization isn't stuck |
 | S-19 | Dates outside 1900–2200 and non-ASCII CSRF headers get a clean refusal instead of a 500 |
 | S-21 | Invitations to an archived department stop working, and work again if it's restored |
@@ -87,7 +87,7 @@ The problems are mostly in the rules *around* those foundations. There are **5 h
 | Medium | 12 | Weakens protection, or causes harm in a limited way |
 | Low | 11 | Hardening and tidying; little direct harm today |
 
-**How this was tested.** Everything marked *Proven* was reproduced by a throwaway attack script against the running API on the test database `listify_test`. The application code and your development data were not changed. Findings marked *Code review* came from reading the code and weren't reproduced.
+**How this was tested.** Everything marked *Proven* was reproduced by a throwaway attack script against the running API on the test database `denote_test`. The application code and your development data were not changed. Findings marked *Code review* came from reading the code and weren't reproduced.
 
 **"Built in"** shows the phase each weakness comes from, so you can see which ones belong to Phases 0–4 and which to Phase 5.
 
@@ -128,7 +128,7 @@ The email column ignores accents, so `ádmin@example.com` finds the account `adm
 
 Root also turns any future app bug into full database access.
 
-**Fix:** set a root password, create a `listify_app` account limited to the two Listify databases, and set `bind-address = 127.0.0.1` in `my.ini`. Make production startup refuse `root`.
+**Fix:** set a root password, create a `denote_app` account limited to the two Denote databases, and set `bind-address = 127.0.0.1` in `my.ini`. Make production startup refuse `root`.
 
 #### S-05 A missing setting silently means "development", which turns the safety checks off
 *Proven · Built in Phase 0 · `core/config.py:22`*

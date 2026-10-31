@@ -1,4 +1,4 @@
-# Listify — Architecture Decision Records
+# Denote — Architecture Decision Records
 
 Format: each ADR states context, decision and consequences. Status is **Accepted** unless noted. "Owner-confirmed" means the product owner explicitly chose it on 2026-10-29.
 
@@ -24,7 +24,7 @@ Format: each ADR states context, decision and consequences. Status is **Accepted
 ## ADR-004 Authentication: server-side sessions in HttpOnly cookies
 
 - **Context:** First-party SPA + API. PRD §11.1 requires secure HttpOnly cookies and CSRF protection.
-- **Decision:** Opaque random session ID (256-bit, `secrets.token_urlsafe`) in cookie `listify_session`; the database stores only its SHA-256 hash in a `sessions` table with `user_id`, `created_at`, `last_seen_at`, `expires_at`, `revoked_at`, `ip`, `user_agent`. Cookie flags: `HttpOnly`, `SameSite=Lax`, `Secure` in production, `Path=/`. Idle timeout 12 h, absolute 7 d. Session ID is rotated on login and on password change; all sessions revoked on password reset. Logout revokes the row.
+- **Decision:** Opaque random session ID (256-bit, `secrets.token_urlsafe`) in cookie `denote_session`; the database stores only its SHA-256 hash in a `sessions` table with `user_id`, `created_at`, `last_seen_at`, `expires_at`, `revoked_at`, `ip`, `user_agent`. Cookie flags: `HttpOnly`, `SameSite=Lax`, `Secure` in production, `Path=/`. Idle timeout 12 h, absolute 7 d. Session ID is rotated on login and on password change; all sessions revoked on password reset. Logout revokes the row.
 - **Why not JWT:** revocation (FR-AUTH-02 "logout invalidates the session") and access-revocation predictability (O7) are simpler with server state.
 - **Consequences:** One indexed lookup per request; acceptable at MVP scale.
 
@@ -34,7 +34,7 @@ Format: each ADR states context, decision and consequences. Status is **Accepted
 
 ## ADR-006 CSRF and CORS
 
-- **Decision:** Double-submit CSRF token: on session creation the API sets a non-HttpOnly `listify_csrf` cookie; the SPA echoes it in the `X-CSRF-Token` header for every unsafe method (POST/PUT/PATCH/DELETE). The server compares it with a value bound to the session (HMAC of session ID). Visitors without a session get a random token from `GET /auth/csrf` (the API client fetches it automatically before the first unsafe request). With a session, that endpoint re-derives the bound token, so a lost cookie heals itself; the client retries once on `csrf_failed`. Implemented as a dependency on the whole `/api/v1` router (`csrf_protect`). Combined with `SameSite=Lax`. CORS allows only the configured `FRONTEND_ORIGINS`, `allow_credentials=True`, no wildcard. In local dev the Vite dev server proxies `/api` to the backend, so the browser sees a single origin.
+- **Decision:** Double-submit CSRF token: on session creation the API sets a non-HttpOnly `denote_csrf` cookie; the SPA echoes it in the `X-CSRF-Token` header for every unsafe method (POST/PUT/PATCH/DELETE). The server compares it with a value bound to the session (HMAC of session ID). Visitors without a session get a random token from `GET /auth/csrf` (the API client fetches it automatically before the first unsafe request). With a session, that endpoint re-derives the bound token, so a lost cookie heals itself; the client retries once on `csrf_failed`. Implemented as a dependency on the whole `/api/v1` router (`csrf_protect`). Combined with `SameSite=Lax`. CORS allows only the configured `FRONTEND_ORIGINS`, `allow_credentials=True`, no wildcard. In local dev the Vite dev server proxies `/api` to the backend, so the browser sees a single origin.
 
 ## ADR-007 Password hashing: Argon2id via `argon2-cffi`
 
@@ -179,9 +179,11 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 
 **Deadlines:** clients send local `due_date` + optional `due_time`; the server converts with the user's timezone. All-day deadlines are stored as 23:59:59.999999 local time, so a task becomes overdue only after its day ends. Responses carry UTC instants plus `due_all_day`, and the SPA formats them in the profile timezone (not the browser's) using `@date-fns/tz`.
 
-## ADR-023 Product name: Listify
+## ADR-023 Product name: Denote
 
-- **Decision:** the product is **Listify** (owner, 2026-10-30). The BRD and PRD use the earlier working name "WorkPulse"; those two source files keep their names. Everything else was renamed, including cookies (`listify_session`, `listify_csrf`), so anyone signed in before the rename signs in once more.
+- **Decision:** the product is **Denote** (owner, 2026-10-31). It was called Listify before that, and the BRD and PRD use the earlier working name "WorkPulse"; those two source files keep their names. Everything else was renamed, including cookies (`denote_session`, `denote_csrf`), so anyone signed in before the rename signs in once more.
+- **Databases too:** `denote` and `denote_test`. MySQL has no database rename, so the tables were moved with one `RENAME TABLE`, after a backup, and row counts were compared before the old empty databases were removed.
+- **Not renamed:** the project folder and the GitHub repository are still called Listify. The folder can't move while tools run inside it, and its Python environment holds fixed paths, so moving it means rebuilding `backend/.venv`. Migrations never contained the name.
 
 ## ADR-024 Borderless cards
 
@@ -229,7 +231,7 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 - **One validation rule for all input:** `InputModel` refuses control characters in every string field, so new fields are covered automatically. Multi-line fields and secrets are listed by name.
 - **Limits on creation, not on all writes.** A write limit on every request would add a database commit to each one. Limits on what fills the database stop the same abuse.
 - **Accepted for now, by the owner:** sign-in stays unchanged until Login with Google, and the MySQL root account stays unchanged while the app only runs on this PC. Both must be closed before real users or deployment.
-- **Security events go to the `listify.security` log,** not `audit_logs`, which is per organization and visible to its admins. The log never holds passwords or the text typed into a failed sign-in.
+- **Security events go to the `denote.security` log,** not `audit_logs`, which is per organization and visible to its admins. The log never holds passwords or the text typed into a failed sign-in.
 
 ## ADR-029 Collaboration and notifications (Phase 6)
 

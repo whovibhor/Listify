@@ -1,6 +1,6 @@
 import logging
 
-logger = logging.getLogger("listify.security")
+logger = logging.getLogger("denote.security")
 
 
 def security_event(event: str, **fields: object) -> None:

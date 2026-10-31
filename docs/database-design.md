@@ -1,10 +1,10 @@
-# Listify — Database Design
+# Denote — Database Design
 
-Status: **Database optimization applied** (head revision `630c0a73320e`; Phases 4 and 7 added no tables). Databases: `listify` (development) and `listify_test` (automated tests and E2E).
+Status: **Database optimization applied** (head revision `630c0a73320e`; Phases 4 and 7 added no tables). Databases: `denote` (development) and `denote_test` (automated tests and E2E).
 
 ## Server and conventions
 
-- MySQL 8.4.7 (WAMP, port 3306), InnoDB, `utf8mb4` / `utf8mb4_0900_ai_ci` set explicitly on every table (ADR-003). The `listify` database itself defaults to `utf8mb4_unicode_ci`; table-level settings make that irrelevant.
+- MySQL 8.4.7 (WAMP, port 3306), InnoDB, `utf8mb4` / `utf8mb4_0900_ai_ci` set explicitly on every table (ADR-003). The `denote` database itself defaults to `utf8mb4_unicode_ci`; table-level settings make that irrelevant.
 - **WAMP defaults are unsafe for this app** (default engine MyISAM, empty `sql_mode`). Every connection therefore runs `SET time_zone='+00:00', sql_mode='STRICT_TRANS_TABLES,ONLY_FULL_GROUP_BY,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION', default_storage_engine='InnoDB'`, and every model declares `MYSQL_TABLE_ARGS` (InnoDB, utf8mb4).
 - Local development uses MySQL `root` without a password (owner's choice). Production must use a dedicated least-privilege account; startup validation rejects an empty `DB_PASSWORD` in production.
 - Driver `mysql+pymysql`.
@@ -12,7 +12,7 @@ Status: **Database optimization applied** (head revision `630c0a73320e`; Phases 
 - Primary keys: `BIGINT UNSIGNED AUTO_INCREMENT` internally. Public identifiers exposed in URLs will be decided in M1 (proposal: keep integer IDs, rely on object-level authorization returning 404; revisit if enumeration becomes a concern).
 - Constraint naming convention is defined in `app/db/base.py` so Alembic diffs stay stable.
 - Every migration must have a working `downgrade()`; destructive changes need a data-migration note in this file.
-- Tests run against `listify_test`, never the development database.
+- Tests run against `denote_test`, never the development database.
 
 ## Phase 1 tables
 

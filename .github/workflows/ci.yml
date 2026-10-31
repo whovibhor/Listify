@@ -19,8 +19,8 @@ env:
   DB_PORT: '3306'
   DB_USER: root
   DB_PASSWORD: ci-root-password
-  DB_NAME: listify
-  DB_TEST_NAME: listify_test
+  DB_NAME: denote
+  DB_TEST_NAME: denote_test
   SESSION_SECRET: ci-only-session-secret-not-used-anywhere-else
 
 jobs:
@@ -31,7 +31,7 @@ jobs:
         image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: ci-root-password
-          MYSQL_DATABASE: listify_test
+          MYSQL_DATABASE: denote_test
         ports: ['3306:3306']
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -pci-root-password"
@@ -83,7 +83,7 @@ jobs:
         image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: ci-root-password
-          MYSQL_DATABASE: listify_test
+          MYSQL_DATABASE: denote_test
         ports: ['3306:3306']
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -pci-root-password"

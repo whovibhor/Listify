@@ -77,7 +77,7 @@ function HomePage() {
   return (
     <motion.div {...pageEnter} className="space-y-6">
       <PageHeader
-        title={firstName ? `Hi, ${firstName}` : 'Welcome to Listify'}
+        title={firstName ? `Hi, ${firstName}` : 'Welcome to Denote'}
         description="Here's where your personal work stands."
       />
       <QuickAddTask

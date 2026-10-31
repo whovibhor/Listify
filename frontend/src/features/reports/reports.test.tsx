@@ -321,7 +321,7 @@ describe('Organization report', () => {
           new Response('"Task ID"', {
             headers: {
               'Content-Type': 'text/csv',
-              'Content-Disposition': 'attachment; filename="listify-tasks-a-to-b.csv"',
+              'Content-Disposition': 'attachment; filename="denote-tasks-a-to-b.csv"',
             },
           }),
       }),
@@ -329,7 +329,7 @@ describe('Organization report', () => {
     const { user } = renderApp('/org/7/reports')
     await user.click(await screen.findByRole('button', { name: 'Export CSV' }))
 
-    await waitFor(() => expect(clicks).toEqual(['listify-tasks-a-to-b.csv']))
+    await waitFor(() => expect(clicks).toEqual(['denote-tasks-a-to-b.csv']))
     const request = calls.find((call) => call.path.endsWith('tasks.csv'))
     expect(request?.query.get('start')).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     click.mockRestore()

@@ -35,7 +35,7 @@ def test_health_does_not_leak_connection_details(app: FastAPI, client: TestClien
 
     text = client.get("/api/v1/health").text.lower()
 
-    for secret_hint in ("password", "3306", "pymysql", "traceback", "listify_app"):
+    for secret_hint in ("password", "3306", "pymysql", "traceback", "denote_app"):
         assert secret_hint not in text
 
 

@@ -30,8 +30,8 @@ def test_production_accepts_secure_configuration() -> None:
         app_env="production",
         session_secret="x" * 48,
         db_password="not-empty",
-        frontend_origins=["https://app.listify.example"],
-        frontend_base_url="https://app.listify.example",
+        frontend_origins=["https://app.denote.example"],
+        frontend_base_url="https://app.denote.example",
         mail_backend="smtp",
     )
     assert settings.is_production
@@ -45,8 +45,8 @@ def test_production_rejects_console_mailer_and_insecure_cookies() -> None:
             app_env="production",
             session_secret="x" * 48,
             db_password="not-empty",
-            frontend_origins=["https://app.listify.example"],
-            frontend_base_url="https://app.listify.example",
+            frontend_origins=["https://app.denote.example"],
+            frontend_base_url="https://app.denote.example",
             mail_backend="console",
             cookie_secure=False,
             rate_limits_enabled=False,
@@ -58,7 +58,7 @@ def test_production_rejects_console_mailer_and_insecure_cookies() -> None:
 
 
 def test_database_url_never_renders_password_by_default() -> None:
-    settings = Settings(_env_file=None, app_env="test", db_password="s3cr3t!@#", db_name="listify")
+    settings = Settings(_env_file=None, app_env="test", db_password="s3cr3t!@#", db_name="denote")
 
     url = settings.database_url()
 
@@ -70,10 +70,10 @@ def test_database_url_never_renders_password_by_default() -> None:
 
 def test_database_url_uses_test_db_name_when_requested() -> None:
     settings = Settings(
-        _env_file=None, app_env="test", db_name="listify", db_test_name="listify_test"
+        _env_file=None, app_env="test", db_name="denote", db_test_name="denote_test"
     )
-    assert settings.database_url(test=True).database == "listify_test"
-    assert settings.database_url().database == "listify"
+    assert settings.database_url(test=True).database == "denote_test"
+    assert settings.database_url().database == "denote"
 
 
 def test_production_refuses_too_few_database_connections() -> None:

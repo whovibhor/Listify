@@ -1,6 +1,6 @@
-# Listify — Feature Status
+# Denote — Feature Status
 
-**Last updated:** 2026-10-31 · **Current phase:** Phase 8 (Reminders & scheduled notifications) — next up
+**Last updated:** 2026-10-31 · **Current work:** UI & journey rework, Batch 2 (inbox per workspace) next · Phase 8 follows the rework
 
 This is the single list of what is **done** and what is **pending**, feature by feature. It is updated every time a feature is completed or changed. A feature is marked ✅ only after it works end-to-end (UI → API → MySQL) and its tests have been run and passed. Detailed plans live in [`implementation-roadmap.md`](implementation-roadmap.md).
 
@@ -20,6 +20,7 @@ Legend: ✅ done · 🟡 partly done · ⏳ pending · ⏸ deferred (later relea
 | Department work boards (team tasks) | ✅ Done |
 | Comments, update requests, attachments, inbox | ✅ Done |
 | Team & organization dashboards | ✅ Done |
+| UI & journey rework | 🟡 In progress: Batch 1 of 6 done |
 | Reminders, notifications, email | ⏳ Pending (Phase 8) |
 | Production readiness (deploy, backups, monitoring) | ⏳ Pending (Phase 9) |
 
@@ -27,7 +28,7 @@ Legend: ✅ done · 🟡 partly done · ⏳ pending · ⏸ deferred (later relea
 
 ## ✅ Done
 
-Every item below is saved in and loaded from MySQL (database `listify`). The "Stored in" column names the table.
+Every item below is saved in and loaded from MySQL (database `denote`). The "Stored in" column names the table.
 
 ### Accounts & security
 | Feature | Stored in |
@@ -150,7 +151,45 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 
 ## ⏳ Pending
 
-### Phase 8 — Reminders & notifications *(next)*
+### UI & journey rework *(next)*
+The agreed plan, with the owner's decisions, is in [`implementation-roadmap.md`](implementation-roadmap.md). These existing features will change:
+
+**Batch 2: Inbox per workspace**
+- ⏳ Organization inbox with its own address, showing only that organization's notices
+- ⏳ Personal inbox for personal notices, plus rejected, suspended and removed notices
+- ⏳ Lists, unread counts, update requests and Mark all as read filtered by workspace
+- ⏳ Bell and sidebar show the current workspace; a dot on the header button shows unread in the other one
+
+**Batch 3: Department page**
+- ⏳ Full department page: description, managers, team totals, trend, and members with roles and job titles
+- ⏳ Regular members see team totals only, with no per-person numbers
+- ⏳ Sidebar: Departments for Owner and Admin, Department for everyone else
+- ⏳ Members item removed from the sidebar for everyone; All members becomes a tab on Departments for Owner and Admin
+- ⏳ Boards move to their own address, and old links redirect
+
+**Batch 4: Boards and task lists**
+- ⏳ Board columns: Not Started, In Progress, In Review, Completed
+- ⏳ Blocked and Cancelled hidden by default, with toggles that show their counts
+- ⏳ Completed column limited to the last 30 days, with a link to the rest
+- ⏳ Team Tasks and My Work open on active work, with a filter to show finished tasks
+
+**Batch 5: Task page**
+- ⏳ Full task page replaces the side panel everywhere, for personal and organization tasks
+- ⏳ Details rail plus tabs with their own links: Overview, Comments, Files, Update requests, Activity
+- ⏳ Status and Complete stay one click; everything else goes through an Edit button
+- ⏳ Subtasks get the same page, with a link to the parent
+- ⏳ Real links on cards and rows, Back keeps list filters, old `?task=` links redirect
+
+**Batch 6: Final pass**
+- ⏳ Full journey for each role, accessibility checks, docs, and a complete E2E run
+
+### Planned additions (agreed 2026-10-31, after the rework)
+- ⏳ Time estimates on the task page and reports
+- ⏳ Bulk actions on Team Tasks: change status, assignee or deadline together
+- ⏳ Global search (Ctrl+K) across tasks, people and pages
+- ⏳ Recurring tasks and task dependencies, after Phase 8
+
+### Phase 8 — Reminders & notifications
 - ⏳ Deadline-approaching and overdue reminders, update-request reminders
 - ⏳ Notification preferences, optional email delivery (SMTP)
 - ⏳ Background worker (Redis + Celery)
@@ -172,7 +211,7 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 - ⏳ Safe account linking, verified emails, and a decision on whether password sign-in stays
 
 ### Small gaps in finished areas
-- 🟡 Estimated / actual effort: saved by the API (`tasks`), no input field in the app yet
+- 🟡 Estimated / actual effort: saved by the API (`tasks`), no input field in the app yet (planned, see Time estimates above)
 - 🟡 Board cards don't keep a custom order within a column; they sort by deadline, then priority
 - 🟡 Calendar shows the first 100 tasks in a month and says so; the List view has them all
 - 🟡 A member can't leave an organization by themselves; an administrator removes them
@@ -180,13 +219,14 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 - 🟡 Comments are plain text, and mentions are chosen from a list rather than typed with @
 - 🟡 The BRD's Median completion time and Update response rate aren't on any report. Neither is in the PRD's report list, and the response rate needs the response window that arrives with Phase 8
 - 🟡 Update requests don't expire on their own (optional in the PRD; comes with reminders in Phase 8)
-- ⏸ Recurring tasks, custom role builder, sign-in with Google etc. — later releases (PRD P2)
+- ⏸ Custom role builder — later release (PRD P2)
 
 ---
 
 ## Change log
 | Date | Change |
 |---|---|
+| 2026-10-31 | Renamed the product from Listify to Denote: interface, emails, cookies, logs, config, packages, docs and the MySQL databases (`denote`, `denote_test`). Everyone signs in once more. |
 | 2026-10-31 | App shell rework: System Status removed from Home, workspace button moved to the header, collapsible sidebar, new sidebar order, Create and Join moved to Account settings, last workspace remembered. |
 | 2026-10-31 | Sample data added to Shoolini University for hands-on testing: 16 more members and 131 tasks with history. See the README. |
 | 2026-10-31 | Database speed, steps 2 and 3: Team Tasks is about four times faster at 100,000 tasks, using a new sort index and a quicker sharing check. Report indexes are smaller. No visible feature changes. |
@@ -196,10 +236,10 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 | 2026-10-30 | Phase 6 (collaboration) completed: comments, attachments, update requests, notifications and the Inbox. |
 | 2026-10-30 | Fixed a Phase 2 bug: a subtask entered while the previous one was still saving was silently lost. |
 | 2026-10-30 | Security fixes: 16 audit findings closed and 2 partly closed, with regression tests. Sign-in and the MySQL account left unchanged by the owner's decision. Login with Google added to future plans. |
-| 2026-10-30 | Security audit of Phases 0–5 written; no critical findings, 5 high. Desktop launcher `Start Listify.bat` added. |
+| 2026-10-30 | Security audit of Phases 0–5 written; no critical findings, 5 high. Desktop launcher `Start Denote.bat` added. |
 | 2026-10-30 | Phase 5 (department work boards) completed. Added a `task.view_all` permission; every member now holds `task.view_organization`. Status colours darkened so they stay readable on tinted backgrounds. |
 | 2026-10-30 | Phase 4 (roles & permissions, member management) completed. Shared red colour darkened in light mode and lightened in dark mode to meet the contrast standard. |
-| 2026-10-30 | Phase 3 (organizations, departments, membership) completed. Product renamed to **Listify** (new checklist logo, cookies and internal names updated). Borders removed from all cards; cards now separate by shadow on a tinted background. |
+| 2026-10-30 | Phase 3 (organizations, departments, membership) completed. Product renamed to **Denote** (new checklist logo, cookies and internal names updated). Borders removed from all cards; cards now separate by shadow on a tinted background. |
 | 2026-10-29 | Theme preference moved from browser-only to the database (`user_preferences`); My Day, My Tasks and Upcoming redesigned; responsive fixes (Home overflow on phones, full-width task panel on phones, priority icons, day-strip fade); "Done today" on My Day. |
 | 2026-10-29 | Phase 2 (personal workspace) completed. |
 | 2026-10-29 | Phase 1 (accounts & sign-in) completed. |

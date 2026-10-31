@@ -1,4 +1,4 @@
-# Listify — Implementation Roadmap
+# Denote — Implementation Roadmap
 
 Dependency-aware sequence derived from PRD §15–16 and the owner's build instructions. Each phase ends with: backend tests, frontend tests, production build, browser walkthrough, authorization/isolation checks, docs update and a phase report in `development-log.md`.
 
@@ -18,7 +18,9 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 | 5 | Department Work Boards | ✅ Complete | 2026-10-30 |
 | 6 | Collaboration (comments, update requests, attachments, inbox) | ✅ Complete | 2026-10-30 |
 | 7 | Dashboards & reporting | ✅ Complete | 2026-10-30 |
-| 8 | Reminders & scheduled notifications | 🚧 Next | — |
+| UI | UI & journey rework (6 batches) | 🚧 In progress: Batch 1 done, Batch 2 next | — |
+| 8 | Reminders & scheduled notifications | ⏳ After the rework | — |
+| Later | Agreed additions: time estimates, bulk actions, global search, recurring tasks and dependencies | ⏳ Planned | — |
 | 9 | Production readiness | ⏳ Planned | — |
 | Future | Sign-in with Google and other providers | ⏳ Planned | — |
 
@@ -29,7 +31,7 @@ Security status: [`security-audit.md`](security-audit.md). 16 of 28 findings are
 ### Phase 0 — Foundation ✅
 - [x] Project structure, documentation, decision records, traceability matrix
 - [x] Backend API skeleton with health check that really tests MySQL
-- [x] MySQL `listify` / `listify_test` connected; Alembic migrations working (upgrade + downgrade verified)
+- [x] MySQL `denote` / `denote_test` connected; Alembic migrations working (upgrade + downgrade verified)
 - [x] App shell: sidebar, mobile menu, workspace switcher (personal only), account menu, light/dark theme
 - [x] Design system: violet brand tokens, status/priority badges, empty/error/loading states
 - [x] Lint, formatting, test and build pipelines (`scripts\check.ps1`)
@@ -98,6 +100,60 @@ Security status: [`security-audit.md`](security-audit.md). 16 of 28 findings are
 - [x] Member summary (self or authorized manager)
 - [x] Date range picker; every metric shows its formula and timezone; CSV export where permitted
 - Note: on 100,000 tasks, seven of eight measured reports met the 500 ms target. A full year for a whole organization took about 780 ms. Measured with `scripts/perf_reports.py`; caching, if ever needed, waits for Redis in Phase 8.
+
+### UI & journey rework
+Requested by the owner on 2026-10-31 after trying the app with sample data. Batches run in this order, smallest and most foundational first.
+
+**Batch 1 — App shell and workspace ✅**
+- [x] System Status removed from Home
+- [x] Collapsible sidebar with an icon rail, saved in MySQL
+- [x] Organization sidebar: Overview, Inbox, Departments, Members, then Boards, Work, Administration
+- [x] Workspace button in the header: direct swap, or a list with two or more organizations
+- [x] Create and Join: in the header until you've joined, then only in Account settings > Organizations
+- [x] Last workspace reopens on a fresh visit or sign-in; Settings and Inbox stay in it
+- [x] Product renamed to Denote, including the MySQL databases
+
+**Batch 2 — Inbox per workspace**
+- [ ] Organization inbox at its own address, showing only that organization's notices
+- [ ] Personal inbox: personal notices, plus rejected, suspended and removed notices that have no organization page to open
+- [ ] Server filters lists, summary counts, update requests and Mark all as read by workspace; check whether `notifications` needs an index
+- [ ] Bell and sidebar count the current workspace; a dot on the header button shows unread in the other one
+
+**Batch 3 — Department page**
+- [ ] Endpoint for a department summary that any member of the department can read, using `visible_tasks` so totals match the board and showing no per-person numbers
+- [ ] Department page: description, managers, totals, trend, members with roles and job titles
+- [ ] Sidebar: Departments for Owner and Admin; Department for Managers, Team Leads and Members
+- [ ] A selector for people in two departments, and an empty state for people in none
+- [ ] Members item removed for everyone; All members tab on Departments for Owner and Admin, because the Owner may be in no department
+- [ ] Boards move to `/org/:id/boards/:id`; old links redirect
+
+**Batch 4 — Boards and task lists**
+- [ ] Column order: Not Started, In Progress, In Review, Completed; In Review still appears only where review is on
+- [ ] Blocked and Cancelled hidden by default, with toggles showing counts; the Move menu still offers them, and a message offers to show the column
+- [ ] Completed column limited to the last 30 days, with a link to the rest
+- [ ] Hidden columns return totals only, so their cards aren't loaded until shown
+- [ ] Team Tasks and My Work open on active work, with a filter to show finished tasks
+
+**Batch 5 — Task page**
+- [ ] Routes for `/org/:id/tasks/:taskId/:tab?` and `/personal/tasks/:taskId/:tab?`
+- [ ] Details rail plus tabs: Overview, Comments, Files, Update requests, Activity, with counts on the tabs
+- [ ] Status and Complete are one click; Edit opens a form with Save and Cancel, showing only fields that person may change
+- [ ] Archive and Delete in a "…" menu
+- [ ] Subtasks use the same page with a link to the parent; first confirm the server handles subtasks fully here
+- [ ] Cards and rows become real links; Back keeps list filters; `?task=` links redirect; notifications and reports link to the new page
+- [ ] After creating a task you stay on the list, with an Open task link
+- [ ] Side panel removed from every page
+
+**Batch 6 — Final pass**
+- [ ] Full journey for each role at phone, tablet and desktop widths
+- [ ] Accessibility checks, a complete E2E run, and docs
+
+### Agreed additions (after the rework)
+In this order, smallest first:
+- [ ] Time estimates: show the existing estimated and actual fields on the task page and in reports
+- [ ] Bulk actions on Team Tasks: status, assignee and deadline
+- [ ] Global search (Ctrl+K) across tasks, people and pages, respecting what each person may see
+- [ ] Recurring tasks and task dependencies, after Phase 8's scheduled jobs
 
 ### Phase 8 — Reminders & scheduled notifications
 - [ ] Deadline-approaching and overdue notifications

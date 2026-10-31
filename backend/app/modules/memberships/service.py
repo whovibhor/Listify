@@ -610,7 +610,7 @@ def create_invitation(
         mailer.send(
             EmailMessage(
                 to=payload.email,
-                subject=f"You're invited to join {context.organization.name} on Listify",
+                subject=f"You're invited to join {context.organization.name} on Denote",
                 body=(
                     f"{context.user.name} invited you to join {context.organization.name}.\n\n"
                     f"Accept here (the link can be used once and expires in "

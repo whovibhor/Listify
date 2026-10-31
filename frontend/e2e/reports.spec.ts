@@ -73,7 +73,7 @@ test('managers read reports, and the numbers only ever cover what they may see',
   const download = owner.waitForEvent('download')
   await owner.getByRole('button', { name: 'Export CSV' }).click()
   const file = await download
-  expect(file.suggestedFilename()).toMatch(/^listify-tasks-.*\.csv$/)
+  expect(file.suggestedFilename()).toMatch(/^denote-tasks-.*\.csv$/)
   const csv = await readFile(await file.path(), 'utf8')
   expect(csv).toContain(`"'=HYPERLINK(""http://evil"")"`)
   expect(csv).toContain('Private restructuring')
@@ -104,7 +104,7 @@ test('managers read reports, and the numbers only ever cover what they may see',
   const members = await (
     await owner.request.get(`/api/v1/organizations/${orgId}/members`, { params: { q: 'Amy' } })
   ).json()
-  const csrf = (await owner.context().cookies()).find((c) => c.name === 'listify_csrf')?.value ?? ''
+  const csrf = (await owner.context().cookies()).find((c) => c.name === 'denote_csrf')?.value ?? ''
   const promoted = await owner.request.patch(
     `/api/v1/organizations/${orgId}/members/${members.items[0].membership_id}/roles`,
     {

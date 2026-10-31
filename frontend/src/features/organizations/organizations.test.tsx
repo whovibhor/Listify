@@ -155,7 +155,7 @@ describe('remembering the workspace', () => {
     const nav = (await screen.findAllByRole('navigation', { name: 'Main' }))[0]
     expect(await within(nav).findByRole('link', { name: /team tasks/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Switch to Personal' })).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: 'Listify home' })[0]).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: 'Denote home' })[0]).toHaveAttribute(
       'href',
       '/org/7',
     )

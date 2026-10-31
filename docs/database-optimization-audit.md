@@ -1,4 +1,4 @@
-# Listify — Database Optimization Audit
+# Denote — Database Optimization Audit
 
 **Date:** 2026-10-30, updated 2026-10-31 · **Covers:** code up to commit `080701a` (Phases 0–7) · **Status:** R-01 to R-08 and R-15 are applied. R-09 onwards are still recommendations.
 
@@ -78,7 +78,7 @@ Non-Owners now run two more small queries per request that touches tasks, to fin
 
 ## How this was measured
 
-- **Data:** `listify_test` only, seeded with 100,000 tasks in one organization, 20,000 subtasks, 5,000 personal tasks, 300,000 activity rows, 100,000 notifications, 50,000 comments, 50,000 audit rows, 20,000 expired sessions and 20,000 old rate-limit rows. `listify` wasn't touched, and the test database was emptied afterwards.
+- **Data:** `denote_test` only, seeded with 100,000 tasks in one organization, 20,000 subtasks, 5,000 personal tasks, 300,000 activity rows, 100,000 notifications, 50,000 comments, 50,000 audit rows, 20,000 expired sessions and 20,000 old rate-limit rows. `denote` wasn't touched, and the test database was emptied afterwards.
 - **Method:** every SQL statement behind each main request was recorded, slow ones were explained, and each candidate fix was tried against the same data.
 - **Candidates were checked through the real app,** because hand-written SQL proved misleading: two fixes that looked excellent in raw SQL did nothing or made things worse in the app. See "Don't do these".
 

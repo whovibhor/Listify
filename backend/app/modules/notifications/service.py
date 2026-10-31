@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.notifications.models import Notification
 
-logger = logging.getLogger("listify.notifications")
+logger = logging.getLogger("denote.notifications")
 
 
 def notify(

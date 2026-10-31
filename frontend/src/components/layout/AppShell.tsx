@@ -131,7 +131,7 @@ export function AppShell() {
       >
         <Link
           to={home}
-          aria-label="Listify home"
+          aria-label="Denote home"
           className={cn(
             'rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
             collapsed ? 'mx-auto' : 'px-1.5',
@@ -177,7 +177,7 @@ export function AppShell() {
 
           <Link
             to={home}
-            aria-label="Listify home"
+            aria-label="Denote home"
             className="shrink-0 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:hidden"
           >
             <Logo />

@@ -1,4 +1,29 @@
-# Listify — Development Log
+# Denote — Development Log
+
+## 2026-10-31 — Renamed from Listify to Denote
+
+### Requested by the owner
+Change the name to Denote everywhere, record what changed and what's still planned, and commit. Run E2E only after bigger changes.
+
+### Changes
+- **Text:** 56 tracked files, covering the interface, emails, logs, config, packages, CI, tests and docs. Older entries in this log now say Denote too.
+- **Things people notice once:** cookies are now `denote_session` and `denote_csrf`, so everyone signs in again. The saved theme key changed too, and the account's theme is restored on sign-in. CSV exports are named `denote-tasks-…`.
+- **Databases:** `listify` and `listify_test` became `denote` and `denote_test`. Each was backed up, its tables moved with one `RENAME TABLE`, row counts compared (27 tables each; 1,829 rows in the main one), and then the empty old database was removed. `backend/.env` was updated to match.
+- **Outside the repository:** the Desktop launcher is now `Start Denote.bat`.
+- **Not renamed:** the project folder and the GitHub repository, which are still called Listify. See ADR-023.
+- **Docs:** `feature-status.md` and `implementation-roadmap.md` now hold the full UI rework plan and the agreed additions. Phase 8 moved after the rework. `testing-strategy.md` records when to run E2E.
+
+### Checks (all actually run, after the rename)
+| Check | Result |
+|---|---|
+| Backend tests | 649 passed |
+| Frontend tests | 139 passed |
+| Ruff, ESLint, Prettier, TypeScript, Alembic check | Clean |
+| E2E, mobile project | 18 passed, 2 skipped by design; the earlier browser crashes didn't return |
+| Real app as Admin | Signed in on the renamed database with the new cookies. Numbers unchanged, a file downloaded, old name absent from the pages checked, no errors |
+
+### Known limitations
+- The desktop E2E project wasn't rerun after the rename. Its last run was before the rename, where everything passed once the two test problems in Batch 1 were fixed. The mobile project runs the same journeys.
 
 ## 2026-10-31 — UI rework, Batch 1: app shell and workspace
 
@@ -41,14 +66,14 @@ Fill the existing organization with believable data for a medium-sized organizat
 
 ### Changes
 - `scripts/seed_shoolini.py` and `scripts/seed_shoolini_data.py` add the data as one transaction, with dates relative to the day they run.
-- `listify` gained 16 fictional members, 4 applicants, 131 organization tasks, 45 subtasks, 20 personal tasks, 42 comments, 14 files, 11 update requests, 267 notifications, 12 tags and 5 invitations. Files are in `backend/storage/`.
+- `denote` gained 16 fictional members, 4 applicants, 131 organization tasks, 45 subtasks, 20 personal tasks, 42 comments, 14 files, 11 update requests, 267 notifications, 12 tags and 5 invitations. Files are in `backend/storage/`.
 - The only existing rows changed are the five department descriptions, which were empty.
 - The data includes special cases: a suspended member, a transferred member, tasks needing reassignment, a task moved after completion, archived and cancelled tasks, private and selected-visibility tasks, and an edited and a deleted comment.
 
 ### Checks (all actually run)
 | Check | Result |
 |---|---|
-| Rehearsal on `listify_test` | Passed, then the test database was emptied |
+| Rehearsal on `denote_test` | Passed, then the test database was emptied |
 | Real app, signed in as sample people | Every report, board, list and task page responded, and all 14 files downloaded |
 | Data consistency checks | 8 checks, no problems |
 | Running it a second time | Changed nothing |
@@ -69,7 +94,7 @@ Fill the existing organization with believable data for a medium-sized organizat
 Apply steps 2 and 3 of the audit together, then test both at once.
 
 ### Changes
-- **Migration `630c0a73320e`:** adds `ix_tasks_org_default_sort`, removes `workspace_type` from the three report indexes, and drops `ix_organization_invitations_organization_id`. Applied to `listify` and `listify_test`; round-tripped on `listify_test` only.
+- **Migration `630c0a73320e`:** adds `ix_tasks_org_default_sort`, removes `workspace_type` from the three report indexes, and drops `ix_organization_invitations_organization_id`. Applied to `denote` and `denote_test`; round-tripped on `denote_test` only.
 - **Visibility:** `visible_tasks` looks up what's shared with a person once per request, falling back to the old check above 1,000 entries. Rules are in ADR-033.
 - No API or data changes.
 
@@ -80,7 +105,7 @@ Apply steps 2 and 3 of the audit together, then test both at once.
 | Frontend Vitest | **131 passed** |
 | Playwright E2E | **35 passed, 1 skipped by design** (desktop 18, mobile 17) |
 | Ruff | passed |
-| Migrations | upgrade → downgrade → upgrade on `listify_test`; `alembic check` clean on both databases |
+| Migrations | upgrade → downgrade → upgrade on `denote_test`; `alembic check` clean on both databases |
 | Regression checks | Changing the sort, or removing collaborator access, each made the new tests fail. Both restored |
 | Measurements | Each page compared with and without the sort index on seeded data, with matching totals. Results are in the audit |
 
@@ -161,7 +186,7 @@ Audit the database for optimization opportunities without breaking anything, the
 Start Phase 7. Phase 6 was still uncommitted, so this work sits on top of it, and nothing has been committed.
 
 ### Changes
-- **Database:** migration `7918315c68c9` adds three indexes on `tasks`. Applied to `listify` and `listify_test`; round-tripped on `listify_test` only.
+- **Database:** migration `7918315c68c9` adds three indexes on `tasks`. Applied to `denote` and `denote_test`; round-tripped on `denote_test` only.
 - **Backend:** `dashboards/organization.py` for the reports and `dashboards/export.py` for CSV, on top of the existing `report.*` permissions. Rules are in ADR-030.
 - **Frontend:** new `features/reports`, with Reports in the organization sidebar. Overview's out-of-date "Team work is coming next" panel was replaced by real numbers, and department boards gained a Report button. `--chart-2` in dark mode changed so that the two chart lines stay distinguishable.
 
@@ -173,7 +198,7 @@ Start Phase 7. Phase 6 was still uncommitted, so this work sits on top of it, an
 | Playwright E2E | **35 passed, 1 skipped by design** (desktop 18, mobile 17), run as two separate sets. New: a manager journey covering numbers, a real CSV download, a period carried between reports, and a private task left out of a manager's report; a member's own summary; axe scans of all report pages; report pages added to the 3-width responsive check |
 | Ruff, ESLint, Prettier, `tsc -b`, `vite build` | passed; no warnings |
 | `npm audit --omit=dev` | 0 vulnerabilities |
-| Migrations | upgrade → downgrade → upgrade on `listify_test`; `alembic check` clean |
+| Migrations | upgrade → downgrade → upgrade on `denote_test`; `alembic check` clean |
 | Chart colors | dataviz validator passed for both themes, after changing dark `--chart-2` |
 | Visual review | Reports and department report at phone and desktop, member summary at phone, Overview at phone, dark mode at desktop |
 
@@ -212,7 +237,7 @@ Start Phase 7. Phase 6 was still uncommitted, so this work sits on top of it, an
 Commit the previous work and move to the next phase. Phase 5 and the security fixes were committed as `4996ef6` on branch `phase-5-work-boards`.
 
 ### Changes
-- **Database:** migration `2214469c2393` adds `task_comments`, `task_attachments`, `task_update_requests` and `notifications`. Applied to `listify` and `listify_test`; round-tripped on `listify_test` only.
+- **Database:** migration `2214469c2393` adds `task_comments`, `task_attachments`, `task_update_requests` and `notifications`. Applied to `denote` and `denote_test`; round-tripped on `denote_test` only.
 - **Backend:** new `collaboration` and `notifications` modules, and `common/storage.py`. Existing flows now send notifications after they commit. Rules are in ADR-029.
 - **Frontend:** new `features/collaboration` and `features/inbox`. The task panel gained Attachments, Update requests and Comments sections; the Inbox page replaced its placeholder; the bell and sidebar show unread counts.
 - **Member management:** the impact preview counts update requests waiting for that person, and removing them closes those requests.
@@ -225,7 +250,7 @@ Commit the previous work and move to the next phase. Phase 5 and the security fi
 | Playwright E2E | **29 passed, 1 skipped by design** (desktop 15, mobile 14), run as two separate sets. New: two-person journey through notifications, a refused disguised file, a real upload and download, comments, an update request and response, and what remains after removal; axe scans of the Inbox, task panel and respond dialog; Inbox added to the 3-width responsive check |
 | Ruff, ESLint, Prettier, `tsc -b`, `vite build` | passed; no warnings |
 | `npm audit --omit=dev` | 0 vulnerabilities |
-| Migrations | upgrade → downgrade → upgrade on `listify_test`; `alembic check` clean |
+| Migrations | upgrade → downgrade → upgrade on `denote_test`; `alembic check` clean |
 | Visual review | Inbox and task panel at phone and desktop widths. The Inbox was reviewed empty; its rows were checked by tests and not by eye |
 
 ### Defects found and fixed during the phase
@@ -283,8 +308,8 @@ Keep the MySQL root account and user login as they are, since the app is still i
 Commands to run the servers, a clickable launcher on the Desktop, and a thorough security audit with a prioritized improvement plan.
 
 ### Changes
-- **Launcher:** `Start Listify.bat` on the Desktop (outside the repository). It checks MySQL, starts both servers in their own windows, skips any already running, waits until they answer, then opens the browser.
-- **Audit:** [`security-audit.md`](security-audit.md). No application code changed. Attack scripts were throwaway and ran against `listify_test` only.
+- **Launcher:** `Start Denote.bat` on the Desktop (outside the repository). It checks MySQL, starts both servers in their own windows, skips any already running, waits until they answer, then opens the browser.
+- **Audit:** [`security-audit.md`](security-audit.md). No application code changed. Attack scripts were throwaway and ran against `denote_test` only.
 
 ### Result
 No critical findings and no SQL injection. 5 high, 12 medium and 11 low findings, in a 4-stage plan. The most serious: a removed admin can regain access with an invitation link made beforehand.
@@ -295,7 +320,7 @@ No critical findings and no SQL injection. 5 high, 12 medium and 11 low findings
 Go with Phase 5.
 
 ### Changes
-- **Database:** migration `c75db4ee8921` adds organization columns on `tasks`, `task_collaborators`, `task_visibility_grants`, organization tags and a `task.view_all` permission. Applied to `listify` and `listify_test`; round-tripped on `listify_test` only.
+- **Database:** migration `c75db4ee8921` adds organization columns on `tasks`, `task_collaborators`, `task_visibility_grants`, organization tags and a `task.view_all` permission. Applied to `denote` and `denote_test`; round-tripped on `denote_test` only.
 - **Backend:** `tasks/policies.py` rewritten around `visible_tasks` and `TaskAccess`; new `tasks/organization.py`. The shared `/tasks/{id}` routes now serve both workspaces. Personal task behaviour is unchanged, and its existing tests pass unmodified. Rules are in ADR-027.
 - **Frontend:** new `features/work`: board with drag and drop (`@dnd-kit/core`), sortable list, calendar, My Work, Team Tasks, create dialog. The shared task panel now shows department, people and visibility on team tasks. New Work and Boards sections in the sidebar; department names link to their boards.
 - **Member management:** the impact preview now counts open tasks to reassign.
@@ -308,11 +333,11 @@ Go with Phase 5.
 | Playwright E2E | **23 passed, 1 skipped by design**. New: two-person journey with a real mouse drag on desktop and the Move menu on mobile, access rules, reassignment after suspension; axe scans of all work pages; board layouts, My Work and Team Tasks added to the 3-width responsive check |
 | Ruff, ESLint, Prettier, `tsc -b`, `vite build` | passed; no warnings |
 | `npm audit --omit=dev` | 0 vulnerabilities |
-| Migrations | upgrade → downgrade → upgrade on `listify_test`; `alembic check` clean on `listify` |
+| Migrations | upgrade → downgrade → upgrade on `denote_test`; `alembic check` clean on `denote` |
 | Visual review | board, list, calendar and Team Tasks screenshots at phone and desktop widths |
 
 ### Defects found and fixed during the phase
-- The first migration downgrade failed partway, because MySQL won't drop an index a foreign key relies on. It left `listify_test` half-downgraded; the development database was never touched. The migration was fixed and the test database restored.
+- The first migration downgrade failed partway, because MySQL won't drop an index a foreign key relies on. It left `denote_test` half-downgraded; the development database was never touched. The migration was fixed and the test database restored.
 - Status labels failed contrast on tinted backgrounds (4.17:1). Fixed at the shared colours.
 - Faded out-of-month calendar days failed contrast, and the first fix shaded the calendar backwards: found in screenshot review.
 - Two buttons in the task panel were both called "Add", which a screen reader can't tell apart.
@@ -354,7 +379,7 @@ Start Phase 4.
 | `npm audit --omit=dev` | 0 vulnerabilities |
 | `alembic check` | clean; no schema change |
 | Visual review | member list, member panel and impact preview at phone and desktop widths |
-| Running dev servers | new routes present, 401 when signed out, health OK. The flows themselves were exercised by Playwright on `listify_test`, not on the development database |
+| Running dev servers | new routes present, 401 when signed out, health OK. The flows themselves were exercised by Playwright on `denote_test`, not on the development database |
 
 ### Defects found and fixed during the phase
 - The shared red failed WCAG contrast on red buttons in both themes (4.33:1 light, 4.25:1 dark). No earlier scan had a red button on screen. Fixed at the token, so every red button benefits.
@@ -379,10 +404,10 @@ Start Phase 4.
 ## 2026-10-30 — Phase 3 complete: organizations, departments & membership; rename; borderless cards
 
 ### Requested by the owner
-Start the servers; no borders on cards; explain how to start from the terminal; rename the site to Listify; start Phase 3.
+Start the servers; no borders on cards; explain how to start from the terminal; rename the site to Denote; start Phase 3.
 
 ### Changes
-- **Rename:** WorkPulse → Listify across code, docs, cookies, logger names and package names (39 files), plus a new checklist logo and favicon. The BRD/PRD file names are unchanged.
+- **Rename:** WorkPulse → Denote across code, docs, cookies, logger names and package names (39 files), plus a new checklist logo and favicon. The BRD/PRD file names are unchanged.
 - **Borderless cards:** removed from every card surface, including the shadcn Card; section side bars removed; nested task rows use a tinted fill; page background deepened and card shadow strengthened so cards still separate.
 - **Phase 3 backend:** `modules/organizations`, `memberships`, `permissions`, `audit_logs`; migration `fa2cb7581b65` (11 tables plus seeded roles and permissions).
 - **Phase 3 frontend:** workspace switcher, permission-based navigation, Create and Join pages, invitation page, and Overview, Departments, Members, Join requests, Invitations, Activity log and Settings pages.
@@ -395,7 +420,7 @@ Start the servers; no borders on cards; explain how to start from the terminal; 
 | Playwright E2E | **15 passed, 1 skipped by design** (responsive runs once with explicit viewports). New: two-user join-and-approve journey, private-org invitation journey, axe scans of 9 organization pages, responsive check of 15 pages at 3 widths |
 | Ruff, ESLint, Prettier, `tsc -b`, `vite build` | passed; no warnings |
 | `npm audit --omit=dev` | 0 vulnerabilities |
-| Migrations | upgrade → downgrade → upgrade on `listify` and `listify_test`; `alembic check` clean |
+| Migrations | upgrade → downgrade → upgrade on `denote` and `denote_test`; `alembic check` clean |
 | Visual review | screenshots of My Day, organization overview, departments and members (desktop/phone) |
 
 ### Defects found and fixed during the phase
@@ -450,7 +475,7 @@ Personal tasks with full lifecycle (create, edit, complete/reopen, cancel/restor
 - E2E: `frontend/e2e/personal-tasks.spec.ts`.
 
 ### Database
-`tasks`, `tags`, `task_tags`, `task_activity_logs` (see `database-design.md`). Upgrade → downgrade → upgrade verified on `listify` and `listify_test`; `alembic check` clean.
+`tasks`, `tags`, `task_tags`, `task_activity_logs` (see `database-design.md`). Upgrade → downgrade → upgrade verified on `denote` and `denote_test`; `alembic check` clean.
 
 ### Security and correctness notes
 - One authorization path (`tasks/policies.py`): personal tasks are visible only to their owner; every endpoint returns 404 for other users' task or tag IDs (tested across GET/PATCH/complete/archive/activity/delete/subtask/tag use).
@@ -489,7 +514,7 @@ Personal tasks with full lifecycle (create, edit, complete/reopen, cancel/restor
 ## 2026-10-29 — Phase 1 complete: accounts & sign-in
 
 ### Phase 0 close-out
-- MySQL credentials provided: `listify` / `listify_test` on localhost:3306, user `root`, empty password (local only, in gitignored `backend/.env`).
+- MySQL credentials provided: `denote` / `denote_test` on localhost:3306, user `root`, empty password (local only, in gitignored `backend/.env`).
 - Found WAMP defaults of **MyISAM** storage engine and an **empty `sql_mode`**. The app now forces InnoDB, strict mode and UTC on every connection, and declares InnoDB/utf8mb4 per table.
 - Alembic upgrade → downgrade → upgrade verified on both databases; `alembic check` clean; the real-MySQL health test passes.
 
@@ -512,7 +537,7 @@ Registration (auto sign-in, detected timezone, terms), sign-in/out, forgot/reset
 ### Tests executed (all actually run)
 | Suite | Result |
 |---|---|
-| Backend pytest (real MySQL `listify_test`) | **47 passed** |
+| Backend pytest (real MySQL `denote_test`) | **47 passed** |
 | Frontend Vitest | **39 passed** (7 files) |
 | Playwright E2E (desktop + mobile) | **4 passed**: full auth journey ×2, axe WCAG 2.2 AA scans ×2 (0 violations) |
 | Ruff, ESLint, Prettier, `tsc -b`, `vite build` | passed; no build warnings |

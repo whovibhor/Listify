@@ -24,7 +24,7 @@ function localDate(offsetDays: number) {
 
 /** Creates realistic data through the real API (same session cookie + CSRF as the SPA). */
 async function seedData(page: Page) {
-  const csrf = (await page.context().cookies()).find((c) => c.name === 'listify_csrf')?.value ?? ''
+  const csrf = (await page.context().cookies()).find((c) => c.name === 'denote_csrf')?.value ?? ''
   const post = async (path: string, data: object) => {
     const response = await page.request.post(`/api/v1${path}`, {
       data,
@@ -103,7 +103,7 @@ async function seedData(page: Page) {
 
 /** A second person, in every department, so the member sheet has real content to lay out. */
 async function addTeammate(browser: Browser, owner: Page, orgId: number) {
-  const csrf = (await owner.context().cookies()).find((c) => c.name === 'listify_csrf')?.value ?? ''
+  const csrf = (await owner.context().cookies()).find((c) => c.name === 'denote_csrf')?.value ?? ''
   const headers = { 'X-CSRF-Token': csrf }
   const invitation = await owner.request.post(`/api/v1/organizations/${orgId}/invitations`, {
     data: { role_key: 'department_manager', department_id: await firstDepartment(owner, orgId) },
@@ -138,7 +138,7 @@ async function expectNoSideScroll(element: Locator, label: string) {
 }
 
 async function choosePersonal(page: Page) {
-  const csrf = (await page.context().cookies()).find((c) => c.name === 'listify_csrf')?.value ?? ''
+  const csrf = (await page.context().cookies()).find((c) => c.name === 'denote_csrf')?.value ?? ''
   const response = await page.request.patch('/api/v1/me/preferences', {
     data: { last_organization_id: null },
     headers: { 'X-CSRF-Token': csrf },

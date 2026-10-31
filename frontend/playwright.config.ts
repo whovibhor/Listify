@@ -35,7 +35,7 @@ export default defineConfig({
       command: `"${python}" -m uvicorn app.main:app --app-dir "${backendDir}" --host 127.0.0.1 --port ${API_PORT}`,
       url: `http://127.0.0.1:${API_PORT}/api/v1/health`,
       env: {
-        DB_NAME: process.env.E2E_DB_NAME ?? 'listify_test',
+        DB_NAME: process.env.E2E_DB_NAME ?? 'denote_test',
         FRONTEND_ORIGINS: `http://localhost:${WEB_PORT}`,
         FRONTEND_BASE_URL: `http://localhost:${WEB_PORT}`,
         LOG_LEVEL: 'WARNING',

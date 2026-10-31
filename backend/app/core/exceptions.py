@@ -8,7 +8,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.logging import request_id_var
 
-logger = logging.getLogger("listify.errors")
+logger = logging.getLogger("denote.errors")
 
 
 class AppError(Exception):

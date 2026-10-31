@@ -25,7 +25,7 @@ class CsrfError(ForbiddenError):
 def csrf_protect(request: Request, settings: Settings = Depends(get_settings)) -> None:
     """Double-submit CSRF check for every unsafe API request (ADR-006).
 
-    The header must equal the `listify_csrf` cookie. When a session cookie is present the
+    The header must equal the `denote_csrf` cookie. When a session cookie is present the
     token must also be the HMAC bound to that session, so a planted cookie is useless.
     """
     if request.method in SAFE_METHODS:

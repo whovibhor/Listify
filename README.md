@@ -1,11 +1,11 @@
-# Listify
+# Denote
 
 Task and work management for individuals and organizations: a private **Personal Workspace** plus **Organization Workspaces** with departments, role-based access, department Work Boards and dashboards.
 
 - Requirements: [`docs/WorkPulse_BRD_v1.docx`](docs/WorkPulse_BRD_v1.docx), [`docs/WorkPulse_PRD_v1.docx`](docs/WorkPulse_PRD_v1.docx)
 - Analysis and plan: [`docs/requirements-analysis.md`](docs/requirements-analysis.md), [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md), [`docs/architecture-decisions.md`](docs/architecture-decisions.md)
 - Security: audit, current status and remaining plan in [`docs/security-audit.md`](docs/security-audit.md).
-- Status: **Phases 0–7 complete (foundation, accounts, personal workspace, organizations, roles & member management, department work boards, collaboration, reports); Phase 8 (Reminders & scheduled notifications) next.** What's done and pending, feature by feature: [`docs/feature-status.md`](docs/feature-status.md). Phase tracker: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md) · history: [`docs/development-log.md`](docs/development-log.md).
+- Status: **Phases 0–7 complete (foundation, accounts, personal workspace, organizations, roles & member management, department work boards, collaboration, reports); UI & journey rework in progress (Batch 1 of 6 done); Phase 8 (Reminders & scheduled notifications) after it.** What's done and pending, feature by feature: [`docs/feature-status.md`](docs/feature-status.md). Phase tracker: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md) · history: [`docs/development-log.md`](docs/development-log.md).
 
 ## Repository layout
 
@@ -32,8 +32,8 @@ scripts/     developer scripts (check.ps1 runs every quality gate)
 3. Create the development and test databases (the test database name must end in `_test`):
 
    ```sql
-   CREATE DATABASE listify      CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-   CREATE DATABASE listify_test CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+   CREATE DATABASE denote      CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+   CREATE DATABASE denote_test CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
    ```
 
    This machine uses the WAMP `root` account with no password for local development. Anywhere else, create a dedicated user and grant it only these two databases. The app forces InnoDB, strict SQL mode and UTC on every connection, so WAMP's defaults (MyISAM, non-strict) don't matter.
@@ -59,7 +59,7 @@ copy .env.example .env          # then edit DB_* values and SESSION_SECRET
 | `APP_ENV` | **Required.** `development`, `test` or `production` (production enforces secure settings at startup). The app won't start without it. | `development` |
 | `LOG_LEVEL` | `DEBUG`/`INFO`/`WARNING`/`ERROR` | `INFO` |
 | `DB_HOST`, `DB_PORT` | MySQL server | `127.0.0.1`, `3306` |
-| `DB_NAME`, `DB_TEST_NAME` | development and test databases | `listify`, `listify_test` |
+| `DB_NAME`, `DB_TEST_NAME` | development and test databases | `denote`, `denote_test` |
 | `DB_USER`, `DB_PASSWORD` | DB account (empty password allowed outside production) | `root`, *(empty)* |
 | `FRONTEND_ORIGINS` | comma-separated origins allowed by CORS | `http://localhost:5173` |
 | `FRONTEND_BASE_URL` | public URL of the SPA, used in password-reset links | `http://localhost:5173` |
@@ -84,7 +84,7 @@ Optional `frontend/.env.local` (see `.env.example`): `VITE_API_BASE_URL` (defaul
 
 ## Sample data
 
-Shoolini University in the development database holds sample data: 18 members across five departments, 131 tasks with months of history, and everything that hangs off them. It stays until you delete it in the app. Tests use `listify_test`, so they never touch it.
+Shoolini University in the development database holds sample data: 18 members across five departments, 131 tasks with months of history, and everything that hangs off them. It stays until you delete it in the app. Tests use `denote_test`, so they never touch it.
 
 To sign in as a sample person, use their address from the Members page. Their shared test password is `SEED_PASSWORD` in `backend/scripts/seed_shoolini.py`. Addresses end in `.example`, so no email can reach anyone real. These accounts show each role's view:
 
@@ -115,10 +115,10 @@ To add it to a database that doesn't have it, run this from `backend/`. It needs
 | Frontend tests | `cd frontend; npm test` (watch: `npm run test:watch`) |
 | Frontend lint / format / types | `npm run lint` / `npm run format` / `npm run typecheck` |
 | Frontend production build | `npm run build` (output in `frontend/dist`) |
-| End-to-end tests | `cd frontend; npm run test:e2e` (first time: `npx playwright install chromium`). Starts its own backend on :8001 against `listify_test` and Vite on :5174, after resetting the test database. |
+| End-to-end tests | `cd frontend; npm run test:e2e` (first time: `npx playwright install chromium`). Starts its own backend on :8001 against `denote_test` and Vite on :5174, after resetting the test database. |
 | Reset the test database | `cd backend; .\.venv\Scripts\python.exe -m scripts.reset_test_db` (refuses unless the name ends in `_test`) |
 
-**Trying the app locally:** double-click `Start Listify.bat` on the Desktop, or start the backend and frontend by hand. Open <http://localhost:5173> and create an account. To test "forgot password", submit the form, then copy the reset link from the backend log line `Email (console backend, not sent)`.
+**Trying the app locally:** double-click `Start Denote.bat` on the Desktop, or start the backend and frontend by hand. Open <http://localhost:5173> and create an account. To test "forgot password", submit the form, then copy the reset link from the backend log line `Email (console backend, not sent)`.
 
 **CI:** `.github/workflows/ci.yml` runs lint, formatting, migrations round-trip, backend tests against a MySQL 8.4 service, frontend tests and build, the production dependency audit, and the Playwright suite. It runs once the repository is pushed to GitHub.
 

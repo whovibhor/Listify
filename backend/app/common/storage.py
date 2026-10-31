@@ -8,7 +8,7 @@ from typing import Protocol
 
 from app.core.config import get_settings
 
-logger = logging.getLogger("listify.storage")
+logger = logging.getLogger("denote.storage")
 
 CHUNK_BYTES = 64 * 1024
 _KEY_PATTERN = re.compile(r"^[0-9a-f]{64}$")

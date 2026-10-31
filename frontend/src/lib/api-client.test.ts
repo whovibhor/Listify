@@ -13,7 +13,7 @@ function mockFetch(response: Response | Error) {
 
 afterEach(() => {
   vi.unstubAllGlobals()
-  document.cookie = 'listify_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+  document.cookie = 'denote_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT'
 })
 
 describe('api client', () => {
@@ -54,7 +54,7 @@ describe('api client', () => {
   })
 
   it('attaches the CSRF token header on unsafe methods only', async () => {
-    document.cookie = 'listify_csrf=token-123'
+    document.cookie = 'denote_csrf=token-123'
     const fetchMock = mockFetch(jsonResponse({}))
 
     await api.post('/auth/logout')

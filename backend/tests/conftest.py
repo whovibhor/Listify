@@ -49,7 +49,7 @@ def client(app: FastAPI) -> Iterator[TestClient]:
         yield test_client
 
 
-# --- MySQL-backed fixtures (listify_test) -------------------------------------------------
+# --- MySQL-backed fixtures (denote_test) -------------------------------------------------
 
 
 @pytest.fixture(scope="session")

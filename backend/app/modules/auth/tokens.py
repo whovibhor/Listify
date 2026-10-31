@@ -2,8 +2,8 @@ import hashlib
 import hmac
 import secrets
 
-SESSION_COOKIE = "listify_session"
-CSRF_COOKIE = "listify_csrf"
+SESSION_COOKIE = "denote_session"
+CSRF_COOKIE = "denote_csrf"
 CSRF_HEADER = "X-CSRF-Token"
 
 

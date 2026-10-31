@@ -143,7 +143,7 @@ function SessionRow({ session }: { session: UserSession }) {
             <AlertDialogHeader>
               <AlertDialogTitle>Sign out {device}?</AlertDialogTitle>
               <AlertDialogDescription>
-                That device will need to sign in again to use Listify.
+                That device will need to sign in again to use Denote.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

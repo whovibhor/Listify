@@ -160,4 +160,4 @@ def export_tasks(
         details={"start": str(period.start), "end": str(period.end), "rows": total},
     )
     db.commit()
-    return buffer.getvalue(), f"listify-tasks-{period.start}-to-{period.end}.csv"
+    return buffer.getvalue(), f"denote-tasks-{period.start}-to-{period.end}.csv"

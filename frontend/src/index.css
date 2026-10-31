@@ -6,7 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Listify design tokens.
+ * Denote design tokens.
  * Raw values live on :root / .dark; @theme inline maps them to Tailwind utilities
  * (bg-primary, text-status-blocked, shadow-card, duration-base, ...).
  * Brand: restrained violet. Text/background pairs target WCAG 2.2 AA (>= 4.5:1).

@@ -32,7 +32,7 @@ from app.modules.auth.sessions import (
 from app.modules.auth.tokens import hash_token, new_token
 from app.modules.users.models import User
 
-logger = logging.getLogger("listify.auth")
+logger = logging.getLogger("denote.auth")
 
 LOGIN_PER_ACCOUNT = rate_limit.RateLimit("login:account", 10, timedelta(minutes=15))
 LOGIN_PER_IP = rate_limit.RateLimit("login:ip", 50, timedelta(minutes=15))
@@ -178,7 +178,7 @@ def request_password_reset(
     mailer.send(
         EmailMessage(
             to=user.email,
-            subject="Reset your Listify password",
+            subject="Reset your Denote password",
             body=(
                 f"Hi {user.name},\n\nUse this link to choose a new password. It expires in "
                 f"{settings.password_reset_ttl_minutes} minutes and can be used once:\n\n{link}\n\n"

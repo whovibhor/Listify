@@ -1,6 +1,6 @@
 import { LogoMark } from '@/components/shared/Logo'
 
-export function FullPageLoader({ label = 'Loading Listify…' }: { label?: string }) {
+export function FullPageLoader({ label = 'Loading Denote…' }: { label?: string }) {
   return (
     <div
       role="status"

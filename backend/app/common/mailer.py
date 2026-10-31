@@ -5,7 +5,7 @@ from typing import Protocol
 
 from app.core.config import get_settings
 
-logger = logging.getLogger("listify.mail")
+logger = logging.getLogger("denote.mail")
 
 
 @dataclass(frozen=True)

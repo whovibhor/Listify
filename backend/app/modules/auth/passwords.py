@@ -27,8 +27,8 @@ _COMMON_PASSWORDS = frozenset(
         "aaaaaaaaaaaa",
         "111111111111",
         "000000000000",
-        "listify12345",
-        "listify123456",
+        "denote12345",
+        "denote123456",
         "changeme1234",
     }
 )

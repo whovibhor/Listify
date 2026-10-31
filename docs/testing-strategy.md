@@ -1,4 +1,4 @@
-# Listify — Testing Strategy
+# Denote — Testing Strategy
 
 Derived from PRD §14 and the definition of done. Never report a test as passing unless it was executed.
 
@@ -8,9 +8,9 @@ Derived from PRD §14 and the definition of done. Never report a test as passing
 |---|---|---|
 | Backend unit | Pytest | transitions, due-date/timezone logic, permission resolution, metric formulas, config validation |
 | Backend API | Pytest + Starlette TestClient (httpx2) | each endpoint: success, validation failure, unauthenticated, forbidden, **cross-tenant 404** |
-| Backend DB integration | Pytest marker `db`, MySQL `listify_test` | transactions, constraints, migrations upgrade/downgrade |
+| Backend DB integration | Pytest marker `db`, MySQL `denote_test` | transactions, constraints, migrations upgrade/downgrade |
 | Frontend unit/component | Vitest + React Testing Library + user-event (jsdom) | API client, hooks, components, routing, forms |
-| End-to-end | Playwright + @axe-core/playwright (`frontend/e2e`) | Desktop Chrome and Pixel 7 projects. Isolated backend (:8001) on `listify_test`, reset in global setup. Phase 1: full auth journey + axe scans of the auth pages. Later: workspace switching, task flows, membership approval. |
+| End-to-end | Playwright + @axe-core/playwright (`frontend/e2e`) | Desktop Chrome and Pixel 7 projects. Isolated backend (:8001) on `denote_test`, reset in global setup. Phase 1: full auth journey + axe scans of the auth pages. Later: workspace switching, task flows, membership approval. |
 | Security | API tests + M9 review | IDOR/guessed IDs, stale memberships, CSRF, XSS, upload validation, rate limits, privilege escalation |
 | Performance | `python -m scripts.perf_reports` (reports, M7); task lists in M9 | p95 < 500 ms on lists and dashboards |
 
@@ -21,6 +21,8 @@ Derived from PRD §14 and the definition of done. Never report a test as passing
 - Tests needing MySQL are marked `@pytest.mark.db` and skip with a clear reason when the test database is not configured; CI will provide MySQL so they always run there.
 - Frontend tests use the real `QueryClient` (with its global 401 handling) minus retries (`src/test/render.tsx`) and stub `fetch` through `src/test/mock-api.ts`, which fails loudly on any unmocked call; no hardcoded sample data in production code.
 - Time-dependent backend tests use the `frozen_now` fixture (20:00 UTC = 01:30 next day for the Asia/Kolkata test user).
+- **When to run E2E:** only after a bigger change, such as the end of a batch, new pages or route changes (owner's rule, 2026-10-31). The full suite takes several minutes, so small fixes use unit tests, lint and a targeted check instead, and reports say when E2E wasn't run.
+- `e2e/workspace.spec.ts` covers the header button, remembering the workspace, and saving the collapsed sidebar.
 - E2E saves screenshots to `frontend/test-results/screens/` for visual review.
 - Warnings are fixed, not suppressed.
 - `tests/test_permissions.py` runs every role against every permission-guarded endpoint on the real API. Each new guarded endpoint adds a case there. `tests/test_organization_tasks.py::test_visibility_matrix` does the same for who can see which task, across reading, listing and search. Those two files use cheap Argon2 settings, because each test signs up a whole team.

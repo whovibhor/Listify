@@ -19,7 +19,7 @@ class Settings(BaseSettings):
         env_file=BACKEND_DIR / ".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    app_name: str = "Listify API"
+    app_name: str = "Denote API"
     # No default: a forgotten setting must stop the app, not quietly skip the production checks.
     app_env: Literal["development", "test", "production"]
     app_version: str = "0.1.0"
@@ -27,8 +27,8 @@ class Settings(BaseSettings):
 
     db_host: str = "127.0.0.1"
     db_port: int = 3306
-    db_name: str = "listify"
-    db_user: str = "listify_app"
+    db_name: str = "denote"
+    db_user: str = "denote_app"
     db_password: SecretStr = SecretStr("")
     db_test_name: str | None = None
     # FastAPI runs these routes on 40 threads, and fewer connections than that stalls under load:
@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     # Public URL of the SPA, used to build links in emails.
     frontend_base_url: str = "http://localhost:5173"
     mail_backend: Literal["console", "smtp"] = "console"
-    mail_from: str = "Listify <no-reply@listify.local>"
+    mail_from: str = "Denote <no-reply@denote.local>"
     # Attachments. Gitignored; S3-compatible storage can replace it later (ADR-018).
     storage_dir: Path = BACKEND_DIR / "storage"
 

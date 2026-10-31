@@ -164,12 +164,12 @@ def test_s07_invitation_tokens_stay_out_of_the_request_log(
     org: Org, caplog: pytest.LogCaptureFixture
 ) -> None:
     token = org.invite(org.owner)
-    caplog.set_level(logging.INFO, logger="listify.request")
+    caplog.set_level(logging.INFO, logger="denote.request")
     org.owner.get(f"/api/v1/invitations/{token}")
     org.owner.post(f"/api/v1/invitations/{token}/accept")
 
     paths = [
-        record.extra_fields["path"] for record in caplog.records if record.name == "listify.request"
+        record.extra_fields["path"] for record in caplog.records if record.name == "denote.request"
     ]
     assert "/api/v1/invitations/<token>" in paths
     assert "/api/v1/invitations/<token>/accept" in paths
@@ -433,7 +433,7 @@ def test_s17_security_events_are_logged_without_secrets(
 ) -> None:
     register(api, email="s@example.com", name="Sam Person")
     other = make_api()
-    caplog.set_level(logging.INFO, logger="listify.security")
+    caplog.set_level(logging.INFO, logger="denote.security")
 
     login(other, "s@example.com", "wrong password here")
     login(other, "nobody@example.com", "my-secret-typed-wrong")
@@ -443,7 +443,7 @@ def test_s17_security_events_are_logged_without_secrets(
         json={"current_password": DEFAULT_PASSWORD, "new_password": "a brand new long passphrase"},
     )
 
-    records = [record for record in caplog.records if record.name == "listify.security"]
+    records = [record for record in caplog.records if record.name == "denote.security"]
     events = [record.extra_fields["event"] for record in records]
     assert events == ["login_failed", "login_failed", "login_succeeded", "password_changed"]
     text = str([record.extra_fields for record in records])
@@ -528,7 +528,7 @@ def test_s19_a_non_ascii_csrf_token_is_a_clean_refusal(client: TestClient) -> No
         json={"email": "a@example.com", "password": "x"},
         headers={
             "X-CSRF-Token": "é".encode("latin-1"),
-            "Cookie": "listify_csrf=é".encode("latin-1"),
+            "Cookie": "denote_csrf=é".encode("latin-1"),
         },
     )
     assert response.status_code in (403, 401, 422)

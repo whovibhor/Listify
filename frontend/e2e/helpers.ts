@@ -31,7 +31,7 @@ export async function createOrganization(page: Page, name: string, searchable: b
 
 /** Calls the real API with the page's own session, as the SPA does. */
 export async function apiPost(page: Page, path: string, data: object) {
-  const csrf = (await page.context().cookies()).find((c) => c.name === 'listify_csrf')?.value ?? ''
+  const csrf = (await page.context().cookies()).find((c) => c.name === 'denote_csrf')?.value ?? ''
   const response = await page.request.post(`/api/v1${path}`, {
     data,
     headers: { 'X-CSRF-Token': csrf },
