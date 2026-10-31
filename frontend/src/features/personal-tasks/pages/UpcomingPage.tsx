@@ -38,7 +38,7 @@ export function UpcomingPage() {
   }
 
   return (
-    <motion.div {...pageEnter} className="mx-auto max-w-4xl space-y-5">
+    <motion.div {...pageEnter} className="mx-auto max-w-4xl space-y-4">
       <PageHeader
         title="Upcoming"
         description="The next two weeks at a glance. Pick a day to plan it."

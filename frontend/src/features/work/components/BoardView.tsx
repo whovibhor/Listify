@@ -18,6 +18,7 @@ import {
   TriangleAlertIcon,
   UsersRoundIcon,
 } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Skeleton } from '@/components/ui/skeleton'
 import { DueChip } from '@/features/tasks/components/DueChip'
 import { TagChip } from '@/features/tasks/components/TagChip'
 import { TaskLink } from '@/features/tasks/components/TaskLink'
@@ -38,6 +40,7 @@ import { useMoveOnBoard, type WorkParams } from '@/features/work/api'
 import { MemberAvatar } from '@/features/organizations/components/MemberAvatar'
 import type { Board } from '@/features/work/types'
 import { errorText } from '@/lib/api-client'
+import { transitions } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
 // Work moves left to right; Blocked and Cancelled sit outside that flow, at the end if shown.
@@ -75,7 +78,7 @@ function CardBody({ task, timezone }: Pick<CardProps, 'task' | 'timezone'>) {
           Needs reassignment
         </span>
       ) : null}
-      <span className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+      <span className="mt-1.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span className="flex min-w-0 items-center gap-1.5">
           {task.assignee ? (
             <>
@@ -120,7 +123,7 @@ function TaskCard({ task, timezone, onMove }: CardProps) {
       ref={setNodeRef}
       {...listeners}
       className={cn(
-        'relative rounded-xl bg-card p-3 shadow-card transition-shadow duration-(--duration-fast) hover:shadow-raised',
+        'relative rounded-lg bg-card p-2.5 shadow-card transition-shadow duration-(--duration-fast) hover:shadow-raised',
         movable && 'cursor-grab touch-pan-y',
         isDragging && 'opacity-40',
       )}
@@ -129,7 +132,7 @@ function TaskCard({ task, timezone, onMove }: CardProps) {
         <TaskLink
           task={task}
           draggable={false}
-          className="min-w-0 flex-1 text-left text-sm font-medium outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-3 focus-visible:after:ring-ring/50"
+          className="min-w-0 flex-1 text-left text-sm font-medium outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-3 focus-visible:after:ring-ring/50"
         >
           <span className="line-clamp-2">{task.title}</span>
         </TaskLink>
@@ -174,11 +177,14 @@ function TaskCard({ task, timezone, onMove }: CardProps) {
 function BoardColumn({
   column,
   dragged,
+  loading,
   onShowOlder,
   children,
 }: {
   column: Board['columns'][number]
   dragged: Task | null
+  /** Its cards are on their way: hidden columns only arrive with their counts. */
+  loading: boolean
   onShowOlder: () => void
   children: React.ReactNode
 }) {
@@ -191,7 +197,8 @@ function BoardColumn({
       aria-label={`${STATUS_LABELS[column.status]}, ${column.total} tasks`}
       data-testid={`column-${column.status}`}
       className={cn(
-        'flex w-72 shrink-0 snap-start flex-col gap-2 rounded-2xl bg-muted/60 p-2 transition-colors duration-(--duration-fast)',
+        // Columns share the width, and only scroll when a screen can't fit them.
+        'flex max-w-md min-w-[17rem] flex-1 basis-0 snap-start flex-col gap-1.5 rounded-xl bg-muted/60 p-1.5 transition-colors duration-(--duration-fast) lg:min-w-56',
         dragged && !accepts && 'opacity-50',
         accepts && 'bg-accent/50',
         isOver && 'bg-accent ring-2 ring-primary/40',
@@ -201,7 +208,15 @@ function BoardColumn({
         <TaskStatusBadge status={column.status} />
         <span className="text-xs text-muted-foreground tabular-nums">{column.total}</span>
       </header>
-      <ul className="min-h-16 space-y-2">{children}</ul>
+      <ul className="min-h-16 space-y-1.5">
+        {loading && column.items.length === 0
+          ? Array.from({ length: Math.min(column.total, 3) }, (_, index) => (
+              <li key={index}>
+                <Skeleton className="h-24 w-full rounded-xl" />
+              </li>
+            ))
+          : children}
+      </ul>
       {hiddenCount > 0 ? (
         <p className="px-1 pb-1 text-xs text-muted-foreground">
           {hiddenCount} more in the List view
@@ -232,6 +247,7 @@ interface BoardViewProps {
   timezone: string
   /** Columns switched off; cards can still be moved to them from the Move menu. */
   hidden: TaskStatus[]
+  loading: boolean
   onShowColumn: (status: TaskStatus) => void
   onShowOlder: () => void
 }
@@ -242,6 +258,7 @@ export function BoardView({
   params,
   timezone,
   hidden,
+  loading,
   onShowColumn,
   onShowOlder,
 }: BoardViewProps) {
@@ -289,20 +306,31 @@ export function BoardView({
       onDragEnd={onDragEnd}
       onDragCancel={() => setDragged(null)}
     >
-      <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-3 sm:mx-0 sm:px-0">
-        {columns.map((column) => (
-          <BoardColumn
-            key={column.status}
-            column={column}
-            dragged={dragged}
-            onShowOlder={onShowOlder}
-          >
-            {column.items.map((task) => (
-              <TaskCard key={task.id} task={task} timezone={timezone} onMove={moveTask} />
-            ))}
-          </BoardColumn>
-        ))}
-      </div>
+      {/* The whole set is swapped, so switching views clears one lot of tasks before the next. */}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={columns.map((column) => column.status).join()}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={transitions.base}
+          className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0"
+        >
+          {columns.map((column) => (
+            <BoardColumn
+              key={column.status}
+              column={column}
+              dragged={dragged}
+              loading={loading}
+              onShowOlder={onShowOlder}
+            >
+              {column.items.map((task) => (
+                <TaskCard key={task.id} task={task} timezone={timezone} onMove={moveTask} />
+              ))}
+            </BoardColumn>
+          ))}
+        </motion.div>
+      </AnimatePresence>
       <DragOverlay>
         {dragged ? (
           <div className="w-68 rotate-1 cursor-grabbing rounded-xl bg-card p-3 shadow-raised">

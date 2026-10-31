@@ -40,7 +40,7 @@ function CurrentWorkspace({ collapsed = false }: { collapsed?: boolean }) {
   const name = active?.name ?? 'Personal'
   const Icon = active ? Building2Icon : UserRoundIcon
   const icon = (
-    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-secondary text-secondary-foreground">
+    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-secondary-foreground">
       <Icon aria-hidden className="size-4" />
     </span>
   )
@@ -96,7 +96,7 @@ function SidebarToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
           aria-label={label}
           aria-expanded={!collapsed}
           onClick={onToggle}
-          className="absolute top-5 -right-3 z-40 grid size-6 place-items-center rounded-full bg-card text-muted-foreground shadow-card transition-colors duration-(--duration-fast) outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="absolute top-3 -right-3 z-40 grid size-6 place-items-center rounded-full bg-card text-muted-foreground shadow-card transition-colors duration-(--duration-fast) outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           <Icon aria-hidden className="size-4" />
         </button>
@@ -135,8 +135,8 @@ export function AppShell() {
       {/* Desktop sidebar (lg and up). Smaller screens use the sheet below. */}
       <aside
         className={cn(
-          'sticky top-0 z-40 hidden h-svh shrink-0 flex-col gap-5 border-r border-sidebar-border bg-sidebar py-4 transition-[width] duration-(--duration-base) lg:flex',
-          collapsed ? 'w-16 px-2' : 'w-64 px-3',
+          'sticky top-0 z-40 hidden h-svh shrink-0 flex-col gap-3 border-r border-sidebar-border bg-sidebar py-3 transition-[width] duration-(--duration-base) lg:flex',
+          collapsed ? 'w-14 px-1.5' : 'w-60 px-2',
         )}
       >
         <Link
@@ -150,14 +150,14 @@ export function AppShell() {
           {collapsed ? <LogoMark /> : <Logo />}
         </Link>
         <SidebarToggle collapsed={collapsed} onToggle={toggleSidebar} />
-        <div className="-mx-1 flex min-h-0 flex-1 [scrollbar-width:thin] flex-col gap-5 overflow-y-auto px-1 pb-1">
+        <div className="-mx-1 flex min-h-0 flex-1 [scrollbar-width:thin] flex-col gap-3 overflow-y-auto px-1 pb-1">
           <CurrentWorkspace collapsed={collapsed} />
           <SidebarNav instanceId="desktop" collapsed={collapsed} />
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/85 px-4 backdrop-blur supports-backdrop-filter:bg-background/70 sm:px-6">
+        <header className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b bg-background/85 px-4 backdrop-blur supports-backdrop-filter:bg-background/70 sm:px-5">
           <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
             <SheetTrigger asChild>
               <Button
@@ -178,7 +178,7 @@ export function AppShell() {
                 </SheetTitle>
                 <SheetDescription className="sr-only">Main navigation</SheetDescription>
               </SheetHeader>
-              <div className="flex flex-col gap-5 overflow-y-auto px-3 py-4">
+              <div className="flex flex-col gap-3 overflow-y-auto px-2 py-3">
                 <CurrentWorkspace />
                 <SidebarNav instanceId="mobile" onNavigate={() => setMobileNavOpen(false)} />
               </div>
@@ -224,7 +224,7 @@ export function AppShell() {
         </header>
 
         <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
-          <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
+          <div className="mx-auto w-full max-w-[120rem] px-4 py-4 sm:px-5">
             <PageOutlet />
           </div>
         </main>

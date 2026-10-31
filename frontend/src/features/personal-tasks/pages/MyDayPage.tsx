@@ -58,7 +58,7 @@ export function MyDayPage() {
   const rowProps = { timezone }
 
   return (
-    <motion.div {...pageEnter} className="mx-auto max-w-4xl space-y-5">
+    <motion.div {...pageEnter} className="mx-auto max-w-4xl space-y-4">
       {/* Hero: date, greeting, progress and quick add in one place. */}
       <section
         aria-labelledby="my-day-title"

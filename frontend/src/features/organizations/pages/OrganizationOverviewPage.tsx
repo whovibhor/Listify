@@ -97,7 +97,7 @@ function WorkAtAGlance({ org }: { org: MyOrganization }) {
         </Link>
       </div>
       {numbers ? (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatTile
             label={wholeOrganization ? 'Open' : 'Assigned to you'}
             value={numbers.open}
@@ -136,7 +136,7 @@ export function OrganizationOverviewPage() {
   const memberTotal = members?.total ?? 0
 
   return (
-    <motion.div {...pageEnter} className="space-y-6">
+    <motion.div {...pageEnter} className="space-y-4">
       <PageHeader
         title={org.name}
         description={org.description ?? `You’re ${primaryRoleLabel(org)} here.`}
@@ -144,7 +144,7 @@ export function OrganizationOverviewPage() {
 
       <WorkAtAGlance org={org} />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatTile
           label={canManage ? 'Members' : 'People in your departments'}
           value={memberTotal}

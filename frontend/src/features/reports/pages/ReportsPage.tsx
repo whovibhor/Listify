@@ -148,7 +148,7 @@ function OrganizationReport({ org }: { org: MyOrganization }) {
   const { data: me } = useMe()
 
   return (
-    <motion.div {...pageEnter} className="space-y-6">
+    <motion.div {...pageEnter} className="space-y-4">
       <PageHeader
         title="Reports"
         description={`How work is going across ${org.name}.`}
@@ -221,7 +221,7 @@ function DepartmentChooser({ org }: { org: MyOrganization }) {
   const { data: me } = useMe()
 
   return (
-    <motion.div {...pageEnter} className="space-y-6">
+    <motion.div {...pageEnter} className="space-y-4">
       <PageHeader
         title="Reports"
         description="Choose a department to see how its work is going."

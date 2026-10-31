@@ -114,7 +114,7 @@ export function OrganizationSettingsPage() {
       {...pageEnter}
       onSubmit={onSubmit}
       noValidate
-      className="mx-auto max-w-2xl space-y-5"
+      className="mx-auto max-w-2xl space-y-4"
     >
       <PageHeader title="Settings" description="Your organization’s profile and policies." />
       <Card>
@@ -131,7 +131,7 @@ export function OrganizationSettingsPage() {
           <FormField label="Description" error={errors.description?.message}>
             <Textarea maxLength={500} className="min-h-20" {...form.register('description')} />
           </FormField>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label="Website" error={errors.website?.message}>
               <Input type="url" placeholder="https://" {...form.register('website')} />
             </FormField>
@@ -155,7 +155,7 @@ export function OrganizationSettingsPage() {
         <CardHeader>
           <CardTitle>Policies</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className="space-y-4">
           <Controller
             control={form.control}
             name="is_discoverable"

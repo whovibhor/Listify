@@ -229,8 +229,26 @@ describe('remembering the workspace', () => {
 })
 
 describe('sidebar', () => {
-  it('puts Overview, Inbox and Boards above the work items', async () => {
+  const twoBoards = {
+    ...orgRoutes,
+    'GET /organizations/7/departments': [sales, { ...sales, id: 4, name: 'Ops' }],
+  }
+
+  it('calls a single board Workboard, with no list of boards', async () => {
     mockApi(signedInRoutes({ 'GET /me/organizations': [makeOrg()], ...orgRoutes }))
+    renderApp('/org/7')
+
+    const nav = (await screen.findAllByRole('navigation', { name: 'Main' }))[0]
+    expect(await within(nav).findByRole('link', { name: 'Workboard' })).toHaveAttribute(
+      'href',
+      '/org/7/boards/3',
+    )
+    expect(within(nav).queryByRole('heading', { name: 'Boards' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Sales' })).not.toBeInTheDocument()
+  })
+
+  it('puts Overview, Inbox and Boards above the work items', async () => {
+    mockApi(signedInRoutes({ 'GET /me/organizations': [makeOrg()], ...twoBoards }))
     renderApp('/org/7')
 
     const nav = (await screen.findAllByRole('navigation', { name: 'Main' }))[0]
@@ -244,7 +262,7 @@ describe('sidebar', () => {
 
   it('collapses to an icon rail, saves the choice and keeps boards in one menu', async () => {
     const { calls } = mockApi(
-      signedInRoutes({ 'GET /me/organizations': [makeOrg()], ...orgRoutes }),
+      signedInRoutes({ 'GET /me/organizations': [makeOrg()], ...twoBoards }),
     )
     const { user, router } = renderApp('/org/7')
     const nav = (await screen.findAllByRole('navigation', { name: 'Main' }))[0]

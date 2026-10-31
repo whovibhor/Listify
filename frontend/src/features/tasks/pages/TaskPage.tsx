@@ -309,7 +309,7 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="space-y-3 rounded-2xl bg-card p-4 shadow-card">
+    <section className="space-y-2 rounded-xl bg-card p-3 shadow-card">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-semibold">{title}</h2>
         {action}
@@ -323,7 +323,7 @@ function Overview({ task, readOnly }: { task: TaskDetail; readOnly: boolean }) {
   const { state } = useLocation()
   const isSubtask = task.parent_task_id !== null
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <Section title="Description">
         {task.description ? (
           <p className="text-sm wrap-anywhere whitespace-pre-wrap">{task.description}</p>
@@ -402,7 +402,7 @@ function TaskView({ task, tab, timezone }: { task: TaskDetail; tab?: string; tim
   }
 
   return (
-    <motion.div {...pageEnter} className="space-y-5">
+    <motion.div {...pageEnter} className="space-y-4">
       <BackLink to={back}>Back</BackLink>
       <header className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-1">
@@ -438,11 +438,11 @@ function TaskView({ task, tab, timezone }: { task: TaskDetail; tab?: string; tim
       ) : null}
 
       {/* The rail comes first in the page, so phones read the facts before the tabs. */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
         <div className="lg:order-last">
           <TaskDetailsRail task={task} timezone={timezone} />
         </div>
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-3">
           <nav aria-label="Task sections" className="flex gap-1 overflow-x-auto border-b">
             {tabs.map((option) => (
               <NavLink
@@ -506,7 +506,7 @@ export function TaskPage() {
 
   if (isPending) {
     return (
-      <div className="space-y-5" aria-busy="true" aria-label="Loading task">
+      <div className="space-y-4" aria-busy="true" aria-label="Loading task">
         <Skeleton className="h-10 w-2/3" />
         <Skeleton className="h-64 w-full rounded-2xl" />
       </div>

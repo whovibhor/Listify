@@ -53,7 +53,7 @@ test('the collapsed sidebar is saved to the account', async ({ browser }, testIn
   await page.getByRole('button', { name: 'Collapse sidebar' }).click()
   await expect(page.getByRole('button', { name: 'Expand sidebar' })).toBeVisible()
   await expect(sidebar.getByRole('link', { name: 'Team Tasks' })).toHaveText('')
-  await expect(sidebar).toHaveCSS('width', '64px')
+  await expect(sidebar).toHaveCSS('width', '56px')
 
   await page.reload()
   await expect(page.getByRole('button', { name: 'Expand sidebar' })).toBeVisible()

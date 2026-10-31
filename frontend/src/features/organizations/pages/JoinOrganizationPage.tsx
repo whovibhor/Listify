@@ -245,7 +245,7 @@ export function JoinOrganizationPage() {
   }, [text])
 
   return (
-    <motion.div {...pageEnter} className="mx-auto max-w-2xl space-y-5">
+    <motion.div {...pageEnter} className="mx-auto max-w-2xl space-y-4">
       <PageHeader
         title="Join an organization"
         description="Search for your organization and ask to join. Got an invitation link? Just open it."

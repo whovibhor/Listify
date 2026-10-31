@@ -69,14 +69,14 @@ export function PersonalAnalyticsPage() {
   )
 
   return (
-    <motion.div {...pageEnter} className="space-y-6">
+    <motion.div {...pageEnter} className="space-y-4">
       <PageHeader
         title="Personal analytics"
         description="How your own work is going. Only you can see this."
         actions={periodPicker}
       />
       {isPending ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }, (_, i) => (
             <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
@@ -94,7 +94,7 @@ export function PersonalAnalyticsPage() {
             {format(inZone(data.period_start, data.timezone), 'd MMM')} – today · times in{' '}
             {data.timezone}
           </p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatTile
               label="Completed"
               value={data.counts.completed_in_period}
@@ -145,7 +145,7 @@ export function PersonalAnalyticsPage() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle>Open by priority</CardTitle>

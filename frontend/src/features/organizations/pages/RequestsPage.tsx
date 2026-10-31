@@ -253,7 +253,7 @@ export function RequestsPage() {
   if (!allowed) return <PermissionDenied />
 
   return (
-    <motion.div {...pageEnter} className="mx-auto max-w-4xl space-y-5">
+    <motion.div {...pageEnter} className="mx-auto max-w-4xl space-y-4">
       <PageHeader
         title="Join requests"
         description="People asking to join. They get no access until you approve."

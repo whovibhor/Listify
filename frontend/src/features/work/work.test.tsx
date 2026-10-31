@@ -255,7 +255,7 @@ describe('department board', () => {
     ).toEqual(['blocked', 'cancelled'])
   })
 
-  it('shows a hidden column on request, with its count on the toggle', async () => {
+  it('swaps the board for Blocked on request, with its count on the toggle', async () => {
     const { user, router } = renderBoard([makeTask({ status: 'blocked' })])
     const toggle = await screen.findByRole('button', { name: 'Show Blocked column, 1 tasks' })
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
@@ -264,9 +264,31 @@ describe('department board', () => {
 
     expect(await screen.findByRole('region', { name: 'Blocked, 1 tasks' })).toBeInTheDocument()
     expect(router.state.location.search).toBe('?show=blocked')
+    await waitFor(() =>
+      expect(screen.getAllByTestId(/^column-/).map((column) => column.dataset.testid)).toEqual([
+        'column-blocked',
+      ]),
+    )
+
     await user.click(screen.getByRole('button', { name: 'Show Blocked column, 1 tasks' }))
+
+    expect(await screen.findByRole('region', { name: 'Not started, 0 tasks' })).toBeInTheDocument()
     await waitFor(() =>
       expect(screen.queryByRole('region', { name: /Blocked/ })).not.toBeInTheDocument(),
+    )
+  })
+
+  it('shows Blocked and Cancelled together, and nothing else', async () => {
+    const { user } = renderBoard([makeTask({ status: 'blocked' })])
+
+    await user.click(await screen.findByRole('button', { name: /^Show Blocked column/ }))
+    await user.click(await screen.findByRole('button', { name: /^Show Cancelled column/ }))
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId(/^column-/).map((column) => column.dataset.testid)).toEqual([
+        'column-blocked',
+        'column-cancelled',
+      ]),
     )
   })
 
@@ -527,7 +549,7 @@ describe('My Work and Team Tasks', () => {
     renderApp('/org/7/my-work')
     const nav = (await screen.findAllByRole('navigation', { name: 'Main' }))[0]
     expect(await within(nav).findByRole('link', { name: 'Team Tasks' })).toBeInTheDocument()
-    expect(await within(nav).findByRole('link', { name: 'Engineering' })).toHaveAttribute(
+    expect(await within(nav).findByRole('link', { name: 'Workboard' })).toHaveAttribute(
       'href',
       '/org/7/boards/3',
     )

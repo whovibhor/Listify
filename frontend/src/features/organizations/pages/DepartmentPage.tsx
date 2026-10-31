@@ -61,7 +61,7 @@ function DepartmentPicker({
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="text-sm">{children}</dd>
     </div>
@@ -70,9 +70,9 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 
 function PageSkeleton() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="Loading department">
+    <div className="space-y-4" aria-busy="true" aria-label="Loading department">
       <Skeleton className="h-10 w-1/3" />
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <Skeleton key={index} className="h-28 rounded-xl" />
         ))}
@@ -105,7 +105,7 @@ export function DepartmentPage() {
   const archived = department.status === 'archived'
 
   return (
-    <motion.div {...pageEnter} className="space-y-6">
+    <motion.div {...pageEnter} className="space-y-4">
       {admin ? <BackLink to={`${base}/departments`}>Departments</BackLink> : null}
       {!admin && departments.length > 1 ? (
         <DepartmentPicker organizationId={org.id} departments={departments} />
@@ -136,7 +136,7 @@ export function DepartmentPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
           label="Open"
           value={counts.open}
@@ -169,12 +169,12 @@ export function DepartmentPage() {
       </div>
 
       {/* minmax(0,…) lets the chart shrink with the page instead of widening it. */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <ReportCard title="Tasks per day" description="The last 30 days, for tasks you can see.">
           <ReportTrendChart trend={data.trend} />
         </ReportCard>
         <ReportCard title="About this department">
-          <dl className="space-y-4">
+          <dl className="space-y-2.5">
             <Fact label={data.managers.length === 1 ? 'Manager' : 'Managers'}>
               {data.managers.length ? (
                 <ul className="space-y-1.5">

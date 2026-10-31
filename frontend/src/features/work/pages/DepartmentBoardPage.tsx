@@ -42,8 +42,9 @@ const LAYOUTS: { value: Layout; label: string; icon: LucideIcon }[] = [
   { value: 'calendar', label: 'Calendar', icon: CalendarDaysIcon },
 ]
 
-// Off until someone asks, so the board opens on the work that's moving.
-const HIDEABLE_COLUMNS: TaskStatus[] = ['blocked', 'cancelled']
+// Their own views: on, they replace the work in progress, so a board opens on what's moving.
+const SEPARATE_COLUMNS: TaskStatus[] = ['blocked', 'cancelled']
+const WORKING_COLUMNS: TaskStatus[] = ['not_started', 'in_progress', 'in_review', 'completed']
 
 const PAGE_SIZE = 25
 
@@ -88,8 +89,9 @@ export function DepartmentBoardPage() {
   // A link that asks for a status needs its column.
   const isShown = (status: TaskStatus) =>
     shownColumns.includes(status) || filters.status.includes(status)
-  const hidden = HIDEABLE_COLUMNS.filter((status) => !isShown(status))
-  const boardParams = { ...shared, collapsed: hidden }
+  const collapsed = SEPARATE_COLUMNS.filter((status) => !isShown(status))
+  const boardParams = { ...shared, collapsed }
+  const hidden = collapsed.length < SEPARATE_COLUMNS.length ? WORKING_COLUMNS : collapsed
   const board = useBoard(org.id, departmentId, boardParams)
   const showFinished = params.get('finished') === 'true'
   const list = useOrganizationTasks(
@@ -120,7 +122,7 @@ export function DepartmentBoardPage() {
   const data = board.data
 
   return (
-    <motion.div {...pageEnter} className="space-y-4">
+    <motion.div {...pageEnter} className="space-y-3">
       <PageHeader
         title={data?.department.name ?? 'Department'}
         description={
@@ -151,7 +153,7 @@ export function DepartmentBoardPage() {
           </>
         }
       />
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <nav aria-label="Board layout" className="inline-flex w-fit rounded-lg bg-muted p-1">
             {LAYOUTS.map(({ value, label, icon: Icon }) => (
@@ -176,7 +178,7 @@ export function DepartmentBoardPage() {
             ))}
           </nav>
           {layout === 'board'
-            ? HIDEABLE_COLUMNS.map((status) => (
+            ? SEPARATE_COLUMNS.map((status) => (
                 <ColumnToggle
                   key={status}
                   status={status}
@@ -217,7 +219,8 @@ export function DepartmentBoardPage() {
           board={data!}
           params={boardParams}
           timezone={org.timezone}
-          hidden={hidden}
+          hidden={[...hidden, ...collapsed]}
+          loading={board.isPlaceholderData}
           onShowColumn={showColumn}
           onShowOlder={() => update({ layout: 'list', status: ['completed'] })}
         />

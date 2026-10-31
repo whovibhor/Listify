@@ -95,7 +95,7 @@ function InviteForm() {
               onChange={(event) => setEmail(event.target.value)}
             />
           </FormField>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label="Role">
               <NativeSelect
                 value={role}
@@ -162,7 +162,7 @@ export function InvitationsPage() {
   if (!allowed) return <PermissionDenied />
 
   return (
-    <motion.div {...pageEnter} className="mx-auto max-w-3xl space-y-5">
+    <motion.div {...pageEnter} className="mx-auto max-w-3xl space-y-4">
       <PageHeader
         title="Invitations"
         description="Bring people in directly, without a join request."

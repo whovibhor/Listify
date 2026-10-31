@@ -190,7 +190,7 @@ function SessionsList() {
 
 export function SecuritySettingsPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card className="shadow-card">
         <CardHeader>
           <CardTitle>Password</CardTitle>

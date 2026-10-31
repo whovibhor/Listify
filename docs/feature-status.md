@@ -1,6 +1,6 @@
 # Denote — Feature Status
 
-**Last updated:** 2026-10-31 · **Current work:** UI & journey rework, Batch 6 (final pass) next · Phase 8 follows the rework
+**Last updated:** 2026-10-31 · **Current work:** UI & journey rework complete · Phase 8 (Reminders & scheduled notifications) next
 
 This is the single list of what is **done** and what is **pending**, feature by feature. It is updated every time a feature is completed or changed. A feature is marked ✅ only after it works end-to-end (UI → API → MySQL) and its tests have been run and passed. Detailed plans live in [`implementation-roadmap.md`](implementation-roadmap.md).
 
@@ -20,7 +20,7 @@ Legend: ✅ done · 🟡 partly done · ⏳ pending · ⏸ deferred (later relea
 | Department work boards (team tasks) | ✅ Done |
 | Comments, update requests, attachments, inbox | ✅ Done |
 | Team & organization dashboards | ✅ Done |
-| UI & journey rework | 🟡 In progress: Batches 1 to 5 of 6 done |
+| UI & journey rework | ✅ Done |
 | Reminders, notifications, email | ⏳ Pending (Phase 8) |
 | Production readiness (deploy, backups, monitoring) | ⏳ Pending (Phase 9) |
 
@@ -76,6 +76,7 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 | Departments: create, edit, archive/restore, open or closed to join requests. Department Managers do this from their department page | `departments` |
 | Department page: description, manager, team totals, 30-day trend and members with roles and job titles. Everyone in the department can open it, and it shows no one person's numbers | computed from `tasks`, reads `departments`, `membership_roles` |
 | Sidebar: Departments for Owner and Admin, Department for everyone else, who go straight to their own page, with a switcher if they're in two | reads `department_memberships` |
+| Sidebar: a single Workboard item for someone with one board, or Boards with a list for someone with several | reads `departments` |
 | Header workspace button: one click between Personal and your organization, a list if you have several, role-based navigation | reads `organization_memberships`, `membership_roles` |
 | Reopens the workspace you last used; pages such as Settings stay in it | `user_preferences` |
 | Collapsible sidebar with an icon rail, saved to your account | `user_preferences` |
@@ -107,7 +108,7 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 |---|---|
 | Create team tasks with department, assignee, collaborators, visibility, tags, priority and deadline | `tasks`, `task_collaborators`, `task_visibility_grants`, `task_tags`, `task_activity_logs` |
 | Department board: drag cards between columns, or use each card's Move menu (works by keyboard and on phones) | `tasks` |
-| Board columns run Not Started, In Progress, In Review, Completed. Blocked and Cancelled stay hidden until switched on, with their counts on the toggles | reads `tasks` |
+| Board columns run Not Started, In Progress, In Review, Completed, and share the width of the screen. Blocked and Cancelled are their own views: switching one on replaces the other columns, with their counts on the buttons | reads `tasks` |
 | Completed column shows the last 30 days, newest first, with a link to older tasks in the List view | reads `tasks` |
 | List view: sort by task, priority or deadline; pagination | reads `tasks` |
 | Calendar view: month grid by deadline on larger screens, agenda on phones | reads `tasks` |
@@ -161,19 +162,13 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 
 ## ⏳ Pending
 
-### UI & journey rework *(next)*
-The agreed plan, with the owner's decisions, is in [`implementation-roadmap.md`](implementation-roadmap.md). These existing features will change:
-
-**Batch 6: Final pass**
-- ⏳ Full journey for each role, accessibility checks, docs, and a complete E2E run
-
-### Planned additions (agreed 2026-10-31, after the rework)
+### Planned additions (agreed 2026-10-31)
 - ⏳ Time estimates on the task page and reports
 - ⏳ Bulk actions on Team Tasks: change status, assignee or deadline together
 - ⏳ Global search (Ctrl+K) across tasks, people and pages
 - ⏳ Recurring tasks and task dependencies, after Phase 8
 
-### Phase 8 — Reminders & notifications
+### Phase 8 — Reminders & notifications *(next)*
 - ⏳ Deadline-approaching and overdue reminders, update-request reminders
 - ⏳ Notification preferences, optional email delivery (SMTP)
 - ⏳ Background worker (Redis + Celery)
@@ -210,6 +205,8 @@ The agreed plan, with the owner's decisions, is in [`implementation-roadmap.md`]
 ## Change log
 | Date | Change |
 |---|---|
+| 2026-10-31 | UI & journey rework finished: every role checked on every page at three widths, and all test suites passed. |
+| 2026-10-31 | Sidebar shows Workboard for one board and Boards for several. All board columns now fit from 1280 px up, Blocked and Cancelled switch the whole board with an animation, and padding and spacing are tighter across the app. |
 | 2026-10-31 | Task page replaces the side panel everywhere, with a details rail, sections with their own links, and an Edit form. Subtasks get their own page. |
 | 2026-10-31 | Boards and lists now open on current work: new column order, Blocked and Cancelled hidden until asked for, Completed limited to 30 days, and Show finished on task lists. Boards load about 45% faster for Members on very large organizations. |
 | 2026-10-31 | Department page added. The Members sidebar item is gone: Owners and Admins use the All members tab on Departments. Boards moved to `/org/:id/boards/:id`, and old links still work. |

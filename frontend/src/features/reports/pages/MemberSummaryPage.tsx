@@ -54,7 +54,7 @@ export function MemberSummaryPage() {
     : undefined
 
   return (
-    <motion.div {...pageEnter} className="space-y-6">
+    <motion.div {...pageEnter} className="space-y-4">
       {canReport ? <BackLink to={`${base}/reports${search}`}>Reports</BackLink> : null}
       <PageHeader title={title} description={detail} />
       <ReportRangePicker control={control} timezone={org.timezone} period={data?.period} />
@@ -72,7 +72,7 @@ export function MemberSummaryPage() {
             period={data.period}
             scope={data.is_self ? 'tasks assigned to you' : 'assigned tasks you can see'}
           />
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             <StatTile
               label="Assigned"
               value={data.counts.assigned}
@@ -109,7 +109,7 @@ export function MemberSummaryPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
             <ReportCard title="Open by status">
               <BreakdownBars
                 label="Open tasks by status"

@@ -155,7 +155,7 @@ export function InboxPage() {
   const tabs = personal ? TABS.slice(0, 2) : TABS
 
   return (
-    <motion.div {...pageEnter} className="mx-auto max-w-3xl space-y-5">
+    <motion.div {...pageEnter} className="mx-auto max-w-4xl space-y-3">
       <PageHeader
         title="Inbox"
         description={

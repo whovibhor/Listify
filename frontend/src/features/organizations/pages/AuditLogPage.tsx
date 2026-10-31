@@ -58,7 +58,7 @@ export function AuditLogPage() {
   const pageCount = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1
 
   return (
-    <motion.div {...pageEnter} className="mx-auto max-w-3xl space-y-5">
+    <motion.div {...pageEnter} className="mx-auto max-w-3xl space-y-4">
       <PageHeader
         title="Activity log"
         description="A permanent record of important changes. It can’t be edited."

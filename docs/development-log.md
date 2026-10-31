@@ -1,5 +1,38 @@
 # Denote — Development Log
 
+## 2026-10-31 — UI rework, Batch 6: owner's fixes and final pass
+
+### Requested by the owner
+Before the final pass: show Workboard when someone has one board and Boards only when they have several, fit all board columns on larger screens, make Blocked and Cancelled replace the other columns with an animation, and remove unnecessary padding.
+
+### Changes
+- **Sidebar:** one board is a single Workboard item, and several are a Boards list.
+- **Board:** columns share the screen width. Measured, all four fit with no scrolling from 1280 px up with the sidebar open, 244 px wide at 1280 and 368 px at 1920.
+- **Blocked and Cancelled:** each button now replaces the working columns, alone or together, and the set animates out before the next comes in. A short placeholder shows while cards load.
+- **Spacing:** tighter throughout, with a smaller header and sidebar, one rhythm for pages and grids, smaller stat tiles and cards, and a wider page limit of 120rem. See ADR-039.
+
+### Problems found while testing
+- A frontend test failed once and passed the next time, because it read the sidebar link just as the page changed. It now waits. Three full runs in a row then passed.
+- Two full E2E runs were stopped when a new message arrived, and browsers crashed as they closed (0xC0000142). That isn't an app fault: with the suite split into desktop and mobile in the foreground, nothing crashed.
+- One E2E test still expected the old 64 px collapsed sidebar. It's 56 px now.
+
+### Checks (all actually run)
+| Check | Result |
+|---|---|
+| Backend tests | 666 passed |
+| Frontend tests | 195 passed, three runs in a row |
+| Ruff, ESLint, Prettier, TypeScript, Alembic check, production build | Clean |
+| Full E2E, desktop | 19 passed, then the corrected workspace spec, 2 passed |
+| Full E2E, mobile | 18 passed, 2 skipped by design |
+| Every role through every page they can reach, at 375, 768 and 1280 px | 435 page visits by Admin, Department Manager, Team Lead, Member, someone in two departments and a suspended member. No errors, broken pages or sideways overflow |
+
+Automated accessibility scans ran in the E2E suite on sign-in, tasks, the Edit form, boards, departments, reports, the inbox and organization pages, in light mode, with dark mode scanned on the task page and the ownership dialog.
+
+### Known limitations
+- Between 1024 and 1279 px with the sidebar open, the board still scrolls sideways, because four columns can't fit at a readable width. Collapsing the sidebar fits them from 1024 px.
+- The Owner account wasn't part of the live walkthrough, because its password isn't available to these checks. The Owner has the same pages as an Admin, and E2E covers Owner journeys on the test database.
+- Backend tests ran before the last few frontend-only edits. No server code changed after them.
+
 ## 2026-10-31 — UI rework, Batch 5: task page
 
 ### Requested by the owner

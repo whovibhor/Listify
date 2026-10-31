@@ -41,12 +41,12 @@ export function StatTile({
           {label}
         </span>
       </div>
-      <p className="mt-2 text-3xl font-semibold tracking-tight">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+      <p className="mt-1 text-2xl font-semibold tracking-tight">{value}</p>
+      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </>
   )
   const base =
-    'relative block h-full rounded-xl bg-card p-4 shadow-card transition-shadow duration-(--duration-fast)'
+    'relative block h-full rounded-xl bg-card p-3 shadow-card transition-shadow duration-(--duration-fast)'
 
   return (
     <div className="relative h-full">
@@ -69,7 +69,7 @@ export function StatTile({
             <button
               type="button"
               aria-label={`How “${label}” is calculated`}
-              className="absolute top-2.5 right-2.5 grid size-7 place-items-center rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="absolute top-1.5 right-1.5 grid size-7 place-items-center rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <InfoIcon className="size-3.5" />
             </button>

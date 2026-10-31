@@ -37,7 +37,7 @@ export function BackLink({ to, children }: { to: string; children: ReactNode }) 
 
 export function ReportSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
       {Array.from({ length: 5 }, (_, index) => (
         <Skeleton key={index} className="h-28 rounded-xl" />
       ))}
@@ -85,7 +85,7 @@ export function ReportTiles({
   links?: { open?: string; overdue?: string; blocked?: string }
 }) {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
       <StatTile
         label="Open"
         value={counts.open}

@@ -106,7 +106,7 @@ export function MemberDirectory({ departmentId }: { departmentId?: number }) {
   const filters = (departmentId ? 0 : 1) + (managesMembers ? 1 : 0)
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <div
         className={cn(
           'grid grid-cols-1 gap-2',

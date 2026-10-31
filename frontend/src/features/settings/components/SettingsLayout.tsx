@@ -14,7 +14,7 @@ const tabs = [
 
 export function SettingsLayout() {
   return (
-    <motion.div {...pageEnter} className="mx-auto max-w-3xl space-y-6">
+    <motion.div {...pageEnter} className="mx-auto max-w-3xl space-y-4">
       <PageHeader
         title="Account settings"
         description="Manage your profile, sign-in security and organizations."

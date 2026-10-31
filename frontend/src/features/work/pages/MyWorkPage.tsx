@@ -40,7 +40,7 @@ export function MyWorkPage() {
   })
 
   return (
-    <motion.div {...pageEnter} className="mx-auto max-w-3xl space-y-4">
+    <motion.div {...pageEnter} className="mx-auto max-w-4xl space-y-3">
       <PageHeader
         title="My Work"
         description={

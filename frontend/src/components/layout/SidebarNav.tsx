@@ -139,11 +139,11 @@ export function SidebarNav({ instanceId, onNavigate, collapsed = false }: Sideba
   if (collapsed) return <Rail sections={sections} instanceId={instanceId} />
 
   return (
-    <nav aria-label="Main" className="flex flex-col gap-5">
+    <nav aria-label="Main" className="flex flex-col gap-3">
       {sections.map((section, index) => (
         <div key={section.label ?? index} className="flex flex-col gap-0.5">
           {section.label ? (
-            <h2 className="px-2.5 pb-1 text-[0.7rem] font-semibold tracking-wider text-muted-foreground uppercase">
+            <h2 className="px-2.5 pb-0.5 text-[0.7rem] font-semibold tracking-wider text-muted-foreground uppercase">
               {section.label}
             </h2>
           ) : null}
@@ -154,7 +154,7 @@ export function SidebarNav({ instanceId, onNavigate, collapsed = false }: Sideba
                   to={item.to}
                   end={item.end ?? item.to === '/'}
                   onClick={onNavigate}
-                  className={({ isActive }) => cn(itemStyles(isActive), 'h-9 gap-2.5 px-2.5')}
+                  className={({ isActive }) => cn(itemStyles(isActive), 'h-8 gap-2.5 px-2.5')}
                 >
                   {({ isActive }) => (
                     <>

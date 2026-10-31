@@ -86,7 +86,7 @@ export function DepartmentsPage() {
   }
 
   return (
-    <motion.div {...pageEnter} className="space-y-5">
+    <motion.div {...pageEnter} className="space-y-4">
       <PageHeader
         title={canCreate ? 'Departments' : 'Department'}
         description={canCreate ? 'Teams in this organization and who can ask to join them.' : null}
@@ -108,7 +108,7 @@ export function DepartmentsPage() {
       ) : null}
 
       {isPending ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Skeleton className="h-36 rounded-2xl" />
           <Skeleton className="h-36 rounded-2xl" />
         </div>
@@ -130,7 +130,7 @@ export function DepartmentsPage() {
           }
         />
       ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {data.map((department) => (
             <DepartmentCard
               key={department.id}

@@ -19,7 +19,7 @@ import { errorText } from '@/lib/api-client'
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="min-w-0 text-sm">{children}</dd>
     </div>
@@ -93,8 +93,8 @@ export function TaskDetailsRail({ task, timezone }: { task: TaskDetail; timezone
   const date = (value: string) => format(inZone(value, timezone), 'd MMM yyyy')
 
   return (
-    <section aria-label="Task details" className="rounded-2xl bg-card p-4 shadow-card">
-      <dl className="space-y-4">
+    <section aria-label="Task details" className="rounded-xl bg-card p-3 shadow-card">
+      <dl className="space-y-2.5">
         {hasPeople ? <OrganizationFacts task={task} archived={archived} /> : null}
         <Fact label="Priority">
           <TaskPriorityBadge priority={task.priority} />

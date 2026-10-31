@@ -14,7 +14,7 @@ export function MembersPage() {
   if (!isOrganizationAdmin(org)) return <Navigate to={`/org/${org.id}/departments`} replace />
 
   return (
-    <motion.div {...pageEnter} className="space-y-5">
+    <motion.div {...pageEnter} className="space-y-4">
       <PageHeader title="All members" description="Everyone in this organization." />
       <DepartmentTabs organizationId={org.id} />
       <MemberDirectory />

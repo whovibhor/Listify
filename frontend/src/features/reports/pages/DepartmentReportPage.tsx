@@ -44,7 +44,7 @@ export function DepartmentReportPage() {
   )
 
   return (
-    <motion.div {...pageEnter} className="space-y-6">
+    <motion.div {...pageEnter} className="space-y-4">
       <BackLink to={`${base}/reports${search}`}>Reports</BackLink>
       <PageHeader
         title={data?.department.name ?? 'Department report'}
@@ -75,7 +75,7 @@ export function DepartmentReportPage() {
           <ReportCard title="Tasks per day" description={data.definitions.trend}>
             <ReportTrendChart trend={data.trend} />
           </ReportCard>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <ReportCard title="Open by status" description="Where the work sits right now.">
               <BreakdownBars
                 label="Open tasks by status"
@@ -109,7 +109,7 @@ export function DepartmentReportPage() {
               )}
             </ReportCard>
           </div>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
             <ReportCard title="Overdue" description="Oldest deadline first.">
               <ReportTaskList
                 tasks={data.overdue_tasks}

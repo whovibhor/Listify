@@ -121,7 +121,7 @@ export function MemberSheet({ member, onClose }: { member: Member; onClose: () =
         side="right"
         className="gap-0 overflow-y-auto p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-md"
       >
-        <div className="space-y-6 p-6">
+        <div className="space-y-4 p-6">
           <header className="flex items-center gap-3 pr-8">
             <MemberAvatar name={member.name} className="size-12" />
             <div className="min-w-0">

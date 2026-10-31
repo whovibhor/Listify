@@ -18,8 +18,8 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 | 5 | Department Work Boards | ✅ Complete | 2026-10-30 |
 | 6 | Collaboration (comments, update requests, attachments, inbox) | ✅ Complete | 2026-10-30 |
 | 7 | Dashboards & reporting | ✅ Complete | 2026-10-30 |
-| UI | UI & journey rework (6 batches) | 🚧 In progress: Batches 1 to 5 done, Batch 6 next | — |
-| 8 | Reminders & scheduled notifications | ⏳ After the rework | — |
+| UI | UI & journey rework (6 batches) | ✅ Complete | 2026-10-31 |
+| 8 | Reminders & scheduled notifications | 🚧 Next | — |
 | Later | Agreed additions: time estimates, bulk actions, global search, recurring tasks and dependencies | ⏳ Planned | — |
 | 9 | Production readiness | ⏳ Planned | — |
 | Future | Sign-in with Google and other providers | ⏳ Planned | — |
@@ -144,9 +144,10 @@ Requested by the owner on 2026-10-31 after trying the app with sample data. Batc
 - [x] After creating a task you stay on the list, with an Open task link
 - [x] Side panel removed from every page
 
-**Batch 6 — Final pass**
-- [ ] Full journey for each role at phone, tablet and desktop widths
-- [ ] Accessibility checks, a complete E2E run, and docs
+**Batch 6 — Final pass ✅**
+- [x] Owner's fixes first: Workboard for one board, columns that fit the screen, Blocked and Cancelled as views, tighter spacing (ADR-037, ADR-039)
+- [x] Full journey for each role at phone, tablet and desktop widths
+- [x] Accessibility checks, a complete E2E run, and docs
 
 ### Agreed additions (after the rework)
 In this order, smallest first:

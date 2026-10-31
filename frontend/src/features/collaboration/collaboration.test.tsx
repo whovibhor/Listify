@@ -391,9 +391,11 @@ describe('inbox', () => {
     expect(await screen.findByRole('link', { name: 'Switch to Personal' })).toBeInTheDocument()
     const nav = screen.getAllByRole('navigation', { name: 'Main' })[0]
     expect(within(nav).getByRole('link', { name: /team tasks/i })).toBeInTheDocument()
-    expect(within(nav).getByRole('link', { name: /inbox/i })).toHaveAttribute(
-      'aria-current',
-      'page',
+    await waitFor(() =>
+      expect(within(nav).getByRole('link', { name: /inbox/i })).toHaveAttribute(
+        'aria-current',
+        'page',
+      ),
     )
   })
 

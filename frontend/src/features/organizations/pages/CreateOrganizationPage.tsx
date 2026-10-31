@@ -91,7 +91,7 @@ export function CreateOrganizationPage() {
       {...pageEnter}
       onSubmit={onSubmit}
       noValidate
-      className="mx-auto max-w-2xl space-y-5"
+      className="mx-auto max-w-2xl space-y-4"
     >
       <PageHeader
         title="Create an organization"
@@ -112,7 +112,7 @@ export function CreateOrganizationPage() {
           <FormField label="Description" error={errors.description?.message}>
             <Textarea maxLength={500} className="min-h-20" {...form.register('description')} />
           </FormField>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label="Website" error={errors.website?.message}>
               <Input type="url" placeholder="https://" {...form.register('website')} />
             </FormField>

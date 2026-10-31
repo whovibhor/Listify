@@ -53,9 +53,13 @@ function organizationSections(
           to: `${base}/departments`,
           icon: Building2Icon,
         },
+        // Only one board to choose from, so it needs no list of its own.
+        ...(departments.length === 1
+          ? [{ label: 'Workboard', to: `${base}/boards/${departments[0].id}`, icon: KanbanIcon }]
+          : []),
       ],
     },
-    ...(departments.length
+    ...(departments.length > 1
       ? [
           {
             label: 'Boards',

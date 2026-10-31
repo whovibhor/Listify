@@ -306,7 +306,7 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 
 ## ADR-037 Boards and lists open on current work
 
-- **Hidden columns live in the URL,** as `show=blocked`, not in saved preferences. The owner asked for them hidden by default, so a board always opens the same way, and a link can still ask for a column. A `status` filter also reveals its column.
+- **Blocked and Cancelled are views of their own,** kept in the URL as `show=blocked`, not in saved preferences. Switching one on replaces the working columns, as the owner asked, so a board always opens the same way, and a link can still ask for a view. A `status` filter also switches to its view. The set of columns animates out as one before the next comes in.
 - **Cards can still move to a hidden column** from the Move menu, and the message offers to show it, so a card never just vanishes. Blocked work stays counted on the toggle, because it's what a team most needs to notice.
 - **Hidden columns return totals without cards** (`collapsed=`). All column counts now come from one grouped query instead of one per column. On 100,000 tasks, a Member's board went from 533 ms to 289 ms.
 - **Completed shows 30 days, newest first.** `older` counts the rest, which stay in the List view. The server rule and the label must agree: `BOARD_COMPLETED_DAYS` and `COMPLETED_DAYS`.
@@ -326,3 +326,10 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 - **Subtasks keep the server's rules.** Comments, files and update requests belong to the top-level task, and people, department and visibility come from the parent, so a subtask page has Overview and Activity only, and its form has no people fields. Archive isn't offered either, because the server refuses it. Delete is, even in an organization, because the parent's history records it.
 - **Tab counts come from the lists themselves,** so opening a task costs three small extra requests and no server change. The Overview needs the comments anyway.
 - **After creating a task you stay on the list,** with Open task in the message, so several can be added in a row.
+
+## ADR-039 Board width and spacing
+
+- **Columns share the screen.** Each is `flex-1` with a minimum width, so all four fit without scrolling from 1280 px with the sidebar open, and a phone still swipes between them. Sideways scrolling remains between 1024 and 1279 px with the sidebar open, where four columns can't fit at a readable width. Collapsing the sidebar fits them from 1024 px.
+- **Pages can use a wide screen.** The limit went from 72rem to 120rem, because large monitors were left with wide empty margins. Inbox, My Work and Account settings stay narrower, because they're reading pages.
+- **One spacing rhythm.** Page stacks use 1rem, grids and cards 0.75rem, and the shell is tighter, with a 3rem header and a 15rem sidebar, so more work fits on screen.
+- **Workboard or Boards.** One board needs no list, so it's a single item beside Department. The rule follows the boards a person can open, so an Admin in a one-department organization sees Workboard too.

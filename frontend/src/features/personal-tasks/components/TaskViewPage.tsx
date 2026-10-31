@@ -67,7 +67,7 @@ export function TaskViewPage(config: TaskViewConfig) {
       : config.empty
 
   return (
-    <motion.div {...pageEnter} className="mx-auto max-w-4xl space-y-5">
+    <motion.div {...pageEnter} className="mx-auto max-w-4xl space-y-4">
       <PageHeader
         title={config.title}
         description={config.description}

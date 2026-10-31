@@ -76,7 +76,7 @@ function HomePage() {
   const { data: dashboard } = usePersonalDashboard('7d')
 
   return (
-    <motion.div {...pageEnter} className="space-y-6">
+    <motion.div {...pageEnter} className="space-y-4">
       <PageHeader
         title={firstName ? `Hi, ${firstName}` : 'Welcome to Denote'}
         description="Here's where your personal work stands."
@@ -85,7 +85,7 @@ function HomePage() {
         defaults={{ due_date: todayKey(timezone) }}
         placeholder="Add a task for today…"
       />
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {dashboard ? (
           <>
             <StatTile

@@ -101,6 +101,14 @@ test('a team plans work on a board, and access follows the rules', async ({
     owner.getByTestId('column-in_progress').getByText('Fix the login page'),
   ).toBeVisible()
 
+  // Blocked is its own view: on, it replaces the work in progress.
+  await owner.getByRole('button', { name: /^Show Blocked column/ }).click()
+  await expect(owner.getByTestId('column-blocked')).toBeVisible()
+  await expect(owner.getByTestId('column-in_progress')).toBeHidden()
+  await owner.getByRole('button', { name: /^Show Blocked column/ }).click()
+  await expect(owner.getByTestId('column-in_progress')).toBeVisible()
+  await expect(owner.getByTestId('column-blocked')).toBeHidden()
+
   // The list and the calendar show the same task.
   await owner.getByRole('button', { name: 'List' }).click()
   const table = owner.getByRole('table')

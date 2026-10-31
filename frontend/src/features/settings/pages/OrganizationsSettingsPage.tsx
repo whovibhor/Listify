@@ -41,7 +41,7 @@ function MyOrganizations() {
 
 export function OrganizationsSettingsPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>Your organizations</CardTitle>
