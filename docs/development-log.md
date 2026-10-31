@@ -1,5 +1,34 @@
 # Listify — Development Log
 
+## 2026-10-31 — Sample data for Shoolini University
+
+### Requested by the owner
+Fill the existing organization with believable data for a medium-sized organization of 18 members, so that analytics, admin pages and tasks can be checked without entering anything by hand, and keep it permanently.
+
+### Changes
+- `scripts/seed_shoolini.py` and `scripts/seed_shoolini_data.py` add the data as one transaction, with dates relative to the day they run.
+- `listify` gained 16 fictional members, 4 applicants, 131 organization tasks, 45 subtasks, 20 personal tasks, 42 comments, 14 files, 11 update requests, 267 notifications, 12 tags and 5 invitations. Files are in `backend/storage/`.
+- The only existing rows changed are the five department descriptions, which were empty.
+- The data includes special cases: a suspended member, a transferred member, tasks needing reassignment, a task moved after completion, archived and cancelled tasks, private and selected-visibility tasks, and an edited and a deleted comment.
+
+### Checks (all actually run)
+| Check | Result |
+|---|---|
+| Rehearsal on `listify_test` | Passed, then the test database was emptied |
+| Real app, signed in as sample people | Every report, board, list and task page responded, and all 14 files downloaded |
+| Data consistency checks | 8 checks, no problems |
+| Running it a second time | Changed nothing |
+| Screenshots | Reports, members, board and Team Tasks reviewed at desktop width |
+
+### Noticed
+- Team Tasks lists completed tasks first, because the default view includes everything sorted by earliest deadline. Almost no real data had shown this before.
+
+### Known limitations
+- Your organization and account were created on 30 October 2026, so sample members show earlier join dates than the Owner, and tasks predate the organization.
+- Deadlines don't move, so more open tasks become overdue as time passes.
+- Vibhor Tiwari is in no department, so his assigned tasks are the organization-wide ones.
+- All sample people share one test password.
+
 ## 2026-10-31 — Database optimization, steps 2 and 3
 
 ### Requested by the owner

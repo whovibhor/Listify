@@ -82,6 +82,26 @@ npm run dev                     # http://localhost:5173 — proxies /api to the 
 
 Optional `frontend/.env.local` (see `.env.example`): `VITE_API_BASE_URL` (default `/api/v1`), `VITE_API_PROXY_TARGET` (default `http://127.0.0.1:8000`).
 
+## Sample data
+
+Shoolini University in the development database holds sample data: 18 members across five departments, 131 tasks with months of history, and everything that hangs off them. It stays until you delete it in the app. Tests use `listify_test`, so they never touch it.
+
+To sign in as a sample person, use their address from the Members page. Their shared test password is `SEED_PASSWORD` in `backend/scripts/seed_shoolini.py`. Addresses end in `.example`, so no email can reach anyone real. These accounts show each role's view:
+
+| Person | Role |
+|---|---|
+| Meenakshi Thakur | Admin |
+| Rohan Kaushal | Department Manager, Engineering |
+| Sneha Rana | Team Lead, Backend |
+| Ishita Verma | Member, Engineering |
+| Manish Pathania | Suspended member |
+
+To add it to a database that doesn't have it, run this from `backend/`. It needs Shoolini University to exist already, refuses to run in production, and does nothing if the data is already there.
+
+```powershell
+.venv\Scripts\python.exe -m scripts.seed_shoolini
+```
+
 ## Common commands
 
 | Task | Command |

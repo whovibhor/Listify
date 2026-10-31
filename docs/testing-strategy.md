@@ -26,6 +26,7 @@ Derived from PRD §14 and the definition of done. Never report a test as passing
 - `tests/test_permissions.py` runs every role against every permission-guarded endpoint on the real API. Each new guarded endpoint adds a case there. `tests/test_organization_tasks.py::test_visibility_matrix` does the same for who can see which task, across reading, listing and search. Those two files use cheap Argon2 settings, because each test signs up a whole team.
 - `tests/test_security_fixes.py` holds one regression test per fixed audit finding, named after its ID, such as `test_s01_...`. Each also checks that normal use still works.
 - `tests/test_collaboration.py` covers comments, attachments, update requests and notifications, including what's hidden after access is lost. Uploaded files go to a temporary folder, never `backend/storage/`.
+- Sample data for checking by hand lives in the development database (`scripts/seed_shoolini.py`, explained in the README). Automated tests never use it.
 - `tests/test_indexes.py` runs `EXPLAIN` on the query the app really sends, because a mismatched index is ignored without any error.
 - `tests/test_request_limit.py` covers the limiter, including slow clients. Slow-client behaviour was also checked on a real server, because a test client doesn't pause mid-request the way a real one can.
 - `tests/test_query_counts.py` fails if a busy page runs more queries as its data grows, or passes its ceiling. Add new list pages to it.
