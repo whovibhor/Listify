@@ -157,7 +157,7 @@ export function DepartmentPage() {
           value={counts.blocked}
           icon={OctagonPauseIcon}
           definition={definitions.blocked}
-          to={`${board}?status=blocked`}
+          to={`${board}?show=blocked`}
         />
         <StatTile
           label="Completed"

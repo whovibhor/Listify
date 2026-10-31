@@ -23,6 +23,10 @@ export interface WorkParams {
   sort?: TaskSort
   page?: number
   page_size?: number
+  /** Leaves out Completed and Cancelled, unless `status` names statuses of its own. */
+  active?: boolean
+  /** Board columns to count without loading their cards. */
+  collapsed?: TaskStatus[]
 }
 
 function toQuery(params: WorkParams) {

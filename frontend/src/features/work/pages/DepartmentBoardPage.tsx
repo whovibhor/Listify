@@ -3,6 +3,8 @@ import {
   Building2Icon,
   CalendarDaysIcon,
   ChartPieIcon,
+  EyeIcon,
+  EyeOffIcon,
   KanbanIcon,
   ListIcon,
   ListTodoIcon,
@@ -20,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { can } from '@/features/organizations/permissions'
 import { useOrg } from '@/features/organizations/use-current-org'
 import { TaskDetailSheet } from '@/features/tasks/components/TaskDetailSheet'
+import { STATUS_LABELS, type TaskStatus } from '@/features/tasks/task-meta'
 import { useTaskSearchParams } from '@/features/tasks/use-task-search-params'
 import { useBoard, useOrganizationTasks } from '@/features/work/api'
 import { BoardView } from '@/features/work/components/BoardView'
@@ -40,7 +43,38 @@ const LAYOUTS: { value: Layout; label: string; icon: LucideIcon }[] = [
   { value: 'calendar', label: 'Calendar', icon: CalendarDaysIcon },
 ]
 
+// Off until someone asks, so the board opens on the work that's moving.
+const HIDEABLE_COLUMNS: TaskStatus[] = ['blocked', 'cancelled']
+
 const PAGE_SIZE = 25
+
+function ColumnToggle({
+  status,
+  total,
+  shown,
+  onToggle,
+}: {
+  status: TaskStatus
+  total: number
+  shown: boolean
+  onToggle: () => void
+}) {
+  const Icon = shown ? EyeIcon : EyeOffIcon
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      aria-pressed={shown}
+      aria-label={`Show ${STATUS_LABELS[status]} column, ${total} tasks`}
+      onClick={onToggle}
+      className={cn(shown && 'border-primary/40 bg-accent/60')}
+    >
+      <Icon data-icon="inline-start" />
+      {STATUS_LABELS[status]}
+      <span className="text-muted-foreground tabular-nums">{total}</span>
+    </Button>
+  )
+}
 
 export function DepartmentBoardPage() {
   const org = useOrg()
@@ -51,11 +85,20 @@ export function DepartmentBoardPage() {
   const [creating, setCreating] = useState(false)
   const layout = (params.get('layout') as Layout | null) ?? 'board'
   const shared = workParams(search)
-  const board = useBoard(org.id, departmentId, shared)
+  const shownColumns = params.getAll('show') as TaskStatus[]
+  // A link that asks for a status needs its column.
+  const isShown = (status: TaskStatus) =>
+    shownColumns.includes(status) || filters.status.includes(status)
+  const hidden = HIDEABLE_COLUMNS.filter((status) => !isShown(status))
+  const boardParams = { ...shared, collapsed: hidden }
+  const board = useBoard(org.id, departmentId, boardParams)
+  const showFinished = params.get('finished') === 'true'
   const list = useOrganizationTasks(
     org.id,
     {
       ...shared,
+      // Searching still finds finished work.
+      active: !showFinished && !filters.q,
       department_id: departmentId,
       sort: filters.sort,
       page: filters.page,
@@ -63,6 +106,15 @@ export function DepartmentBoardPage() {
     },
     { enabled: layout === 'list' },
   )
+
+  const showColumn = (status: TaskStatus) => update({ show: [...shownColumns, status] })
+  const toggleColumn = (status: TaskStatus) =>
+    isShown(status)
+      ? update({
+          show: shownColumns.filter((shown) => shown !== status),
+          status: filters.status.filter((filtered) => filtered !== status),
+        })
+      : showColumn(status)
 
   // Departments the viewer can't open look like they don't exist (BR-006).
   if (board.error instanceof ApiError && board.error.status === 404) return <NotFoundPage />
@@ -101,25 +153,52 @@ export function DepartmentBoardPage() {
         }
       />
       <div className="flex flex-col gap-3">
-        <nav aria-label="Board layout" className="inline-flex w-fit rounded-lg bg-muted p-1">
-          {LAYOUTS.map(({ value, label, icon: Icon }) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={layout === value}
-              onClick={() => update({ layout: value === 'board' ? null : value })}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-(--duration-fast) outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                layout === value
-                  ? 'bg-card text-foreground shadow-card'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
+        <div className="flex flex-wrap items-center gap-2">
+          <nav aria-label="Board layout" className="inline-flex w-fit rounded-lg bg-muted p-1">
+            {LAYOUTS.map(({ value, label, icon: Icon }) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={layout === value}
+                onClick={() =>
+                  // The board has no status filter, so one left from the List view couldn't be undone.
+                  update(value === 'board' ? { layout: null, status: null } : { layout: value })
+                }
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-(--duration-fast) outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                  layout === value
+                    ? 'bg-card text-foreground shadow-card'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                <Icon aria-hidden className="size-4" />
+                {label}
+              </button>
+            ))}
+          </nav>
+          {layout === 'board'
+            ? HIDEABLE_COLUMNS.map((status) => (
+                <ColumnToggle
+                  key={status}
+                  status={status}
+                  total={data?.columns.find((column) => column.status === status)?.total ?? 0}
+                  shown={isShown(status)}
+                  onToggle={() => toggleColumn(status)}
+                />
+              ))
+            : null}
+          {layout === 'list' ? (
+            <Button
+              variant="outline"
+              size="sm"
+              aria-pressed={showFinished}
+              onClick={() => update({ finished: showFinished ? null : 'true' })}
+              className={cn(showFinished && 'border-primary/40 bg-accent/60')}
             >
-              <Icon aria-hidden className="size-4" />
-              {label}
-            </button>
-          ))}
-        </nav>
+              Show finished
+            </Button>
+          ) : null}
+        </div>
         <WorkFilters
           organizationId={org.id}
           search={search}
@@ -137,9 +216,12 @@ export function DepartmentBoardPage() {
         <BoardView
           organizationId={org.id}
           board={data!}
-          params={shared}
+          params={boardParams}
           timezone={org.timezone}
           onOpen={openTask}
+          hidden={hidden}
+          onShowColumn={showColumn}
+          onShowOlder={() => update({ layout: 'list', status: ['completed'] })}
         />
       ) : layout === 'calendar' ? (
         <WorkCalendar

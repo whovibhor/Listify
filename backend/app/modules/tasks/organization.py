@@ -3,10 +3,11 @@
 Fields shared with personal tasks (title, dates, status...) stay in `service.py`.
 """
 
+from collections.abc import Collection
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
-from sqlalchemy import ColumnElement, exists, func, or_, select
+from sqlalchemy import ColumnElement, and_, case, exists, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.common import rate_limit
@@ -55,6 +56,7 @@ from app.modules.tasks.transitions import allowed_targets
 from app.modules.users.models import User
 
 BOARD_COLUMN_LIMIT = 100
+BOARD_COMPLETED_DAYS = 30
 ORGANIZATION_FIELDS = {"assigned_to", "department_id", "visibility", "visible_to"}
 
 _READ_OPTIONS = (
@@ -521,6 +523,8 @@ class OrganizationTaskQuery:
     needs_reassignment: bool = False
     q: str | None = None
     sort: str = "due"
+    # Leaves out Completed and Cancelled, unless the request names statuses of its own.
+    active_only: bool = False
 
 
 def _conditions(
@@ -536,6 +540,8 @@ def _conditions(
     else:
         conditions.append(Task.archived_at.is_(None))
     open_unless_filtered = [Task.status.in_(OPEN_STATUSES)] if not query.statuses else []
+    if query.active_only:
+        conditions += open_unless_filtered
     if query.view == "my_work":
         conditions += [Task.assigned_to == context.user.id, *open_unless_filtered]
     elif query.view == "collaborating":
@@ -607,10 +613,12 @@ def get_board(
     department_id: int,
     query: OrganizationTaskQuery,
     now: datetime,
+    collapsed: Collection[TaskStatus] = (),
 ) -> BoardRead:
     """Only members of the department (and administrators) can open its board (BR-006).
 
     Being a collaborator on one task isn't enough: that gives access to the task, not the board.
+    Collapsed columns return their count without their cards, for columns the viewer has hidden.
     """
     department = db.scalar(
         select(Department).where(
@@ -624,19 +632,40 @@ def get_board(
         raise NotFoundError("Department not found.")
 
     query.department_id = department_id
+    conditions = _conditions(context, query, now)
+    # A board is for current work: finished tasks would otherwise pile up here for ever.
+    completed_since = now - timedelta(days=BOARD_COMPLETED_DAYS)
+    is_older = and_(Task.status == TaskStatus.COMPLETED, Task.completed_at < completed_since)
+    counts = {
+        status: (total, int(older or 0))
+        for status, total, older in db.execute(
+            select(Task.status, func.count(), func.sum(case((is_older, 1), else_=0)))
+            .where(*conditions)
+            .group_by(Task.status)
+        )
+    }
     columns = []
     for status in TaskStatus:
-        conditions = [*_conditions(context, query, now), Task.status == status]
-        total = db.scalar(select(func.count()).select_from(Task).where(*conditions)) or 0
-        tasks = db.scalars(
-            select(Task)
-            .where(*conditions)
-            .options(*_READ_OPTIONS)
-            .order_by(*service.order_by(query.sort))
-            .limit(BOARD_COLUMN_LIMIT)
-        ).all()
+        total, older = counts.get(status, (0, 0))
+        tasks = []
+        if status not in collapsed:
+            recent = [Task.completed_at >= completed_since] if older else []
+            tasks = db.scalars(
+                select(Task)
+                .where(*conditions, Task.status == status, *recent)
+                .options(*_READ_OPTIONS)
+                .order_by(
+                    *service.order_by("completed" if status == TaskStatus.COMPLETED else query.sort)
+                )
+                .limit(BOARD_COLUMN_LIMIT)
+            ).all()
         columns.append(
-            BoardColumn(status=status, total=total, items=_to_reads(db, context, list(tasks), now))
+            BoardColumn(
+                status=status,
+                total=total - older,
+                older=older,
+                items=_to_reads(db, context, list(tasks), now),
+            )
         )
     return BoardRead(
         department=DepartmentRef(id=department.id, name=department.name),

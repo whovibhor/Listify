@@ -158,6 +158,8 @@ class TaskDetail(TaskRead):
 class BoardColumn(ApiModel):
     status: TaskStatus
     total: int
+    # Completed tasks too old for the board, which the List view still has.
+    older: int = 0
     items: list[TaskRead]
 
 

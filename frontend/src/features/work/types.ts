@@ -6,6 +6,8 @@ export type WorkView = 'team' | 'my_work' | 'collaborating' | 'archived'
 export interface BoardColumn {
   status: TaskStatus
   total: number
+  /** Completed tasks too old for the board, which the List view still has. */
+  older: number
   items: Task[]
 }
 

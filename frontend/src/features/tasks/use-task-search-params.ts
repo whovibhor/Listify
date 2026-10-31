@@ -36,7 +36,8 @@ export interface TaskFilterState {
 }
 
 /** URL keys beyond the filters: the open task, and each organization page's own settings. */
-type ExtraParam = 'task' | 'layout' | 'month' | 'view' | 'department' | 'flagged' | 'archived'
+type ExtraParam =
+  'task' | 'layout' | 'month' | 'view' | 'department' | 'flagged' | 'archived' | 'finished' | 'show'
 
 /**
  * Filters, sort, page and the open task live in the URL: shareable, back-button friendly and

@@ -85,7 +85,7 @@ function makeBoard(tasks: Task[], overrides: Partial<Board> = {}): Board {
     can_create: true,
     columns: statuses.map((status) => {
       const items = tasks.filter((task) => task.status === status)
-      return { status, total: items.length, items }
+      return { status, total: items.length, older: 0, items }
     }),
     ...overrides,
   }
@@ -126,6 +126,16 @@ function lastCall(api: ReturnType<typeof mockApi>, method: string, path: string)
   return api.calls.filter((call) => call.method === method && call.path === path).at(-1)
 }
 
+function renderBoardAt(path: string) {
+  mockApi(
+    signedInRoutes({
+      ...routes,
+      'GET /organizations/7/departments/3/board': makeBoard([]),
+    }),
+  )
+  return renderApp(path)
+}
+
 function renderBoard(tasks: Task[], extra: Record<string, unknown> = {}, boardOverrides = {}) {
   const api = mockApi(
     signedInRoutes({
@@ -136,6 +146,66 @@ function renderBoard(tasks: Task[], extra: Record<string, unknown> = {}, boardOv
   )
   return { api, ...renderApp('/org/7/boards/3') }
 }
+
+describe('finished work', () => {
+  const listCall = (api: ReturnType<typeof mockApi>) =>
+    lastCall(api, 'GET', '/organizations/7/tasks')?.query
+
+  it('Team Tasks opens on active work, and shows the rest on request', async () => {
+    const api = mockApi(signedInRoutes({ ...routes }))
+    const { user } = renderApp('/org/7/tasks')
+
+    const toggle = await screen.findByRole('button', { name: 'Show finished' })
+    await waitFor(() => expect(listCall(api)?.get('active')).toBe('true'))
+    expect(await screen.findByText('No active tasks')).toBeInTheDocument()
+
+    await user.click(toggle)
+
+    await waitFor(() => expect(listCall(api)?.has('active')).toBe(false))
+  })
+
+  it('searching Team Tasks includes finished work', async () => {
+    const api = mockApi(signedInRoutes({ ...routes }))
+    renderApp('/org/7/tasks?q=invoice')
+
+    await screen.findByRole('button', { name: 'Show finished' })
+    await waitFor(() => expect(listCall(api)?.get('q')).toBe('invoice'))
+    expect(listCall(api)?.has('active')).toBe(false)
+  })
+
+  it('the archive isn’t filtered by whether tasks are finished', async () => {
+    const api = mockApi(signedInRoutes({ ...routes }))
+    renderApp('/org/7/tasks?archived=true')
+
+    expect(await screen.findByRole('button', { name: 'Show finished' })).toBeDisabled()
+    await waitFor(() => expect(listCall(api)?.get('view')).toBe('archived'))
+    expect(listCall(api)?.has('active')).toBe(false)
+  })
+
+  it('My Work adds finished tasks on request, latest deadline first', async () => {
+    const api = mockApi(signedInRoutes({ ...routes }))
+    const { user } = renderApp('/org/7/my-work')
+
+    await user.click(await screen.findByRole('button', { name: 'Show finished' }))
+
+    await waitFor(() => expect(listCall(api)?.getAll('status')).toContain('completed'))
+    expect(listCall(api)?.get('sort')).toBe('-due')
+  })
+
+  it('the board’s List view opens on active work too', async () => {
+    const api = mockApi(
+      signedInRoutes({
+        ...routes,
+        'GET /organizations/7/departments/3/board': makeBoard([]),
+      }),
+    )
+    const { user } = renderApp('/org/7/boards/3?layout=list')
+
+    await user.click(await screen.findByRole('button', { name: 'Show finished' }))
+
+    await waitFor(() => expect(listCall(api)?.has('active')).toBe(false))
+  })
+})
 
 describe('department board', () => {
   it('shows the columns and what matters on each card', async () => {
@@ -166,6 +236,79 @@ describe('department board', () => {
 
     renderBoard([makeTask()], {}, { review_required: true })
     expect(await screen.findByRole('region', { name: 'In review, 0 tasks' })).toBeInTheDocument()
+  })
+
+  it('runs left to right, with Blocked and Cancelled hidden until asked for', async () => {
+    const { api } = renderBoard([makeTask({ status: 'blocked' })], {}, { review_required: true })
+
+    await screen.findByRole('region', { name: 'Not started, 0 tasks' })
+    expect(
+      screen.getAllByTestId(/^column-/).map((column) => column.getAttribute('aria-label')),
+    ).toEqual([
+      'Not started, 0 tasks',
+      'In progress, 0 tasks',
+      'In review, 0 tasks',
+      'Completed, 0 tasks',
+    ])
+    expect(
+      lastCall(api, 'GET', '/organizations/7/departments/3/board')?.query.getAll('collapsed'),
+    ).toEqual(['blocked', 'cancelled'])
+  })
+
+  it('shows a hidden column on request, with its count on the toggle', async () => {
+    const { user, router } = renderBoard([makeTask({ status: 'blocked' })])
+    const toggle = await screen.findByRole('button', { name: 'Show Blocked column, 1 tasks' })
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+
+    await user.click(toggle)
+
+    expect(await screen.findByRole('region', { name: 'Blocked, 1 tasks' })).toBeInTheDocument()
+    expect(router.state.location.search).toBe('?show=blocked')
+    await user.click(screen.getByRole('button', { name: 'Show Blocked column, 1 tasks' }))
+    await waitFor(() =>
+      expect(screen.queryByRole('region', { name: /Blocked/ })).not.toBeInTheDocument(),
+    )
+  })
+
+  it('offers to show the column when a card moves to a hidden one', async () => {
+    const task = makeTask({ allowed_statuses: ['blocked'] })
+    const { user, router } = renderBoard([task], {
+      'PATCH /tasks/1': detail({ ...task, status: 'blocked' }),
+    })
+    await user.click(
+      await screen.findByRole('button', { name: 'Move “Fix the login page” to another column' }),
+    )
+    await user.click(await screen.findByRole('menuitem', { name: 'Blocked' }))
+
+    await user.click(await screen.findByRole('button', { name: 'Show column' }))
+
+    await waitFor(() => expect(router.state.location.search).toBe('?show=blocked'))
+  })
+
+  it('points to completed tasks too old for the board', async () => {
+    const board = makeBoard([makeTask({ status: 'completed' })])
+    const { user, router } = renderBoard([], {
+      'GET /organizations/7/departments/3/board': {
+        ...board,
+        columns: board.columns.map((column) =>
+          column.status === 'completed' ? { ...column, older: 12 } : column,
+        ),
+      },
+    })
+    const completed = await screen.findByRole('region', { name: 'Completed, 1 tasks' })
+    expect(within(completed).getByText(/Last 30 days/)).toBeInTheDocument()
+
+    await user.click(within(completed).getByRole('button', { name: '12 older in the List view' }))
+
+    await waitFor(() => expect(router.state.location.search).toBe('?layout=list&status=completed'))
+  })
+
+  it('drops the List view’s status filter on the way back to the board', async () => {
+    const { user, router } = renderBoardAt('/org/7/boards/3?layout=list&status=completed')
+
+    await user.click(await screen.findByRole('button', { name: 'Board' }))
+
+    await waitFor(() => expect(router.state.location.search).toBe(''))
   })
 
   it('moves a card from its menu', async () => {

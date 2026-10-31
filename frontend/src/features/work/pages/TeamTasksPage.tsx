@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 25
 
-/** Every task the viewer can see, and search across them. Same rules as the boards. */
+/** Active work the viewer can see, and search across everything. Same rules as the boards. */
 export function TeamTasksPage() {
   const org = useOrg()
   const search = useTaskSearchParams()
@@ -33,10 +33,13 @@ export function TeamTasksPage() {
   const departmentId = params.get('department')
   const flagged = params.get('flagged') === 'true'
   const archived = params.get('archived') === 'true'
+  const showFinished = params.get('finished') === 'true'
 
   const { data, isPending, isError, error, refetch } = useOrganizationTasks(org.id, {
     ...workParams(search),
     view: archived ? 'archived' : 'team',
+    // Searching still finds finished work.
+    active: !archived && !showFinished && !filters.q,
     department_id: departmentId ? Number(departmentId) : undefined,
     needs_reassignment: flagged || undefined,
     sort: filters.sort,
@@ -48,7 +51,11 @@ export function TeamTasksPage() {
     <motion.div {...pageEnter} className="space-y-4">
       <PageHeader
         title="Team Tasks"
-        description="Everything you can see in this organization."
+        description={
+          showFinished
+            ? 'Everything you can see in this organization.'
+            : 'Active work you can see in this organization.'
+        }
         actions={
           <Button onClick={() => setCreating(true)}>
             <PlusIcon data-icon="inline-start" />
@@ -91,6 +98,16 @@ export function TeamTasksPage() {
           >
             Archived
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            aria-pressed={showFinished}
+            disabled={archived}
+            onClick={() => update({ finished: showFinished ? null : 'true' })}
+            className={cn(showFinished && 'border-primary/40 bg-accent/60')}
+          >
+            Show finished
+          </Button>
         </div>
         <WorkFilters organizationId={org.id} search={search} />
       </div>
@@ -102,11 +119,19 @@ export function TeamTasksPage() {
       ) : data.items.length === 0 ? (
         <EmptyState
           icon={ListTodoIcon}
-          title={activeFilterCount > 0 || flagged ? 'Nothing matches' : 'No tasks yet'}
+          title={
+            activeFilterCount > 0 || flagged
+              ? 'Nothing matches'
+              : showFinished || archived
+                ? 'No tasks yet'
+                : 'No active tasks'
+          }
           description={
             activeFilterCount > 0 || flagged
               ? 'Try removing a filter.'
-              : 'Create the first task for your team.'
+              : showFinished || archived
+                ? 'Create the first task for your team.'
+                : 'Create a task, or show finished ones.'
           }
         />
       ) : (

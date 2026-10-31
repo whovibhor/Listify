@@ -5,7 +5,7 @@ Task and work management for individuals and organizations: a private **Personal
 - Requirements: [`docs/WorkPulse_BRD_v1.docx`](docs/WorkPulse_BRD_v1.docx), [`docs/WorkPulse_PRD_v1.docx`](docs/WorkPulse_PRD_v1.docx)
 - Analysis and plan: [`docs/requirements-analysis.md`](docs/requirements-analysis.md), [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md), [`docs/architecture-decisions.md`](docs/architecture-decisions.md)
 - Security: audit, current status and remaining plan in [`docs/security-audit.md`](docs/security-audit.md).
-- Status: **Phases 0–7 complete (foundation, accounts, personal workspace, organizations, roles & member management, department work boards, collaboration, reports); UI & journey rework in progress (Batches 1 to 3 of 6 done); Phase 8 (Reminders & scheduled notifications) after it.** What's done and pending, feature by feature: [`docs/feature-status.md`](docs/feature-status.md). Phase tracker: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md) · history: [`docs/development-log.md`](docs/development-log.md).
+- Status: **Phases 0–7 complete (foundation, accounts, personal workspace, organizations, roles & member management, department work boards, collaboration, reports); UI & journey rework in progress (Batches 1 to 4 of 6 done); Phase 8 (Reminders & scheduled notifications) after it.** What's done and pending, feature by feature: [`docs/feature-status.md`](docs/feature-status.md). Phase tracker: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md) · history: [`docs/development-log.md`](docs/development-log.md).
 
 ## Repository layout
 

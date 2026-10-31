@@ -101,6 +101,7 @@ def list_organization_tasks(
     needs_reassignment: bool = False,
     q: Annotated[str | None, Query(max_length=100)] = None,
     sort: Sort = "due",
+    active: bool = False,
 ) -> Page[TaskRead]:
     query = organization.OrganizationTaskQuery(
         view=view,
@@ -117,6 +118,7 @@ def list_organization_tasks(
         needs_reassignment=needs_reassignment,
         q=q.strip() if q else None,
         sort=sort,
+        active_only=active,
     )
     items, total = organization.list_tasks(
         db, context, query, offset=paging.offset, limit=paging.page_size, now=utc_now()
@@ -154,6 +156,7 @@ def department_board(
     due_from: TaskDateFilter = None,
     due_to: TaskDateFilter = None,
     q: Annotated[str | None, Query(max_length=100)] = None,
+    collapsed: Annotated[list[TaskStatus], Query()] = [],  # noqa: B006
 ) -> BoardRead:
     query = organization.OrganizationTaskQuery(
         assignee_id=assignee,
@@ -167,7 +170,7 @@ def department_board(
         due_to=due_to,
         q=q.strip() if q else None,
     )
-    return organization.get_board(db, context, department_id, query, utc_now())
+    return organization.get_board(db, context, department_id, query, utc_now(), collapsed)
 
 
 @router.get("/organizations/{organization_id}/tags", response_model=list[TagRead])

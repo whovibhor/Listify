@@ -129,7 +129,7 @@ The shared `/tasks/{id}` routes work for both personal and organization tasks. O
 |---|---|---|---|
 | GET | `/organizations/{id}/tasks` | member | Visible tasks only. `view` = `team` \| `my_work` \| `collaborating` \| `archived`; filters `department_id`, `assignee`, `unassigned`, `creator`, `status`, `priority`, `tag`, `overdue`, `due_from`, `due_to`, `needs_reassignment`, `q`; `sort`. Search uses the same visibility rule as the list. |
 | POST | `/organizations/{id}/tasks` | `task.create`, membership of the department | 201 `TaskDetail`. `department_id`, `assigned_to`, `collaborator_ids`, `visibility`, `visible_to`, `parent_task_id`. 404 for a department the caller isn't in. 422 for an archived department or an ineligible person. 403 for `organization` visibility without `task.view_all`. |
-| GET | `…/departments/{id}/board` | department member or `task.view_all` | One column per status, up to 100 tasks each with `total`. Same filters. 404 otherwise, including for collaborators on one of its tasks. |
+| GET | `…/departments/{id}/board` | department member or `task.view_all` | One column per status, up to 100 tasks each with `total`. Completed covers the last 30 days, newest first, and its `older` counts the rest. `collapsed=` lists columns to count without loading cards. Same filters. 404 otherwise, including for collaborators on one of its tasks. |
 | GET / POST | `/organizations/{id}/tags` | member / `task.create` | Organization tags. 409 `tag_name_taken`. |
 | PATCH / DELETE | `…/tags/{id}` | `organization.settings.update` | Edit or delete. |
 | PATCH | `/tasks/{id}` | see ADR-027 | Also takes `assigned_to`, `department_id`, `visibility`, `visible_to` on organization tasks; 422 on personal tasks. |

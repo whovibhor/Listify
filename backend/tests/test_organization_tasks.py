@@ -1,12 +1,14 @@
+from datetime import timedelta
 from typing import Any
 from unittest.mock import patch
 
 import pytest
 from argon2 import PasswordHasher
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from app.db.base import utc_now
 from app.modules.audit_logs.models import AuditLog
 from app.modules.tasks.models import Task, TaskActivity, TaskStatus, WorkspaceType
 from tests.conftest import ApiClient
@@ -793,3 +795,77 @@ def test_removed_member_loses_board(team: Team) -> None:
     assert team.board(team.eng).status_code == 404
     assert team.eng.get(f"{team.base}/tasks").status_code == 404
     assert team.titles(team.owner, needs_reassignment="true") == {"Work"}
+
+
+# --- What boards and lists open on -------------------------------------------------------------
+
+
+def column(team: Team, status: str, **params: Any) -> dict[str, Any]:
+    response = team.board(team.owner, **params)
+    assert response.status_code == 200, response.text
+    return next(item for item in response.json()["columns"] if item["status"] == status)
+
+
+def finish(team: Team, title: str, *, status: str = "completed") -> dict[str, Any]:
+    task = team.eng_task(title=title)
+    assert team.owner.patch(task_url(task), json={"status": status}).status_code == 200
+    return task
+
+
+def age(db: Session, task: dict[str, Any], days: int) -> None:
+    db.execute(
+        update(Task)
+        .where(Task.id == task["id"])
+        .values(completed_at=utc_now() - timedelta(days=days))
+    )
+    db.commit()
+
+
+def test_the_completed_column_keeps_the_last_30_days(team: Team, db: Session) -> None:
+    age(db, finish(team, "Finished long ago"), 31)
+    age(db, finish(team, "Finished last month"), 29)
+    finish(team, "Finished today")
+
+    completed = column(team, "completed")
+
+    assert completed["total"] == 2
+    assert completed["older"] == 1
+    assert [task["title"] for task in completed["items"]] == [
+        "Finished today",
+        "Finished last month",
+    ]
+    assert column(team, "in_progress")["older"] == 0
+
+
+def test_older_completed_tasks_are_still_in_the_list(team: Team, db: Session) -> None:
+    age(db, finish(team, "Finished long ago"), 31)
+
+    assert team.titles(team.owner, status="completed") == {"Finished long ago"}
+
+
+def test_filters_narrow_the_older_count_too(team: Team, db: Session) -> None:
+    age(db, finish(team, "Finished long ago"), 31)
+
+    assert column(team, "completed", q="something else")["older"] == 0
+
+
+def test_a_collapsed_column_counts_without_loading_cards(team: Team) -> None:
+    blocked = team.eng_task(title="Stuck")
+    team.owner.patch(task_url(blocked), json={"status": "in_progress"})
+    team.owner.patch(task_url(blocked), json={"status": "blocked"})
+
+    assert column(team, "blocked")["total"] == 1
+    assert len(column(team, "blocked")["items"]) == 1
+    collapsed = column(team, "blocked", collapsed="blocked")
+    assert collapsed["total"] == 1
+    assert collapsed["items"] == []
+
+
+def test_active_leaves_out_finished_work_unless_statuses_are_named(team: Team) -> None:
+    team.eng_task(title="Still going")
+    finish(team, "Done")
+    finish(team, "Dropped", status="cancelled")
+
+    assert team.titles(team.owner) == {"Still going", "Done", "Dropped"}
+    assert team.titles(team.owner, active="true") == {"Still going"}
+    assert team.titles(team.owner, active="true", status="completed") == {"Done"}

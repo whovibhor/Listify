@@ -1,5 +1,47 @@
 # Denote — Development Log
 
+## 2026-10-31 — UI rework, Batch 4: boards and task lists
+
+### Requested by the owner
+Order board columns as work moves, hide Blocked and Cancelled by default, and stop old finished tasks crowding boards and lists.
+
+### Changes
+- **Columns:** Not Started, In Progress, In Review, Completed. In Review still appears only where review is on.
+- **Blocked and Cancelled:** hidden by default, with toggles showing their counts. Cards can still move there from the Move menu, and the message offers Show column. Choices stay in the address (`show=blocked`), so a board always opens the same way. See ADR-037.
+- **Completed column:** the last 30 days, newest first, with a link to older tasks in the List view.
+- **Team Tasks and My Work:** open on active work, with Show finished. My Work had no way to see finished tasks before. Search always includes finished tasks.
+- **Added beyond the plan:** the board's List view follows the same rule, and going back to the Board clears a status filter it has no control for.
+- **Speed:** column counts now come from one query. Hidden columns skip loading their cards.
+
+### Timings on 100,000 tasks (test database)
+| Page | Median |
+|---|---|
+| Board, Member, before the one-query change | 533 ms |
+| Board, Member, after | 289 ms |
+| Board, Owner, after | 285 ms |
+| Team Tasks, Owner, everything | 72 ms |
+| Team Tasks, Owner, active | 202 ms |
+| Team Tasks, Member, active | 217 ms |
+
+### Problems found while testing
+- An edit put `active_only` on the personal task list instead of the organization one. For a few minutes the live personal task list returned errors. It also made the first timings wrong, because "active" was really the unfiltered list. Tests caught it, and every timing above is from after the fix.
+- That re-measure showed the Owner's Team Tasks slower than first reported, 202 ms not 71 ms, and accepted as within target. See ADR-037.
+- A screenshot walkthrough found that a status filter from the List view stayed on after returning to the Board, with no way to clear it. Fixed, with a test.
+
+### Checks (all actually run)
+| Check | Result |
+|---|---|
+| Backend tests | 666 passed |
+| Frontend tests | 168 passed |
+| Ruff, ESLint, Prettier, TypeScript, Alembic check | Clean |
+| E2E, desktop and mobile: work and reports specs | 10 passed |
+| Real app as Admin and Member at 320, 375, 768 and 1280 px | Toggles and links work, no sideways overflow, no errors. Read only, so no sample task changed |
+
+### Known limitations
+- The full E2E suite wasn't run, by the owner's rule. Batch 5 replaces the task panel, so it will run there.
+- Moving a card to a hidden column was checked by a frontend test, not on the live app, so as not to change sample data.
+- Team Tasks' Deadline column is slightly clipped at 1280 px with the sidebar open for long dates. It scrolls sideways within the table. This was already there.
+
 ## 2026-10-31 — UI rework, Batch 3: department page
 
 ### Requested by the owner

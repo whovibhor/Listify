@@ -39,6 +39,19 @@ import type { Board } from '@/features/work/types'
 import { errorText } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 
+// Work moves left to right; Blocked and Cancelled sit outside that flow, at the end if shown.
+const COLUMN_ORDER: TaskStatus[] = [
+  'not_started',
+  'in_progress',
+  'in_review',
+  'completed',
+  'blocked',
+  'cancelled',
+]
+
+/** Matches BOARD_COMPLETED_DAYS on the server. */
+const COMPLETED_DAYS = 30
+
 interface CardProps {
   task: Task
   timezone: string
@@ -161,10 +174,12 @@ function TaskCard({ task, timezone, onOpen, onMove }: CardProps) {
 function BoardColumn({
   column,
   dragged,
+  onShowOlder,
   children,
 }: {
   column: Board['columns'][number]
   dragged: Task | null
+  onShowOlder: () => void
   children: React.ReactNode
 }) {
   const accepts = dragged?.allowed_statuses.includes(column.status) ?? false
@@ -192,6 +207,20 @@ function BoardColumn({
           {hiddenCount} more in the List view
         </p>
       ) : null}
+      {column.status === 'completed' ? (
+        <p className="px-1 pb-1 text-xs text-muted-foreground">
+          Last {COMPLETED_DAYS} days.{' '}
+          {column.older ? (
+            <button
+              type="button"
+              onClick={onShowOlder}
+              className="font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {column.older} older in the List view
+            </button>
+          ) : null}
+        </p>
+      ) : null}
     </section>
   )
 }
@@ -202,9 +231,22 @@ interface BoardViewProps {
   params: WorkParams
   timezone: string
   onOpen: (id: number) => void
+  /** Columns switched off; cards can still be moved to them from the Move menu. */
+  hidden: TaskStatus[]
+  onShowColumn: (status: TaskStatus) => void
+  onShowOlder: () => void
 }
 
-export function BoardView({ organizationId, board, params, timezone, onOpen }: BoardViewProps) {
+export function BoardView({
+  organizationId,
+  board,
+  params,
+  timezone,
+  onOpen,
+  hidden,
+  onShowColumn,
+  onShowOlder,
+}: BoardViewProps) {
   const [dragged, setDragged] = useState<Task | null>(null)
   const move = useMoveOnBoard(organizationId, board.department.id, params)
   const sensors = useSensors(
@@ -218,7 +260,14 @@ export function BoardView({ organizationId, board, params, timezone, onOpen }: B
     move.mutate(
       { task, status },
       {
-        onSuccess: () => toast.success(`Moved to ${STATUS_LABELS[status]}`),
+        onSuccess: () =>
+          toast.success(
+            `Moved to ${STATUS_LABELS[status]}`,
+            // Otherwise a card moved to a hidden column just seems to vanish.
+            hidden.includes(status)
+              ? { action: { label: 'Show column', onClick: () => onShowColumn(status) } }
+              : undefined,
+          ),
         onError: (error) => toast.error(errorText(error)),
       },
     )
@@ -230,10 +279,10 @@ export function BoardView({ organizationId, board, params, timezone, onOpen }: B
     if (task && status && status !== task.status) moveTask(task, status)
   }
 
-  // In Review only exists where the organization turned review on (ADR-015).
-  const columns = board.columns.filter(
-    (column) => column.status !== 'in_review' || board.review_required || column.total > 0,
-  )
+  const columns = COLUMN_ORDER.filter((status) => !hidden.includes(status))
+    .flatMap((status) => board.columns.filter((column) => column.status === status))
+    // In Review only exists where the organization turned review on (ADR-015).
+    .filter((column) => column.status !== 'in_review' || board.review_required || column.total > 0)
 
   return (
     <DndContext
@@ -244,7 +293,12 @@ export function BoardView({ organizationId, board, params, timezone, onOpen }: B
     >
       <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-3 sm:mx-0 sm:px-0">
         {columns.map((column) => (
-          <BoardColumn key={column.status} column={column} dragged={dragged}>
+          <BoardColumn
+            key={column.status}
+            column={column}
+            dragged={dragged}
+            onShowOlder={onShowOlder}
+          >
             {column.items.map((task) => (
               <TaskCard
                 key={task.id}

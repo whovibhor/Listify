@@ -303,3 +303,14 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 - **All members moved under Departments,** at `/departments/members`, instead of disappearing with the sidebar item. Department pages alone can't replace it, because someone in no department, such as an Owner, would appear nowhere.
 - **Editing and archiving moved with the people.** Department Managers hold `department.update` and used to do this from the list they no longer see, so `DepartmentControls` is on both the list and the department page.
 - **Boards moved to `/boards/:id`,** because the department page took their address. Old links that carried board settings, such as `?layout=list`, are sent on to the board. A bare old link now opens the department page, which has an Open board button.
+
+## ADR-037 Boards and lists open on current work
+
+- **Hidden columns live in the URL,** as `show=blocked`, not in saved preferences. The owner asked for them hidden by default, so a board always opens the same way, and a link can still ask for a column. A `status` filter also reveals its column.
+- **Cards can still move to a hidden column** from the Move menu, and the message offers to show it, so a card never just vanishes. Blocked work stays counted on the toggle, because it's what a team most needs to notice.
+- **Hidden columns return totals without cards** (`collapsed=`). All column counts now come from one grouped query instead of one per column. On 100,000 tasks, a Member's board went from 533 ms to 289 ms.
+- **Completed shows 30 days, newest first.** `older` counts the rest, which stay in the List view. The server rule and the label must agree: `BOARD_COMPLETED_DAYS` and `COMPLETED_DAYS`.
+- **Active by default is a request parameter,** `active=true`, and naming statuses overrides it. Search always includes finished tasks, because people search for old work. The Archived view ignores it.
+- **The board's List view follows Team Tasks,** which the plan didn't list, because it had the same problem of old completed tasks appearing first.
+- **Going back to the Board clears a status filter,** because the board has no control to clear it with.
+- **Accepted cost:** with `active=true`, Team Tasks for an Owner takes about 200 ms on 100,000 tasks, up from about 75 ms, since MySQL walks past finished tasks in the sort index. That's within the 500 ms target and level with what Members already get, so there's no new index for now. If it grows, an index that covers open tasks is the next step.

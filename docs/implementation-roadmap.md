@@ -18,7 +18,7 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 | 5 | Department Work Boards | ✅ Complete | 2026-10-30 |
 | 6 | Collaboration (comments, update requests, attachments, inbox) | ✅ Complete | 2026-10-30 |
 | 7 | Dashboards & reporting | ✅ Complete | 2026-10-30 |
-| UI | UI & journey rework (6 batches) | 🚧 In progress: Batches 1 to 3 done, Batch 4 next | — |
+| UI | UI & journey rework (6 batches) | 🚧 In progress: Batches 1 to 4 done, Batch 5 next | — |
 | 8 | Reminders & scheduled notifications | ⏳ After the rework | — |
 | Later | Agreed additions: time estimates, bulk actions, global search, recurring tasks and dependencies | ⏳ Planned | — |
 | 9 | Production readiness | ⏳ Planned | — |
@@ -127,12 +127,12 @@ Requested by the owner on 2026-10-31 after trying the app with sample data. Batc
 - [x] Members item removed for everyone; All members tab on Departments for Owner and Admin, because the Owner may be in no department
 - [x] Boards move to `/org/:id/boards/:id`; old links redirect
 
-**Batch 4 — Boards and task lists**
-- [ ] Column order: Not Started, In Progress, In Review, Completed; In Review still appears only where review is on
-- [ ] Blocked and Cancelled hidden by default, with toggles showing counts; the Move menu still offers them, and a message offers to show the column
-- [ ] Completed column limited to the last 30 days, with a link to the rest
-- [ ] Hidden columns return totals only, so their cards aren't loaded until shown
-- [ ] Team Tasks and My Work open on active work, with a filter to show finished tasks
+**Batch 4 — Boards and task lists ✅**
+- [x] Column order: Not Started, In Progress, In Review, Completed; In Review still appears only where review is on
+- [x] Blocked and Cancelled hidden by default, with toggles showing counts; the Move menu still offers them, and a message offers to show the column
+- [x] Completed column limited to the last 30 days, with a link to the rest
+- [x] Hidden columns return totals only, so their cards aren't loaded until shown
+- [x] Team Tasks and My Work open on active work, with a filter to show finished tasks
 
 **Batch 5 — Task page**
 - [ ] Routes for `/org/:id/tasks/:taskId/:tab?` and `/personal/tasks/:taskId/:tab?`

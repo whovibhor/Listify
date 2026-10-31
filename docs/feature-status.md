@@ -1,6 +1,6 @@
 # Denote — Feature Status
 
-**Last updated:** 2026-10-31 · **Current work:** UI & journey rework, Batch 4 (boards and task lists) next · Phase 8 follows the rework
+**Last updated:** 2026-10-31 · **Current work:** UI & journey rework, Batch 5 (task page) next · Phase 8 follows the rework
 
 This is the single list of what is **done** and what is **pending**, feature by feature. It is updated every time a feature is completed or changed. A feature is marked ✅ only after it works end-to-end (UI → API → MySQL) and its tests have been run and passed. Detailed plans live in [`implementation-roadmap.md`](implementation-roadmap.md).
 
@@ -20,7 +20,7 @@ Legend: ✅ done · 🟡 partly done · ⏳ pending · ⏸ deferred (later relea
 | Department work boards (team tasks) | ✅ Done |
 | Comments, update requests, attachments, inbox | ✅ Done |
 | Team & organization dashboards | ✅ Done |
-| UI & journey rework | 🟡 In progress: Batches 1 to 3 of 6 done |
+| UI & journey rework | 🟡 In progress: Batches 1 to 4 of 6 done |
 | Reminders, notifications, email | ⏳ Pending (Phase 8) |
 | Production readiness (deploy, backups, monitoring) | ⏳ Pending (Phase 9) |
 
@@ -102,11 +102,13 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 |---|---|
 | Create team tasks with department, assignee, collaborators, visibility, tags, priority and deadline | `tasks`, `task_collaborators`, `task_visibility_grants`, `task_tags`, `task_activity_logs` |
 | Department board: drag cards between columns, or use each card's Move menu (works by keyboard and on phones) | `tasks` |
+| Board columns run Not Started, In Progress, In Review, Completed. Blocked and Cancelled stay hidden until switched on, with their counts on the toggles | reads `tasks` |
+| Completed column shows the last 30 days, newest first, with a link to older tasks in the List view | reads `tasks` |
 | List view: sort by task, priority or deadline; pagination | reads `tasks` |
 | Calendar view: month grid by deadline on larger screens, agenda on phones | reads `tasks` |
 | Filters kept in the page URL: assignee, creator, priority, status, tags, overdue, deadline range, search | — (URL state) |
-| My Work: assigned to you, and tasks you're collaborating on | reads `tasks`, `task_collaborators` |
-| Team Tasks: everything you can see, across departments, with search and an Archived view | reads `tasks` |
+| My Work: assigned to you, and tasks you're collaborating on. Opens on open work, with Show finished | reads `tasks`, `task_collaborators` |
+| Team Tasks and the board's List view open on active work, with Show finished. Team Tasks works across departments, with an Archived view. Search always includes finished tasks | reads `tasks` |
 | Four visibility levels: Private, Department, Selected people, Organization | `tasks`, `task_visibility_grants` |
 | Assign, reassign, or pick up an unassigned task; add and remove collaborators | `tasks`, `task_collaborators` |
 | Move a task to another department: access changes at once, and it's in the activity log | `tasks`, `audit_logs` |
@@ -156,12 +158,6 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 
 ### UI & journey rework *(next)*
 The agreed plan, with the owner's decisions, is in [`implementation-roadmap.md`](implementation-roadmap.md). These existing features will change:
-
-**Batch 4: Boards and task lists**
-- ⏳ Board columns: Not Started, In Progress, In Review, Completed
-- ⏳ Blocked and Cancelled hidden by default, with toggles that show their counts
-- ⏳ Completed column limited to the last 30 days, with a link to the rest
-- ⏳ Team Tasks and My Work open on active work, with a filter to show finished tasks
 
 **Batch 5: Task page**
 - ⏳ Full task page replaces the side panel everywhere, for personal and organization tasks
@@ -216,6 +212,7 @@ The agreed plan, with the owner's decisions, is in [`implementation-roadmap.md`]
 ## Change log
 | Date | Change |
 |---|---|
+| 2026-10-31 | Boards and lists now open on current work: new column order, Blocked and Cancelled hidden until asked for, Completed limited to 30 days, and Show finished on task lists. Boards load about 45% faster for Members on very large organizations. |
 | 2026-10-31 | Department page added. The Members sidebar item is gone: Owners and Admins use the All members tab on Departments. Boards moved to `/org/:id/boards/:id`, and old links still work. |
 | 2026-10-31 | Inbox per workspace: each organization has its own inbox and counts, Personal keeps notices from organizations you can't open any more, and a dot shows when another workspace has something waiting. Clicking Inbox no longer jumps to Personal. |
 | 2026-10-31 | Renamed the product from Listify to Denote: interface, emails, cookies, logs, config, packages, docs and the MySQL databases (`denote`, `denote_test`). Everyone signs in once more. |
