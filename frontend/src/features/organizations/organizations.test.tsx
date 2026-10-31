@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Department, MembershipRequest, MyOrganization } from '@/features/organizations/types'
 import { jsonResponse, renderApp } from '@/test/render'
-import { emptyPage, mockApi, noContent, signedInRoutes } from '@/test/mock-api'
+import { emptyPage, mockApi, noContent, signedInRoutes, testUser } from '@/test/mock-api'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -72,19 +72,196 @@ const orgRoutes = {
   'GET /organizations/7/membership-requests': emptyPage(),
 }
 
-describe('workspace switcher', () => {
-  it('lists Personal and active organizations and switches workspace', async () => {
+describe('header workspace button', () => {
+  it('swaps straight between Personal and a single organization', async () => {
     mockApi(signedInRoutes({ 'GET /me/organizations': [makeOrg()], ...orgRoutes }))
     const { user, router } = renderApp('/')
 
-    const switcher = await screen.findAllByRole('button', { name: /switch workspace/i })
-    await user.click(switcher[0])
+    await user.click(await screen.findByRole('link', { name: 'Switch to Acme' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/org/7'))
+    expect(await screen.findByRole('heading', { name: 'Acme', level: 1 })).toBeInTheDocument()
+
+    await user.click(await screen.findByRole('link', { name: 'Switch to Personal' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    expect(await screen.findByRole('link', { name: 'Switch to Acme' })).toBeInTheDocument()
+  })
+
+  it('lists workspaces for two or more organizations, without Create or Join', async () => {
+    const beta = makeOrg({ id: 8, name: 'Beta', slug: 'beta' })
+    mockApi(signedInRoutes({ 'GET /me/organizations': [makeOrg(), beta], ...orgRoutes }))
+    const { user, router } = renderApp('/')
+
+    await user.click(await screen.findByRole('button', { name: /switch workspace/i }))
     const menu = await screen.findByRole('menu')
     expect(within(menu).getByRole('menuitem', { name: /personal/i })).toBeInTheDocument()
+    expect(within(menu).getByRole('menuitem', { name: /beta/i })).toBeInTheDocument()
+    expect(within(menu).queryByRole('menuitem', { name: /create|join/i })).not.toBeInTheDocument()
     await user.click(within(menu).getByRole('menuitem', { name: /acme/i }))
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/org/7'))
-    expect(await screen.findByRole('heading', { name: 'Acme', level: 1 })).toBeInTheDocument()
+  })
+
+  it('offers Create and Join only to people with no organization', async () => {
+    mockApi(signedInRoutes())
+    const { user, router } = renderApp('/')
+
+    await user.click(await screen.findByRole('button', { name: 'Join or create organization' }))
+    const menu = await screen.findByRole('menu')
+    expect(within(menu).getByRole('menuitem', { name: /create/i })).toBeInTheDocument()
+    await user.click(within(menu).getByRole('menuitem', { name: /join/i }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/organizations/join'))
+  })
+
+  it('hides Create and Join from the main app once someone has joined', async () => {
+    mockApi(signedInRoutes({ 'GET /me/organizations': [makeOrg()], ...orgRoutes }))
+    renderApp('/org/7')
+
+    await screen.findByRole('link', { name: 'Switch to Personal' })
+    expect(screen.queryByText(/join or create|create an organization/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('Organizations settings', () => {
+  it('lists your organizations and keeps Create and Join here', async () => {
+    mockApi(signedInRoutes({ 'GET /me/organizations': [makeOrg()], ...orgRoutes }))
+    renderApp('/settings/organizations')
+
+    const main = await screen.findByRole('main')
+    expect(await within(main).findByRole('link', { name: /acme/i })).toHaveAttribute(
+      'href',
+      '/org/7',
+    )
+    expect(within(main).getByRole('link', { name: /create an organization/i })).toHaveAttribute(
+      'href',
+      '/organizations/new',
+    )
+    expect(within(main).getByRole('link', { name: /join an organization/i })).toHaveAttribute(
+      'href',
+      '/organizations/join',
+    )
+  })
+})
+
+describe('remembering the workspace', () => {
+  const inAcme = { ...testUser, last_organization_id: 7 }
+
+  it('keeps the organization around pages outside any workspace', async () => {
+    mockApi(
+      signedInRoutes({ 'GET /me': inAcme, 'GET /me/organizations': [makeOrg()], ...orgRoutes }),
+    )
+    renderApp('/settings/profile')
+
+    const nav = (await screen.findAllByRole('navigation', { name: 'Main' }))[0]
+    expect(await within(nav).findByRole('link', { name: /team tasks/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Switch to Personal' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Listify home' })[0]).toHaveAttribute(
+      'href',
+      '/org/7',
+    )
+  })
+
+  it('saves the organization you open', async () => {
+    const { calls } = mockApi(
+      signedInRoutes({ 'GET /me/organizations': [makeOrg()], ...orgRoutes }),
+    )
+    renderApp('/org/7')
+
+    await waitFor(() =>
+      expect(calls.find((call) => call.method === 'PATCH')?.body).toEqual({
+        last_organization_id: 7,
+      }),
+    )
+  })
+
+  it('reopens the last organization on a fresh visit', async () => {
+    mockApi(
+      signedInRoutes({ 'GET /me': inAcme, 'GET /me/organizations': [makeOrg()], ...orgRoutes }),
+    )
+    const { router } = renderApp('/')
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/org/7'))
+  })
+
+  it('stays on Personal when you choose it, and saves that', async () => {
+    const { calls } = mockApi(
+      signedInRoutes({ 'GET /me': inAcme, 'GET /me/organizations': [makeOrg()], ...orgRoutes }),
+    )
+    const { user, router } = renderApp('/org/7')
+
+    await user.click(await screen.findByRole('link', { name: 'Switch to Personal' }))
+
+    await waitFor(() =>
+      expect(calls.find((call) => call.method === 'PATCH')?.body).toEqual({
+        last_organization_id: null,
+      }),
+    )
+    expect(router.state.location.pathname).toBe('/')
+    expect(await screen.findByRole('heading', { name: 'Hi, Ada' })).toBeInTheDocument()
+  })
+
+  it('stays on Personal when the last organization is no longer yours', async () => {
+    mockApi(signedInRoutes({ 'GET /me': inAcme }))
+    const { router } = renderApp('/')
+
+    expect(await screen.findByRole('heading', { name: 'Hi, Ada' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/')
+  })
+})
+
+describe('sidebar', () => {
+  it('puts Overview, Inbox and Boards above the work items', async () => {
+    mockApi(signedInRoutes({ 'GET /me/organizations': [makeOrg()], ...orgRoutes }))
+    renderApp('/org/7')
+
+    const nav = (await screen.findAllByRole('navigation', { name: 'Main' }))[0]
+    await within(nav).findByRole('heading', { name: 'Boards' })
+    const links = within(nav)
+      .getAllByRole('link')
+      .map((link) => link.textContent)
+    expect(links.slice(0, 2)).toEqual(['Overview', 'Inbox'])
+    expect(links.indexOf('Sales')).toBeLessThan(links.indexOf('My Work'))
+  })
+
+  it('collapses to an icon rail, saves the choice and keeps boards in one menu', async () => {
+    const { calls } = mockApi(
+      signedInRoutes({ 'GET /me/organizations': [makeOrg()], ...orgRoutes }),
+    )
+    const { user, router } = renderApp('/org/7')
+    const nav = (await screen.findAllByRole('navigation', { name: 'Main' }))[0]
+    await within(nav).findByRole('heading', { name: 'Boards' })
+
+    await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }))
+
+    expect(await screen.findByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        calls.some(
+          (call) =>
+            call.path === '/me/preferences' &&
+            (call.body as { sidebar_collapsed?: boolean }).sidebar_collapsed === true,
+        ),
+      ).toBe(true),
+    )
+    const rail = screen.getAllByRole('navigation', { name: 'Main' })[0]
+    expect(within(rail).getByRole('link', { name: 'Team Tasks' })).toHaveClass('size-9')
+
+    await user.click(within(rail).getByRole('button', { name: 'Boards' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Sales' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/org/7/departments/3'))
+  })
+
+  it('opens collapsed when that was saved, and shows waiting items as a dot', async () => {
+    mockApi(
+      signedInRoutes({
+        'GET /me': { ...testUser, sidebar_collapsed: true },
+        'GET /inbox/summary': { unread: 3, pending_update_requests: 0 },
+      }),
+    )
+    renderApp('/')
+
+    expect(await screen.findByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Inbox, 3 pending' })).toBeInTheDocument()
   })
 })
 

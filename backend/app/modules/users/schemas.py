@@ -20,15 +20,23 @@ class UserRead(ApiModel):
     name: str
     timezone: str
     theme: ThemePreference
+    sidebar_collapsed: bool
+    last_organization_id: int | None
     created_at: UtcDateTime
 
 
 class PreferencesRead(ApiModel):
     theme: ThemePreference
+    sidebar_collapsed: bool
+    last_organization_id: int | None
 
 
 class PreferencesUpdate(InputModel):
-    theme: ThemePreference
+    """Only what's sent changes. Sending null for the organization means Personal."""
+
+    theme: ThemePreference | None = None
+    sidebar_collapsed: bool | None = None
+    last_organization_id: int | None = None
 
 
 class UserUpdate(InputModel):

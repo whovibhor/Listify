@@ -1,11 +1,19 @@
 import { useState } from 'react'
-import { BellIcon, MenuIcon } from 'lucide-react'
+import {
+  BellIcon,
+  Building2Icon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MenuIcon,
+  UserRoundIcon,
+} from 'lucide-react'
 import { Link, Outlet } from 'react-router'
+import { toast } from 'sonner'
 
 import { SidebarNav } from '@/components/layout/SidebarNav'
 import { UserMenu } from '@/components/layout/UserMenu'
-import { WorkspaceSwitcher } from '@/components/layout/WorkspaceSwitcher'
-import { Logo } from '@/components/shared/Logo'
+import { WorkspaceButton } from '@/components/layout/WorkspaceButton'
+import { Logo, LogoMark } from '@/components/shared/Logo'
 import { ThemeSync } from '@/components/theme/ThemeSync'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,20 +25,73 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useMe, useUpdatePreferences } from '@/features/auth/api'
 import { useInboxSummary } from '@/features/inbox/api'
+import { primaryRoleLabel } from '@/features/organizations/permissions'
+import {
+  useActiveOrganization,
+  useRememberWorkspace,
+} from '@/features/organizations/use-current-org'
+import { cn } from '@/lib/utils'
 
-function SidebarContents({
-  instanceId,
-  onNavigate,
-}: {
-  instanceId: string
-  onNavigate?: () => void
-}) {
+/** Names the workspace you're in; the header button only offers the one you can swap to. */
+function CurrentWorkspace({ collapsed = false }: { collapsed?: boolean }) {
+  const active = useActiveOrganization()
+  const name = active?.name ?? 'Personal'
+  const Icon = active ? Building2Icon : UserRoundIcon
+  const icon = (
+    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-secondary text-secondary-foreground">
+      <Icon aria-hidden className="size-4" />
+    </span>
+  )
+
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            tabIndex={0}
+            aria-label={`Current workspace: ${name}`}
+            className="mx-auto rounded-lg"
+          >
+            {icon}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="right">{name}</TooltipContent>
+      </Tooltip>
+    )
+  }
   return (
-    <div className="flex flex-col gap-5">
-      <WorkspaceSwitcher onNavigate={onNavigate} />
-      <SidebarNav instanceId={instanceId} onNavigate={onNavigate} />
+    <div className="flex min-w-0 items-center gap-2.5 px-1">
+      {icon}
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium">{name}</span>
+        <span className="block truncate text-xs text-muted-foreground">
+          {active ? primaryRoleLabel(active) : 'Private workspace'}
+        </span>
+      </span>
     </div>
+  )
+}
+
+function SidebarToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+  const label = collapsed ? 'Expand sidebar' : 'Collapse sidebar'
+  const Icon = collapsed ? ChevronRightIcon : ChevronLeftIcon
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          aria-expanded={!collapsed}
+          onClick={onToggle}
+          className="absolute top-5 -right-3 z-40 grid size-6 place-items-center rounded-full bg-card text-muted-foreground shadow-card transition-colors duration-(--duration-fast) outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <Icon aria-hidden className="size-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -38,6 +99,18 @@ export function AppShell() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const { data: inbox } = useInboxSummary()
   const unread = (inbox?.unread ?? 0) + (inbox?.pending_update_requests ?? 0)
+  const { data: user } = useMe()
+  const savePreferences = useUpdatePreferences()
+  const active = useActiveOrganization()
+  const home = active ? `/org/${active.id}` : '/'
+  const collapsed = user?.sidebar_collapsed ?? false
+  useRememberWorkspace()
+
+  const toggleSidebar = () =>
+    savePreferences.mutate(
+      { sidebar_collapsed: !collapsed },
+      { onError: () => toast.error("Couldn't save your sidebar choice. Please try again.") },
+    )
 
   return (
     <div className="flex min-h-svh bg-background">
@@ -50,14 +123,27 @@ export function AppShell() {
       </a>
 
       {/* Desktop sidebar (lg and up). Smaller screens use the sheet below. */}
-      <aside className="sticky top-0 hidden h-svh w-64 shrink-0 flex-col gap-6 border-r border-sidebar-border bg-sidebar px-3 py-4 lg:flex">
+      <aside
+        className={cn(
+          'sticky top-0 z-40 hidden h-svh shrink-0 flex-col gap-5 border-r border-sidebar-border bg-sidebar py-4 transition-[width] duration-(--duration-base) lg:flex',
+          collapsed ? 'w-16 px-2' : 'w-64 px-3',
+        )}
+      >
         <Link
-          to="/"
-          className="rounded-md px-1.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          to={home}
+          aria-label="Listify home"
+          className={cn(
+            'rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+            collapsed ? 'mx-auto' : 'px-1.5',
+          )}
         >
-          <Logo />
+          {collapsed ? <LogoMark /> : <Logo />}
         </Link>
-        <SidebarContents instanceId="desktop" />
+        <SidebarToggle collapsed={collapsed} onToggle={toggleSidebar} />
+        <div className="-mx-1 flex min-h-0 flex-1 [scrollbar-width:thin] flex-col gap-5 overflow-y-auto px-1 pb-1">
+          <CurrentWorkspace collapsed={collapsed} />
+          <SidebarNav instanceId="desktop" collapsed={collapsed} />
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -82,20 +168,25 @@ export function AppShell() {
                 </SheetTitle>
                 <SheetDescription className="sr-only">Main navigation</SheetDescription>
               </SheetHeader>
-              <div className="overflow-y-auto px-3 py-4">
-                <SidebarContents instanceId="mobile" onNavigate={() => setMobileNavOpen(false)} />
+              <div className="flex flex-col gap-5 overflow-y-auto px-3 py-4">
+                <CurrentWorkspace />
+                <SidebarNav instanceId="mobile" onNavigate={() => setMobileNavOpen(false)} />
               </div>
             </SheetContent>
           </Sheet>
 
           <Link
-            to="/"
-            className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:hidden"
+            to={home}
+            aria-label="Listify home"
+            className="shrink-0 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:hidden"
           >
             <Logo />
           </Link>
 
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex min-w-0 items-center gap-1">
+            <div className="mr-1 flex min-w-0">
+              <WorkspaceButton />
+            </div>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" asChild>

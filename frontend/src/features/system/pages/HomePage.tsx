@@ -6,18 +6,19 @@ import {
   ListTodoIcon,
   SunIcon,
 } from 'lucide-react'
-import { Link } from 'react-router'
+import { Link, Navigate, useLocation } from 'react-router'
 
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMe } from '@/features/auth/api'
 import { usePersonalDashboard } from '@/features/dashboards/api'
 import { StatTile } from '@/features/dashboards/components/StatTile'
+import { useMyOrganizations } from '@/features/organizations/api'
+import { isResumingWorkspace } from '@/features/organizations/use-current-org'
 import { useTasks } from '@/features/tasks/api'
 import { DueChip } from '@/features/tasks/components/DueChip'
 import { QuickAddTask } from '@/features/tasks/components/QuickAddTask'
 import { todayKey } from '@/features/tasks/dates'
-import { SystemStatusCard } from '@/features/system/components/SystemStatusCard'
 import { pageEnter } from '@/lib/motion'
 
 function TodayPreview({ timezone }: { timezone: string }) {
@@ -67,7 +68,7 @@ function TodayPreview({ timezone }: { timezone: string }) {
   )
 }
 
-export function HomePage() {
+function HomePage() {
   const { data: user } = useMe()
   const timezone = user?.timezone ?? 'UTC'
   const firstName = user?.name.split(' ')[0]
@@ -83,9 +84,15 @@ export function HomePage() {
         defaults={{ due_date: todayKey(timezone) }}
         placeholder="Add a task for today…"
       />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {dashboard ? (
           <>
+            <StatTile
+              label="Open tasks"
+              value={dashboard.counts.open}
+              icon={ListTodoIcon}
+              to="/personal/tasks"
+            />
             <StatTile
               label="Due today"
               value={dashboard.counts.due_today}
@@ -110,28 +117,26 @@ export function HomePage() {
             />
           </>
         ) : (
-          Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
         )}
       </div>
-      {/* minmax(0,…) lets long task titles truncate instead of widening the column. */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <TodayPreview timezone={timezone} />
-        <div className="space-y-6">
-          {dashboard ? (
-            <Link
-              to="/personal/tasks"
-              className="flex items-center gap-3 rounded-xl bg-card p-4 shadow-card transition-shadow hover:shadow-raised"
-            >
-              <ListTodoIcon aria-hidden className="size-5 text-primary" />
-              <span className="flex-1 text-sm">
-                <span className="font-semibold">{dashboard.counts.open}</span> open tasks in total
-              </span>
-              <ArrowRightIcon aria-hidden className="size-4 text-muted-foreground" />
-            </Link>
-          ) : null}
-          <SystemStatusCard />
-        </div>
-      </div>
+      <TodayPreview timezone={timezone} />
     </motion.div>
   )
+}
+
+/** `/` is the Personal home, but a fresh visit or sign-in reopens the last workspace. */
+export function HomeRoute() {
+  const location = useLocation()
+  const { data: user } = useMe()
+  const { data: organizations, isPending } = useMyOrganizations()
+  const lastId = user?.last_organization_id
+
+  if (lastId && isResumingWorkspace(location)) {
+    if (isPending) return null
+    if (organizations?.some((organization) => organization.id === lastId)) {
+      return <Navigate to={`/org/${lastId}`} replace />
+    }
+  }
+  return <HomePage />
 }

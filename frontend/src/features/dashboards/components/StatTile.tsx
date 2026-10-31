@@ -28,8 +28,16 @@ export function StatTile({
   const body = (
     <>
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Icon aria-hidden className={cn('size-4', tone === 'danger' && 'text-destructive')} />
+        <span
+          className={cn(
+            'flex items-center gap-1.5 text-sm text-muted-foreground',
+            definition && 'pr-6',
+          )}
+        >
+          <Icon
+            aria-hidden
+            className={cn('size-4 shrink-0', tone === 'danger' && 'text-destructive')}
+          />
           {label}
         </span>
       </div>

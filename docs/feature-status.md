@@ -60,7 +60,7 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 | Feature | Stored in |
 |---|---|
 | Personal analytics (7/30/90 days): completed, on-time rate, overdue, open, completed-per-day chart (+ table), by priority/status | computed from `tasks` |
-| Home: today's numbers, today's tasks, quick add, system status | reads `tasks` |
+| Home: today's numbers, today's tasks, quick add | reads `tasks` |
 
 ### Organizations, departments & membership
 | Feature | Stored in |
@@ -68,7 +68,10 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 | Create an organization (you become Owner) with profile, website, location, timezone | `organizations`, `organization_memberships`, `membership_roles` |
 | Organization settings: profile, searchable by name, require task review | `organizations` |
 | Departments: create, edit, archive/restore, open or closed to join requests | `departments` |
-| Workspace switcher: Personal + your active organizations, with role-based navigation | reads `organization_memberships`, `membership_roles` |
+| Header workspace button: one click between Personal and your organization, a list if you have several, role-based navigation | reads `organization_memberships`, `membership_roles` |
+| Reopens the workspace you last used; pages such as Settings and Inbox stay in it | `user_preferences` |
+| Collapsible sidebar with an icon rail, saved to your account | `user_preferences` |
+| Create and Join: in the header until you've joined an organization, then only in Account settings > Organizations | reads `organization_memberships` |
 | Find an organization by name (only ones that opted in) | reads `organizations` |
 | Request to join with a department, job title and note; cancel a request; see its status | `membership_requests` |
 | Review requests: approve, decline with a reason, change department or role before approving | `membership_requests`, `organization_memberships`, `department_memberships`, `membership_roles` |
@@ -184,6 +187,8 @@ Every item below is saved in and loaded from MySQL (database `listify`). The "St
 ## Change log
 | Date | Change |
 |---|---|
+| 2026-10-31 | App shell rework: System Status removed from Home, workspace button moved to the header, collapsible sidebar, new sidebar order, Create and Join moved to Account settings, last workspace remembered. |
+| 2026-10-31 | Sample data added to Shoolini University for hands-on testing: 16 more members and 131 tasks with history. See the README. |
 | 2026-10-31 | Database speed, steps 2 and 3: Team Tasks is about four times faster at 100,000 tasks, using a new sort index and a quicker sharing check. Report indexes are smaller. No visible feature changes. |
 | 2026-10-31 | Request limiter: the app stays up under heavy load, with a "server busy" reply after 30 seconds. Fixed a freeze caused by slow uploads. |
 | 2026-10-31 | Database speed, step 1: a larger connection pool, far fewer queries on busy pages, and tests that keep it that way. No visible feature changes. |

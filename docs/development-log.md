@@ -1,5 +1,39 @@
 # Listify — Development Log
 
+## 2026-10-31 — UI rework, Batch 1: app shell and workspace
+
+### Requested by the owner
+Remove System Status from Home, make the sidebar collapsible, move the workspace swap to the header, and stop showing Create and Join in the main app once someone has joined an organization. Put Overview, Inbox and Boards at the top of the organization sidebar.
+
+### Changes
+- **Home:** System Status removed. The open-tasks link became a fourth tile. The `/health` endpoint stays.
+- **Sidebar:** new organization order: Overview, Inbox, Departments, Members, then Boards, Work and Administration. It collapses to an icon rail with Boards as one menu, and it now scrolls on short screens instead of cutting off.
+- **Header:** `WorkspaceButton` replaces the sidebar switcher. One organization means a direct swap, and two or more give a list. People with no organization see "Join or create organization".
+- **Account settings:** a new Organizations tab lists your organizations and holds Create and Join.
+- **Workspace memory:** Settings and Inbox keep the workspace you were in, a fresh visit or sign-in reopens it, and the logo goes to the current workspace's home. See ADR-034.
+- **Database:** migration `b41e7d2a9c55` adds `user_preferences.sidebar_collapsed` and `last_organization_id`.
+- **Added without being asked:** the sidebar names the current workspace, because the header button only shows the one you can swap to.
+- **Small fix:** stat tiles keep their icon size and no longer run under the info button on narrow screens.
+
+### Problems found while testing
+- The rail lost all its link styling and one highlight covered the logo. The tooltip trigger can't merge NavLink's class function. Unit tests passed; a screenshot caught it. A test now checks the class.
+- 28 E2E tests failed at first because a helper's "Create organization" also matched the new header button. The helper now matches the exact name.
+- The responsive test expected `/` to show Personal, but the app correctly reopened the organization. The test now chooses Personal first.
+
+### Checks (all actually run)
+| Check | Result |
+|---|---|
+| Backend tests | 649 passed |
+| Frontend tests | 139 passed |
+| Ruff, ESLint, Prettier, TypeScript, Alembic check | Clean |
+| E2E, desktop: responsive and workspace specs | 3 passed |
+| Real app as Admin, Member and someone with no organization, at 1280, 768, 375 and 320 px | No sideways overflow, no console errors |
+
+### Known limitations
+- The full E2E suite didn't complete for this batch: that run was stopped, with 27 passed and 7 failed, including 6 browser crashes on mobile. See the entry for the rename below.
+- Someone who has never chosen a workspace lands on Personal, even if they belong to an organization.
+- Inbox still shows every workspace's notices. Batch 2 separates them.
+
 ## 2026-10-31 — Sample data for Shoolini University
 
 ### Requested by the owner

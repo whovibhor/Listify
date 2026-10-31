@@ -28,7 +28,10 @@ export function LoginPage() {
     setFormError(null)
     try {
       await login.mutateAsync(values)
-      navigate(safeRedirectPath(params.get('next')), { replace: true })
+      navigate(safeRedirectPath(params.get('next')), {
+        replace: true,
+        state: { resumeWorkspace: true },
+      })
     } catch (error) {
       setFormError(applyServerErrors(error, form.setError, ['email', 'password']))
       form.resetField('password', { keepError: true })

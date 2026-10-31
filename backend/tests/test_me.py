@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.modules.auth.models import UserSession
 from app.modules.users.models import UserPreferences
 from tests.conftest import ApiClient
-from tests.factories import DEFAULT_PASSWORD, login, register
+from tests.factories import DEFAULT_PASSWORD, create_org, login, register
 
 
 def test_update_profile_name_and_timezone(api: ApiClient) -> None:
@@ -87,7 +87,11 @@ def test_theme_preference_is_stored_and_follows_the_user(api: ApiClient, make_ap
     register(api)
     assert api.get("/api/v1/me").json()["theme"] == "system"  # default before any choice
 
-    assert api.patch("/api/v1/me/preferences", json={"theme": "dark"}).json() == {"theme": "dark"}
+    assert api.patch("/api/v1/me/preferences", json={"theme": "dark"}).json() == {
+        "theme": "dark",
+        "sidebar_collapsed": False,
+        "last_organization_id": None,
+    }
     assert api.patch("/api/v1/me/preferences", json={"theme": "neon"}).status_code == 422
 
     # Another device sees the saved choice straight from the database.
@@ -96,3 +100,62 @@ def test_theme_preference_is_stored_and_follows_the_user(api: ApiClient, make_ap
     assert laptop.get("/api/v1/me").json()["theme"] == "dark"
     row = db.scalar(select(UserPreferences))
     assert row is not None and row.theme == "dark"
+
+
+def test_sidebar_and_workspace_choices_follow_the_user(api: ApiClient, make_api) -> None:
+    register(api)
+    org = create_org(api)
+
+    saved = api.patch(
+        "/api/v1/me/preferences",
+        json={"sidebar_collapsed": True, "last_organization_id": org["id"]},
+    )
+
+    assert saved.status_code == 200
+    assert saved.json() == {
+        "theme": "system",
+        "sidebar_collapsed": True,
+        "last_organization_id": org["id"],
+    }
+    laptop = make_api()
+    login(laptop)
+    me = laptop.get("/api/v1/me").json()
+    assert me["sidebar_collapsed"] is True
+    assert me["last_organization_id"] == org["id"]
+
+
+def test_saving_one_preference_leaves_the_others_alone(api: ApiClient) -> None:
+    register(api)
+    org = create_org(api)
+    api.patch("/api/v1/me/preferences", json={"last_organization_id": org["id"]})
+
+    kept = api.patch("/api/v1/me/preferences", json={"theme": "dark"}).json()
+    assert kept["last_organization_id"] == org["id"]
+
+    # Null is a real choice here: it means the Personal workspace.
+    personal = api.patch("/api/v1/me/preferences", json={"last_organization_id": None}).json()
+    assert personal["last_organization_id"] is None
+    assert personal["theme"] == "dark"
+
+
+def test_null_is_ignored_for_preferences_that_need_a_value(api: ApiClient) -> None:
+    register(api)
+    api.patch("/api/v1/me/preferences", json={"theme": "dark", "sidebar_collapsed": True})
+
+    saved = api.patch("/api/v1/me/preferences", json={"theme": None, "sidebar_collapsed": None})
+
+    assert saved.status_code == 200
+    assert saved.json()["theme"] == "dark"
+    assert saved.json()["sidebar_collapsed"] is True
+
+
+def test_cannot_remember_an_organization_you_are_not_in(api: ApiClient, make_api) -> None:
+    register(api)
+    org = create_org(api)
+    outsider = make_api()
+    register(outsider, email="outsider@example.com", name="Outsider")
+
+    refused = outsider.patch("/api/v1/me/preferences", json={"last_organization_id": org["id"]})
+
+    assert refused.status_code == 404
+    assert outsider.get("/api/v1/me").json()["last_organization_id"] is None

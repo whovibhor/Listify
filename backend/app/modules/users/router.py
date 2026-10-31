@@ -8,6 +8,7 @@ from app.modules.auth import service as auth_service
 from app.modules.auth.dependencies import CurrentAuth, DbSession
 from app.modules.auth.models import UserSession
 from app.modules.auth.schemas import ChangePasswordRequest, SessionRead
+from app.modules.permissions.service import load_context
 from app.modules.users.models import UserPreferences
 from app.modules.users.schemas import PreferencesRead, PreferencesUpdate, UserRead, UserUpdate
 
@@ -33,12 +34,24 @@ def update_preferences(
     payload: PreferencesUpdate, auth: CurrentAuth, db: DbSession
 ) -> PreferencesRead:
     user = auth.user
-    if user.preferences is None:
-        user.preferences = UserPreferences(user_id=user.id, theme=payload.theme)
-    else:
-        user.preferences.theme = payload.theme
+    organization_id = payload.last_organization_id
+    if organization_id is not None:
+        load_context(db, user, organization_id)  # 404 unless the user is an active member
+    preferences = user.preferences
+    if preferences is None:
+        preferences = user.preferences = UserPreferences(user_id=user.id)
+    if payload.theme is not None:
+        preferences.theme = payload.theme
+    if payload.sidebar_collapsed is not None:
+        preferences.sidebar_collapsed = payload.sidebar_collapsed
+    if "last_organization_id" in payload.model_fields_set:
+        preferences.last_organization_id = organization_id
     db.commit()
-    return PreferencesRead(theme=user.theme)
+    return PreferencesRead(
+        theme=user.theme,
+        sidebar_collapsed=user.sidebar_collapsed,
+        last_organization_id=user.last_organization_id,
+    )
 
 
 @router.post("/password", status_code=status.HTTP_204_NO_CONTENT)

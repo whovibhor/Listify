@@ -137,6 +137,15 @@ async function expectNoSideScroll(element: Locator, label: string) {
   expect(overflow, `${label} scrolls sideways`).toBeLessThanOrEqual(0)
 }
 
+async function choosePersonal(page: Page) {
+  const csrf = (await page.context().cookies()).find((c) => c.name === 'listify_csrf')?.value ?? ''
+  const response = await page.request.patch('/api/v1/me/preferences', {
+    data: { last_organization_id: null },
+    headers: { 'X-CSRF-Token': csrf },
+  })
+  expect(response.ok(), await response.text()).toBe(true)
+}
+
 test('every page fits phone, tablet and desktop widths', async ({ browser, page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'viewports are set explicitly in this test')
   test.setTimeout(240_000)
@@ -198,6 +207,8 @@ test('every page fits phone, tablet and desktop widths', async ({ browser, page 
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     for (const target of pages) {
+      // A fresh visit to `/` reopens the last workspace, so choose Personal first.
+      if (target.path === '/') await choosePersonal(page)
       await page.goto(target.path)
       await expect(page.getByRole('heading', { level: 1, name: target.heading })).toBeVisible()
       await page.waitForLoadState('networkidle')

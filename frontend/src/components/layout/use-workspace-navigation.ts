@@ -48,22 +48,16 @@ function organizationSections(
     {
       items: [
         { label: 'Overview', to: base, icon: LayoutDashboardIcon, end: true },
+        { label: 'Inbox', to: '/inbox', icon: InboxIcon },
         { label: 'Departments', to: `${base}/departments`, icon: Building2Icon, end: true },
         { label: 'Members', to: `${base}/members`, icon: UsersRoundIcon },
-      ],
-    },
-    {
-      label: 'Work',
-      items: [
-        { label: 'My Work', to: `${base}/my-work`, icon: BriefcaseIcon },
-        { label: 'Team Tasks', to: `${base}/tasks`, icon: ListChecksIcon },
-        { label: 'Reports', to: `${base}/reports`, icon: ChartPieIcon },
       ],
     },
     ...(departments.length
       ? [
           {
             label: 'Boards',
+            railIcon: KanbanIcon,
             items: departments.map((department) => ({
               label: department.name,
               to: `${base}/departments/${department.id}`,
@@ -72,11 +66,15 @@ function organizationSections(
           },
         ]
       : []),
-    ...(administration.length ? [{ label: 'Administration', items: administration }] : []),
     {
-      label: 'Inbox',
-      items: [{ label: 'Inbox', to: '/inbox', icon: InboxIcon }],
+      label: 'Work',
+      items: [
+        { label: 'My Work', to: `${base}/my-work`, icon: BriefcaseIcon },
+        { label: 'Team Tasks', to: `${base}/tasks`, icon: ListChecksIcon },
+        { label: 'Reports', to: `${base}/reports`, icon: ChartPieIcon },
+      ],
     },
+    ...(administration.length ? [{ label: 'Administration', items: administration }] : []),
   ]
 }
 

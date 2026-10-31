@@ -24,6 +24,8 @@ export interface NavItem {
 export interface NavSection {
   label?: string
   items: NavItem[]
+  /** Shown as a single icon with a menu when the sidebar is collapsed. */
+  railIcon?: LucideIcon
 }
 
 // Personal workspace navigation (PRD §4). Organization sections are added in Phase 3

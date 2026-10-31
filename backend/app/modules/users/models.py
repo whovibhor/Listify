@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Boolean, Enum, ForeignKey, String
+from sqlalchemy import Boolean, Enum, ForeignKey, String, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import MYSQL_TABLE_ARGS, Base, IdType, TimestampMixin, UtcDateTime, utc_now
@@ -37,6 +37,14 @@ class User(TimestampMixin, Base):
     def theme(self) -> ThemePreference:
         return self.preferences.theme if self.preferences else ThemePreference.SYSTEM
 
+    @property
+    def sidebar_collapsed(self) -> bool:
+        return self.preferences.sidebar_collapsed if self.preferences else False
+
+    @property
+    def last_organization_id(self) -> int | None:
+        return self.preferences.last_organization_id if self.preferences else None
+
 
 class UserPreferences(Base):
     """Per-user settings that must follow the user across devices (one row per user).
@@ -62,6 +70,13 @@ class UserPreferences(Base):
         ),
         nullable=False,
         default=ThemePreference.SYSTEM,
+    )
+    sidebar_collapsed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+    # The workspace to reopen; null means Personal. Membership is rechecked before it's used.
+    last_organization_id: Mapped[int | None] = mapped_column(
+        IdType, ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True
     )
     updated_at: Mapped[datetime] = mapped_column(
         UtcDateTime, nullable=False, default=utc_now, onupdate=utc_now

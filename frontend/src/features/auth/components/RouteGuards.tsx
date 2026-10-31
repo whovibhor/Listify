@@ -40,6 +40,14 @@ export function GuestOnly() {
 
   if (isPending) return <FullPageLoader />
   if (isError) return <SessionCheckFailed onRetry={() => void refetch()} />
-  if (user) return <Navigate to={safeRedirectPath(params.get('next'))} replace />
+  if (user) {
+    return (
+      <Navigate
+        to={safeRedirectPath(params.get('next'))}
+        state={{ resumeWorkspace: true }}
+        replace
+      />
+    )
+  }
   return <Outlet />
 }

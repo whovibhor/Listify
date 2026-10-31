@@ -9,8 +9,13 @@ export interface User {
   name: string
   timezone: string
   theme: 'light' | 'dark' | 'system'
+  sidebar_collapsed: boolean
+  /** The workspace to reopen; null means Personal. */
+  last_organization_id: number | null
   created_at: string
 }
+
+type Preferences = Pick<User, 'theme' | 'sidebar_collapsed' | 'last_organization_id'>
 
 export interface UserSession {
   id: number
@@ -109,8 +114,14 @@ export function useUpdateProfile() {
 export function useUpdatePreferences() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { theme: User['theme'] }) =>
-      api.patch<{ theme: User['theme'] }>('/me/preferences', input),
+    mutationFn: (input: Partial<Preferences>) => api.patch<Preferences>('/me/preferences', input),
+    // Applied straight away, so the interface never waits for the save.
+    onMutate: (input) => {
+      const previous = queryClient.getQueryData<User | null>(authKeys.me)
+      if (previous) queryClient.setQueryData<User>(authKeys.me, { ...previous, ...input })
+      return { previous }
+    },
+    onError: (_error, _input, context) => queryClient.setQueryData(authKeys.me, context?.previous),
     onSuccess: (prefs) =>
       queryClient.setQueryData<User | null>(authKeys.me, (user) =>
         user ? { ...user, ...prefs } : user,

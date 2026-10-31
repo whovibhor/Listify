@@ -24,7 +24,7 @@ export async function createOrganization(page: Page, name: string, searchable: b
   await page.getByRole('button', { name: 'Engineering' }).click()
   await page.getByRole('button', { name: 'Sales' }).click()
   if (searchable) await page.getByRole('switch').click()
-  await page.getByRole('button', { name: 'Create organization' }).click()
+  await page.getByRole('button', { name: 'Create organization', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
   return Number(new URL(page.url()).pathname.split('/')[2])
 }

@@ -9,6 +9,8 @@ export const testUser: User = {
   name: 'Ada Lovelace',
   timezone: 'Asia/Kolkata',
   theme: 'system',
+  sidebar_collapsed: false,
+  last_organization_id: null,
   created_at: '2026-10-29T09:00:00Z',
 }
 
@@ -83,10 +85,17 @@ export const emptyDashboard = {
 
 /** Routes every signed-in screen needs. */
 export function signedInRoutes(extra: Record<string, Handler | unknown> = {}) {
+  // Like the server, each save builds on the ones before it.
+  const { theme, sidebar_collapsed, last_organization_id } = (extra['GET /me'] ?? testUser) as User
+  let preferences = { theme, sidebar_collapsed, last_organization_id }
   return {
     'GET /me': testUser,
     'GET /health': healthyResponse,
     'GET /auth/csrf': noContent,
+    'PATCH /me/preferences': (init: RequestInit) => {
+      preferences = { ...preferences, ...JSON.parse(String(init.body)) }
+      return jsonResponse(preferences)
+    },
     'GET /me/dashboard': emptyDashboard,
     'GET /me/tasks': emptyPage(),
     'GET /me/tags': [],

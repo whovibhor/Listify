@@ -16,7 +16,8 @@ import { WelcomePage } from '@/features/auth/pages/WelcomePage'
 import { SettingsLayout } from '@/features/settings/components/SettingsLayout'
 import { ProfileSettingsPage } from '@/features/settings/pages/ProfileSettingsPage'
 import { SecuritySettingsPage } from '@/features/settings/pages/SecuritySettingsPage'
-import { HomePage } from '@/features/system/pages/HomePage'
+import { OrganizationsSettingsPage } from '@/features/settings/pages/OrganizationsSettingsPage'
+import { HomeRoute } from '@/features/system/pages/HomePage'
 
 const plannedRoutes: RouteObject[] = allNavItems
   .filter((item) => item.plannedMilestone)
@@ -214,7 +215,7 @@ export const routes: RouteObject[] = [
           {
             element: <AppShell />,
             children: [
-              { index: true, element: <HomePage /> },
+              { index: true, element: <HomeRoute /> },
               { path: '/welcome', element: <WelcomePage /> },
               {
                 path: '/settings',
@@ -223,6 +224,7 @@ export const routes: RouteObject[] = [
                   { index: true, element: <Navigate to="profile" replace /> },
                   { path: 'profile', element: <ProfileSettingsPage /> },
                   { path: 'security', element: <SecuritySettingsPage /> },
+                  { path: 'organizations', element: <OrganizationsSettingsPage /> },
                 ],
               },
               ...personalRoutes,

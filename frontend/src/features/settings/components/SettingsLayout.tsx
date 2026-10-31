@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { ShieldCheckIcon, UserRoundIcon } from 'lucide-react'
+import { Building2Icon, ShieldCheckIcon, UserRoundIcon } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router'
 
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 const tabs = [
   { to: '/settings/profile', label: 'Profile', icon: UserRoundIcon },
   { to: '/settings/security', label: 'Security', icon: ShieldCheckIcon },
+  { to: '/settings/organizations', label: 'Organizations', icon: Building2Icon },
 ]
 
 export function SettingsLayout() {
@@ -16,9 +17,9 @@ export function SettingsLayout() {
     <motion.div {...pageEnter} className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title="Account settings"
-        description="Manage your profile and sign-in security."
+        description="Manage your profile, sign-in security and organizations."
       />
-      <nav aria-label="Settings" className="flex gap-1 border-b">
+      <nav aria-label="Settings" className="flex gap-1 overflow-x-auto border-b">
         {tabs.map((tab) => (
           <NavLink
             key={tab.to}

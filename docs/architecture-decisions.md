@@ -276,3 +276,10 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 - **The default sort has its own index,** `ix_tasks_org_default_sort`. It's built on expressions that must match `order_by("due")` exactly, or MySQL silently ignores it, so `tests/test_indexes.py` checks the real query plan. Changing that sort means changing the index too.
 - **Autogenerate can't compare expression indexes,** so `alembic/env.py` skips this one and migrations manage it by hand.
 - **Accepted trade-off:** rare searches matching nothing and very deep pages are slightly slower, because MySQL walks the index further. Everyday lists gain far more.
+
+## ADR-034 Remembering the workspace
+
+- **Three kinds of page.** `/org/:id/*` is that organization, and `/` and `/personal/*` are Personal. Everything else, such as Settings, belongs to neither and keeps the workspace in `user_preferences.last_organization_id`. Without this, those pages flipped the sidebar to Personal.
+- **The choice is saved in MySQL,** like the theme, so it follows the person to other devices. The server rejects an organization the person isn't an active member of, and the client still checks membership before using it, because they may have been removed since.
+- **`/` only redirects on a fresh visit or sign-in,** detected by React Router's `default` location key or `resumeWorkspace` state. A redirect on every visit would bounce people straight back out of Personal when they chose it. `useRememberWorkspace` skips saving during that moment, or it would overwrite the organization with Personal first.
+- **The sidebar names the current workspace.** The header button only offers the one you can swap to, so without this nothing would say where you are.
