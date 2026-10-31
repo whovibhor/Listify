@@ -231,12 +231,25 @@ test('every page fits phone, tablet and desktop widths', async ({ browser, page 
         fullPage: true,
       })
     }
-    // The task panel at this width.
+    // The task page and its Edit form at this width.
     await page.goto('/personal/my-day')
-    await page.getByRole('button', { name: /quarterly planning deck/ }).click()
-    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.getByRole('link', { name: /quarterly planning deck/ }).click()
+    await expect(page.getByRole('navigation', { name: 'Task sections' })).toBeVisible()
     await page.waitForTimeout(400)
-    await page.screenshot({ path: `test-results/screens/responsive-${viewport.name}-panel.png` })
+    const pageOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    )
+    expect(pageOverflow, `task page at ${viewport.width}px`).toBeLessThanOrEqual(0)
+    await page.screenshot({
+      path: `test-results/screens/responsive-${viewport.name}-task.png`,
+      fullPage: true,
+    })
+    await page.getByRole('button', { name: 'Edit', exact: true }).click()
+    const editForm = page.getByRole('dialog', { name: 'Edit task' })
+    await expect(editForm).toBeVisible()
+    await page.waitForTimeout(300)
+    await expectNoSideScroll(editForm, `task form at ${viewport.width}px`)
+    await page.keyboard.press('Escape')
 
     // The member sheet and its impact preview at this width.
     await page.goto(`/org/${orgId}/members`)

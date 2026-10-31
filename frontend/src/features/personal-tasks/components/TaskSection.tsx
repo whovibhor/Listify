@@ -24,8 +24,6 @@ interface TaskSectionProps {
   tone: SectionTone
   tasks: Task[]
   timezone: string
-  onOpen: (id: number) => void
-  selectedId: number | null
   description?: ReactNode
   defaultOpen?: boolean
   /** Total on the server when only part of the section is loaded. */

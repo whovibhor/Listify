@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useCreateTask, useDeleteTask, useTaskAction } from '@/features/tasks/api'
 import { TaskCheckbox } from '@/features/tasks/components/TaskCheckbox'
+import { TaskLink } from '@/features/tasks/components/TaskLink'
 import type { TaskDetail } from '@/features/tasks/types'
 import { transitions } from '@/lib/motion'
 import { cn } from '@/lib/utils'
@@ -66,15 +67,16 @@ export function SubtaskList({ task, readOnly }: { task: TaskDetail; readOnly: bo
                     )
                   }
                 />
-                <span
+                <TaskLink
+                  task={subtask}
                   className={cn(
-                    'flex-1 truncate text-sm',
+                    'flex-1 truncate text-sm underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50',
                     (done || subtask.status === 'cancelled') &&
                       'text-muted-foreground line-through',
                   )}
                 >
                   {subtask.title}
-                </span>
+                </TaskLink>
                 {readOnly ? null : (
                   <Button
                     variant="ghost"

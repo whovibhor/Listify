@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDepartments } from '@/features/organizations/api'
 import { useOrg } from '@/features/organizations/use-current-org'
-import { TaskDetailSheet } from '@/features/tasks/components/TaskDetailSheet'
 import { useTaskSearchParams } from '@/features/tasks/use-task-search-params'
 import { useOrganizationTasks } from '@/features/work/api'
 import { CreateTaskDialog } from '@/features/work/components/CreateTaskDialog'
@@ -26,7 +25,7 @@ const PAGE_SIZE = 25
 export function TeamTasksPage() {
   const org = useOrg()
   const search = useTaskSearchParams()
-  const { filters, update, openTaskId, openTask, activeFilterCount } = search
+  const { filters, update, activeFilterCount } = search
   const [params] = useSearchParams()
   const [creating, setCreating] = useState(false)
   const { data: departments = [] } = useDepartments(org.id)
@@ -141,15 +140,11 @@ export function TeamTasksPage() {
           sort={filters.sort ?? 'due'}
           showDepartment
           onSort={(sort) => update({ sort: sort === 'due' ? null : sort })}
-          onOpen={openTask}
           onPageChange={(page) => update({ page })}
         />
       )}
 
-      {creating ? (
-        <CreateTaskDialog onClose={() => setCreating(false)} onCreated={openTask} />
-      ) : null}
-      <TaskDetailSheet taskId={openTaskId} timezone={org.timezone} onClose={() => openTask(null)} />
+      {creating ? <CreateTaskDialog onClose={() => setCreating(false)} /> : null}
     </motion.div>
   )
 }

@@ -15,6 +15,7 @@ import { ErrorState } from '@/components/shared/StatePanels'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DueChip } from '@/features/tasks/components/DueChip'
+import { TaskLink } from '@/features/tasks/components/TaskLink'
 import { inZone, localDateKey, nowIn, todayKey } from '@/features/tasks/dates'
 import type { Task } from '@/features/tasks/types'
 import { useOrganizationTasks, type WorkParams } from '@/features/work/api'
@@ -33,18 +34,12 @@ interface WorkCalendarProps {
   /** yyyy-MM; defaults to this month in the organization's time zone. */
   month: string | null
   onMonthChange: (month: string) => void
-  onOpen: (id: number) => void
 }
 
-function DayTask({
-  task,
-  timezone,
-  onOpen,
-}: Pick<WorkCalendarProps, 'timezone' | 'onOpen'> & { task: Task }) {
+function DayTask({ task, timezone }: Pick<WorkCalendarProps, 'timezone'> & { task: Task }) {
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(task.id)}
+    <TaskLink
+      task={task}
       className={cn(
         'block w-full truncate rounded-md bg-muted/60 px-1.5 py-1 text-left text-xs font-medium outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50',
         task.is_overdue && 'text-destructive',
@@ -57,7 +52,7 @@ function DayTask({
         {format(inZone(task.due_at!, timezone), 'EEEE d MMMM')}:{' '}
       </span>
       {task.title}
-    </button>
+    </TaskLink>
   )
 }
 
@@ -68,7 +63,6 @@ export function WorkCalendar({
   timezone,
   month,
   onMonthChange,
-  onOpen,
 }: WorkCalendarProps) {
   const shown = month ? parse(month, MONTH_FORMAT, new Date()) : startOfMonth(nowIn(timezone))
   const gridStart = startOfWeek(startOfMonth(shown), WEEK)
@@ -160,7 +154,7 @@ export function WorkCalendar({
                       {format(day, 'd')}
                     </p>
                     {tasks.slice(0, VISIBLE_PER_DAY).map((task) => (
-                      <DayTask key={task.id} task={task} timezone={timezone} onOpen={onOpen} />
+                      <DayTask key={task.id} task={task} timezone={timezone} />
                     ))}
                     {extra > 0 ? (
                       <p className="px-1 text-xs text-muted-foreground">+{extra} more</p>
@@ -185,14 +179,13 @@ export function WorkCalendar({
                   <ul className="space-y-1">
                     {byDay.get(key)?.map((task) => (
                       <li key={task.id}>
-                        <button
-                          type="button"
-                          onClick={() => onOpen(task.id)}
+                        <TaskLink
+                          task={task}
                           className="flex w-full items-center justify-between gap-2 rounded-lg bg-muted/60 px-2.5 py-2 text-left text-sm outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50"
                         >
                           <span className="min-w-0 truncate">{task.title}</span>
                           <DueChip task={task} timezone={timezone} className="shrink-0" />
-                        </button>
+                        </TaskLink>
                       </li>
                     ))}
                   </ul>

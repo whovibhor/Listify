@@ -160,6 +160,8 @@ describe('task detail panel', () => {
       signedInRoutes({
         'GET /me/tasks': emptyPage([task]),
         'GET /tasks/1': detail(task),
+        'GET /tasks/1/comments': [],
+        'GET /tasks/1/attachments': [],
         'GET /tasks/1/activity': [
           {
             id: 1,
@@ -177,24 +179,28 @@ describe('task detail panel', () => {
     )
     const { user, router } = renderApp('/personal/tasks')
 
-    await user.click(await screen.findByRole('button', { name: 'Draft' }))
-    const dialog = await screen.findByRole('dialog')
-    expect(router.state.location.search).toContain('task=1')
-    expect(await within(dialog).findByText('created this task')).toBeInTheDocument()
+    await user.click(await screen.findByRole('link', { name: 'Draft' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/personal/tasks/1'))
+    await user.click(await screen.findByRole('link', { name: 'Activity' }))
+    expect(await screen.findByText('created this task')).toBeInTheDocument()
 
-    const title = within(dialog).getByLabelText('Title')
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    const form = await screen.findByRole('dialog')
+    const title = within(form).getByLabelText('Title')
     await user.clear(title)
-    await user.type(title, 'Final draft{Enter}')
+    await user.type(title, 'Final draft')
+    await user.click(within(form).getByRole('button', { name: 'Save changes' }))
     await waitFor(() =>
       expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ title: 'Final draft' }),
     )
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 
-    await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    await user.click(screen.getByRole('button', { name: 'More actions' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete' }))
     await user.click(await screen.findByRole('button', { name: 'Delete permanently' }))
     await waitFor(() =>
       expect(calls.some((c) => c.method === 'DELETE' && c.path === '/tasks/1')).toBe(true),
     )
-    await waitFor(() => expect(router.state.location.search).not.toContain('task='))
   })
 })
 

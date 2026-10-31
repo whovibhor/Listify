@@ -35,12 +35,12 @@ export interface TaskFilterState {
   due_to: string
 }
 
-/** URL keys beyond the filters: the open task, and each organization page's own settings. */
+/** URL keys beyond the filters: each organization page's own settings. */
 type ExtraParam =
-  'task' | 'layout' | 'month' | 'view' | 'department' | 'flagged' | 'archived' | 'finished' | 'show'
+  'layout' | 'month' | 'view' | 'department' | 'flagged' | 'archived' | 'finished' | 'show'
 
 /**
- * Filters, sort, page and the open task live in the URL: shareable, back-button friendly and
+ * Filters, sort and page live in the URL: shareable, back-button friendly and
  * preserved across reloads (PRD: preserve filters and navigation state).
  */
 export function useTaskSearchParams() {
@@ -67,8 +67,6 @@ export function useTaskSearchParams() {
     }
   }, [params])
 
-  const openTaskId = Number(params.get('task')) || null
-
   const update = useCallback(
     (
       changes: Partial<
@@ -88,7 +86,7 @@ export function useTaskSearchParams() {
             for (const item of values) next.append(key, item)
           }
           // Any filter change returns to the first page.
-          if (!('page' in changes) && !('task' in changes)) next.delete('page')
+          if (!('page' in changes)) next.delete('page')
           return next
         },
         { replace: true },
@@ -97,7 +95,6 @@ export function useTaskSearchParams() {
     [setParams],
   )
 
-  const openTask = useCallback((id: number | null) => update({ task: id }), [update])
   const clearFilters = useCallback(
     () =>
       update({
@@ -121,5 +118,5 @@ export function useTaskSearchParams() {
     (filters.overdue ? 1 : 0) +
     [filters.assignee, filters.creator, filters.due_from, filters.due_to].filter(Boolean).length
 
-  return { filters, update, openTaskId, openTask, clearFilters, activeFilterCount }
+  return { filters, update, clearFilters, activeFilterCount }
 }

@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { StatTile } from '@/features/dashboards/components/StatTile'
 import { useExportReport, type ReportRange } from '@/features/reports/api'
 import type { OnTime, ReportCounts, ReportTask } from '@/features/reports/types'
+import { TaskLink } from '@/features/tasks/components/TaskLink'
 import { inZone } from '@/features/tasks/dates'
 import { errorText } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
@@ -245,15 +246,15 @@ export function ReportTaskList({
             : 'No deadline'
         return (
           <li key={task.id}>
-            <Link
-              to={`/org/${orgId}/tasks?task=${task.id}`}
+            <TaskLink
+              task={{ id: task.id, organization_id: orgId }}
               className="block rounded-lg px-2 py-1.5 outline-none hover:bg-accent/60 focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <span className="block truncate text-sm font-medium">{task.title}</span>
               <span className="block truncate text-xs text-muted-foreground">
                 {when} · {task.assignee?.name ?? 'Unassigned'}
               </span>
-            </Link>
+            </TaskLink>
           </li>
         )
       })}

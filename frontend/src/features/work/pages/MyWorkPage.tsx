@@ -6,7 +6,6 @@ import { useSearchParams } from 'react-router'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Button } from '@/components/ui/button'
 import { useOrg } from '@/features/organizations/use-current-org'
-import { TaskDetailSheet } from '@/features/tasks/components/TaskDetailSheet'
 import { TaskList } from '@/features/tasks/components/TaskList'
 import { TASK_STATUSES } from '@/features/tasks/task-meta'
 import { useTaskSearchParams } from '@/features/tasks/use-task-search-params'
@@ -25,7 +24,7 @@ const TABS = [
 /** The work that's yours in this organization, separate from your personal tasks. */
 export function MyWorkPage() {
   const org = useOrg()
-  const { filters, update, openTaskId, openTask } = useTaskSearchParams()
+  const { filters, update } = useTaskSearchParams()
   const [params] = useSearchParams()
   const [creating, setCreating] = useState(false)
   const view = params.get('view') === 'collaborating' ? 'collaborating' : 'my_work'
@@ -88,8 +87,6 @@ export function MyWorkPage() {
       <TaskList
         query={query}
         timezone={org.timezone}
-        onOpen={openTask}
-        selectedId={openTaskId}
         onPageChange={(page) => update({ page })}
         empty={{
           icon: BriefcaseIcon,
@@ -97,10 +94,7 @@ export function MyWorkPage() {
           description: 'Tasks appear here as soon as someone adds you to them.',
         }}
       />
-      {creating ? (
-        <CreateTaskDialog onClose={() => setCreating(false)} onCreated={openTask} />
-      ) : null}
-      <TaskDetailSheet taskId={openTaskId} timezone={org.timezone} onClose={() => openTask(null)} />
+      {creating ? <CreateTaskDialog onClose={() => setCreating(false)} /> : null}
     </motion.div>
   )
 }

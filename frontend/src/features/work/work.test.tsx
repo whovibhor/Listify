@@ -6,7 +6,7 @@ import type { TaskStatus } from '@/features/tasks/task-meta'
 import type { Task, TaskDetail } from '@/features/tasks/types'
 import type { Board } from '@/features/work/types'
 import { jsonResponse, renderApp } from '@/test/render'
-import { emptyPage, mockApi, signedInRoutes, testUser } from '@/test/mock-api'
+import { emptyPage, mockApi, signedInRoutes } from '@/test/mock-api'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -353,7 +353,7 @@ describe('department board', () => {
 
   it('offers no move controls on a task the viewer can only read', async () => {
     renderBoard([makeTask({ allowed_statuses: [], actions: [] })])
-    await screen.findByRole('button', { name: 'Fix the login page' })
+    await screen.findByRole('link', { name: 'Fix the login page' })
     expect(screen.queryByRole('button', { name: /^Move/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Drag/ })).not.toBeInTheDocument()
   })
@@ -431,7 +431,7 @@ describe('list and calendar', () => {
     const { user } = renderApp('/org/7/boards/3?layout=calendar&month=2026-12')
 
     const day = await screen.findByTestId('day-2026-12-01')
-    expect(await within(day).findByRole('button', { name: /Late night/ })).toBeInTheDocument()
+    expect(await within(day).findByRole('link', { name: /Late night/ })).toBeInTheDocument()
     const call = lastCall(api, 'GET', '/organizations/7/tasks')
     expect(call?.query.get('due_from')).toBe('2026-11-30')
     expect(call?.query.get('department_id')).toBe('3')
@@ -491,75 +491,6 @@ describe('creating a task', () => {
   })
 })
 
-describe('task panel on organization work', () => {
-  function renderPanel(task: Task, extra: Record<string, unknown> = {}) {
-    const api = mockApi(
-      signedInRoutes({
-        ...routes,
-        'GET /organizations/7/departments/3/board': makeBoard([task]),
-        'GET /tasks/1': detail(task),
-        'GET /tasks/1/activity': [],
-        ...extra,
-      }),
-    )
-    return { api, ...renderApp('/org/7/boards/3?task=1') }
-  }
-
-  it('shows who’s on the task and only archives, never deletes', async () => {
-    renderPanel(makeTask({ collaborators: [{ id: 5, name: 'Lee Lead' }] }))
-    const panel = await screen.findByRole('dialog')
-    expect(await within(panel).findByText('Ada Lovelace')).toBeInTheDocument()
-    expect(within(panel).getByText('Lee Lead')).toBeInTheDocument()
-    expect(within(panel).getByRole('button', { name: 'Archive' })).toBeInTheDocument()
-    expect(within(panel).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
-  })
-
-  it('reassigns a task', async () => {
-    const task = makeTask({ assignee: null })
-    const { user, api } = renderPanel(task, { 'PATCH /tasks/1': detail(task) })
-    const panel = await screen.findByRole('dialog')
-    await user.selectOptions(
-      await within(panel).findByLabelText('Assignee'),
-      await within(panel).findByRole('option', { name: 'Eve Eng' }),
-    )
-    await waitFor(() =>
-      expect(lastCall(api, 'PATCH', '/tasks/1')?.body).toEqual({ assigned_to: 2 }),
-    )
-  })
-
-  it('makes a read-only task clear, and lets someone pick up unassigned work', async () => {
-    const task = makeTask({ assignee: null, allowed_statuses: [], actions: [] })
-    const { user, api } = renderPanel(task, { 'PATCH /tasks/1': detail(task) })
-    const panel = await screen.findByRole('dialog')
-
-    expect(
-      await within(panel).findByText('You can view this task, but not change it.'),
-    ).toBeInTheDocument()
-    expect(within(panel).queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
-    await user.click(within(panel).getByRole('button', { name: 'Assign to me' }))
-
-    await waitFor(() =>
-      expect(lastCall(api, 'PATCH', '/tasks/1')?.body).toEqual({ assigned_to: testUser.id }),
-    )
-  })
-
-  it('explains a task that needs a new assignee', async () => {
-    renderPanel(makeTask({ needs_reassignment: true }))
-    expect(await screen.findByText(/Eve Eng can no longer work on this task/)).toBeInTheDocument()
-  })
-
-  it('adds a collaborator', async () => {
-    const task = makeTask({ assignee: null })
-    const { user, api } = renderPanel(task, { 'POST /tasks/1/collaborators': detail(task) })
-    const panel = await screen.findByRole('dialog')
-    await user.click(await within(panel).findByRole('button', { name: 'Add collaborator' }))
-    await user.click(await screen.findByRole('button', { name: 'Eve Eng' }))
-    await waitFor(() =>
-      expect(lastCall(api, 'POST', '/tasks/1/collaborators')?.body).toEqual({ user_id: 2 }),
-    )
-  })
-})
-
 describe('My Work and Team Tasks', () => {
   it('splits what’s assigned from what you’re helping with', async () => {
     const api = mockApi(signedInRoutes({ ...routes }))
@@ -580,7 +511,7 @@ describe('My Work and Team Tasks', () => {
       signedInRoutes({ ...routes, 'GET /organizations/7/tasks': emptyPage([makeTask()]) }),
     )
     const { user } = renderApp('/org/7/tasks')
-    await screen.findByRole('button', { name: 'Fix the login page' })
+    await screen.findByRole('link', { name: 'Fix the login page' })
 
     await user.click(screen.getByRole('button', { name: 'Needs reassignment' }))
 

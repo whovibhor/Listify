@@ -7,7 +7,7 @@ import {
   MenuIcon,
   UserRoundIcon,
 } from 'lucide-react'
-import { Link, Outlet } from 'react-router'
+import { Link, Navigate, Outlet, useLocation, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 
 import { SidebarNav } from '@/components/layout/SidebarNav'
@@ -72,6 +72,17 @@ function CurrentWorkspace({ collapsed = false }: { collapsed?: boolean }) {
       </span>
     </div>
   )
+}
+
+/** Tasks used to open in a panel at `?task=ID`, and old links and bookmarks still say so. */
+function PageOutlet() {
+  const { pathname } = useLocation()
+  const [params] = useSearchParams()
+  const taskId = Number(params.get('task'))
+  if (!taskId) return <Outlet />
+  const organizationId = /^\/org\/(\d+)/.exec(pathname)?.[1]
+  const to = organizationId ? `/org/${organizationId}/tasks` : '/personal/tasks'
+  return <Navigate to={`${to}/${taskId}`} replace />
 }
 
 function SidebarToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
@@ -214,7 +225,7 @@ export function AppShell() {
 
         <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
           <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
-            <Outlet />
+            <PageOutlet />
           </div>
         </main>
       </div>

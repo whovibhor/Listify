@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { DueChip } from '@/features/tasks/components/DueChip'
 import { TagChip } from '@/features/tasks/components/TagChip'
+import { TaskLink } from '@/features/tasks/components/TaskLink'
 import { TaskPriorityBadge, TaskStatusBadge } from '@/features/tasks/components/TaskBadges'
 import { STATUS_LABELS, type TaskStatus } from '@/features/tasks/task-meta'
 import type { Task } from '@/features/tasks/types'
@@ -55,7 +56,6 @@ const COMPLETED_DAYS = 30
 interface CardProps {
   task: Task
   timezone: string
-  onOpen: (id: number) => void
   onMove: (task: Task, status: TaskStatus) => void
 }
 
@@ -107,7 +107,7 @@ function CardBody({ task, timezone }: Pick<CardProps, 'task' | 'timezone'>) {
   )
 }
 
-function TaskCard({ task, timezone, onOpen, onMove }: CardProps) {
+function TaskCard({ task, timezone, onMove }: CardProps) {
   const movable = task.allowed_statuses.length > 0
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
     id: task.id,
@@ -126,13 +126,13 @@ function TaskCard({ task, timezone, onOpen, onMove }: CardProps) {
       )}
     >
       <div className="flex items-start gap-1">
-        <button
-          type="button"
-          onClick={() => onOpen(task.id)}
+        <TaskLink
+          task={task}
+          draggable={false}
           className="min-w-0 flex-1 text-left text-sm font-medium outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-3 focus-visible:after:ring-ring/50"
         >
           <span className="line-clamp-2">{task.title}</span>
-        </button>
+        </TaskLink>
         {movable ? (
           <span className="relative z-10 flex shrink-0 items-center">
             <DropdownMenu>
@@ -230,7 +230,6 @@ interface BoardViewProps {
   board: Board
   params: WorkParams
   timezone: string
-  onOpen: (id: number) => void
   /** Columns switched off; cards can still be moved to them from the Move menu. */
   hidden: TaskStatus[]
   onShowColumn: (status: TaskStatus) => void
@@ -242,7 +241,6 @@ export function BoardView({
   board,
   params,
   timezone,
-  onOpen,
   hidden,
   onShowColumn,
   onShowOlder,
@@ -300,13 +298,7 @@ export function BoardView({
             onShowOlder={onShowOlder}
           >
             {column.items.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                timezone={timezone}
-                onOpen={onOpen}
-                onMove={moveTask}
-              />
+              <TaskCard key={task.id} task={task} timezone={timezone} onMove={moveTask} />
             ))}
           </BoardColumn>
         ))}

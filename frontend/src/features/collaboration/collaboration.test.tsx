@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TaskAttachment, TaskComment, UpdateRequest } from '@/features/collaboration/types'
 import type { InboxNotification } from '@/features/inbox/types'
@@ -112,9 +112,11 @@ const routes = {
   'GET /tasks/1/update-requests': [request],
 }
 
+let section = 'comments'
+
 function renderTask(extra: Record<string, unknown> = {}) {
   const api = mockApi(signedInRoutes({ ...routes, ...extra }))
-  return { api, ...renderApp('/org/7/tasks?task=1') }
+  return { api, ...renderApp(`/org/7/tasks/1/${section}`) }
 }
 
 function lastCall(api: ReturnType<typeof mockApi>, method: string, path: string) {
@@ -122,6 +124,10 @@ function lastCall(api: ReturnType<typeof mockApi>, method: string, path: string)
 }
 
 describe('comments', () => {
+  beforeEach(() => {
+    section = 'comments'
+  })
+
   it('shows text exactly as written, never as HTML', async () => {
     renderTask({
       'GET /tasks/1/comments': [{ ...comment, body: '<img src=x onerror=alert(1)>' }],
@@ -136,7 +142,7 @@ describe('comments', () => {
       'GET /organizations/7/members': emptyPage([person]),
       'POST /tasks/1/comments': comment,
     })
-    const panel = await screen.findByRole('dialog')
+    const panel = await screen.findByRole('main')
     await user.type(await within(panel).findByLabelText('Add a comment'), 'Please check')
     await user.click(within(panel).getByRole('button', { name: 'Mention' }))
     await user.click(await screen.findByRole('button', { name: 'Eve Eng' }))
@@ -155,7 +161,7 @@ describe('comments', () => {
       'PATCH /comments/5': comment,
       'DELETE /comments/5': noContent,
     })
-    const panel = await screen.findByRole('dialog')
+    const panel = await screen.findByRole('main')
     await user.click(await within(panel).findByRole('button', { name: 'Edit your comment' }))
     const box = within(panel).getByLabelText('Edit comment')
     await user.clear(box)
@@ -182,6 +188,10 @@ describe('comments', () => {
 })
 
 describe('attachments', () => {
+  beforeEach(() => {
+    section = 'files'
+  })
+
   it('links to the protected download, and offers delete only when allowed', async () => {
     renderTask({ 'GET /tasks/1/attachments': [{ ...attachment, can_delete: false }] })
     const link = await screen.findByRole('link', { name: 'Download plan.pdf' })
@@ -191,7 +201,7 @@ describe('attachments', () => {
 
   it('uploads the raw file with its name', async () => {
     const { user, api } = renderTask({ 'POST /tasks/1/attachments': attachment })
-    const panel = await screen.findByRole('dialog')
+    const panel = await screen.findByRole('main')
     const input = await within(panel).findByLabelText('Choose files to attach')
     await user.upload(input, new File(['hello'], 'notes.txt', { type: 'text/plain' }))
 
@@ -203,7 +213,7 @@ describe('attachments', () => {
 
   it('stops a file over 10 MB before sending it', async () => {
     const { user, api } = renderTask()
-    const panel = await screen.findByRole('dialog')
+    const panel = await screen.findByRole('main')
     const input = await within(panel).findByLabelText('Choose files to attach')
     const big = new File(['x'], 'huge.pdf', { type: 'application/pdf' })
     Object.defineProperty(big, 'size', { value: 11 * 1024 * 1024 })
@@ -215,19 +225,23 @@ describe('attachments', () => {
 
   it('offers no upload on a task the viewer can only read', async () => {
     renderTask({ 'GET /tasks/1': { ...detail, actions: [], allowed_statuses: [] } })
-    const panel = await screen.findByRole('dialog')
+    const panel = await screen.findByRole('main')
     await within(panel).findByRole('link', { name: 'Download plan.pdf' })
     expect(within(panel).queryByRole('button', { name: 'Attach files' })).not.toBeInTheDocument()
   })
 })
 
 describe('update requests', () => {
+  beforeEach(() => {
+    section = 'requests'
+  })
+
   it('sends a request to someone on the task', async () => {
     const { user, api } = renderTask({
       'GET /tasks/1/update-requests': [],
       'POST /tasks/1/update-requests': request,
     })
-    const panel = await screen.findByRole('dialog')
+    const panel = await screen.findByRole('main')
     await user.click(await within(panel).findByRole('button', { name: 'Request an update' }))
     const dialog = await screen.findByRole('dialog', { name: 'Request an update' })
     await user.type(within(dialog).getByLabelText(/What would you like/), 'Any news?')
@@ -244,7 +258,7 @@ describe('update requests', () => {
 
   it('hides Request an update from people who may not ask', async () => {
     renderTask({ 'GET /tasks/1': { ...detail, actions: ['edit'] } })
-    const panel = await screen.findByRole('dialog')
+    const panel = await screen.findByRole('main')
     await within(panel).findByText('How is it going?')
     expect(
       within(panel).queryByRole('button', { name: 'Request an update' }),
@@ -255,7 +269,7 @@ describe('update requests', () => {
     const { user, api } = renderTask({
       'POST /update-requests/4/respond': { ...request, status: 'responded' },
     })
-    const panel = await screen.findByRole('dialog')
+    const panel = await screen.findByRole('main')
     await user.click(await within(panel).findByRole('button', { name: 'Respond' }))
     const dialog = await screen.findByRole('dialog', { name: 'Respond to Lee Lead' })
     await user.type(within(dialog).getByLabelText('Your update'), 'Almost done')
@@ -296,8 +310,7 @@ describe('inbox', () => {
     const { user, router } = renderApp('/org/7/inbox')
     await user.click(await screen.findByRole('button', { name: /Lee Lead assigned you/ }))
 
-    await waitFor(() => expect(router.state.location.pathname).toBe('/org/7/tasks'))
-    expect(router.state.location.search).toBe('?task=1')
+    await waitFor(() => expect(router.state.location.pathname).toBe('/org/7/tasks/1'))
     expect(lastCall(api, 'POST', '/notifications/3/read')).toBeDefined()
   })
 
@@ -432,6 +445,10 @@ describe('inbox', () => {
 })
 
 describe('failures', () => {
+  beforeEach(() => {
+    section = 'files'
+  })
+
   it('explains a refused upload', async () => {
     const { user } = renderTask({
       'POST /tasks/1/attachments': () =>
@@ -447,7 +464,7 @@ describe('failures', () => {
           422,
         ),
     })
-    const panel = await screen.findByRole('dialog')
+    const panel = await screen.findByRole('main')
     const input = await within(panel).findByLabelText('Choose files to attach')
     await user.upload(input, new File(['x'], 'notes.txt', { type: 'text/plain' }))
     expect(await screen.findByText("This type of file can't be attached.")).toBeInTheDocument()

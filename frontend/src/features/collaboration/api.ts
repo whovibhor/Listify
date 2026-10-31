@@ -25,10 +25,11 @@ function refreshTask(queryClient: QueryClient, taskId: number) {
 
 // --- Comments ----------------------------------------------------------------------------------
 
-export function useComments(taskId: number) {
+export function useComments(taskId: number, { enabled = true } = {}) {
   return useQuery({
     queryKey: collaborationKeys.comments(taskId),
     queryFn: () => api.get<TaskComment[]>(`/tasks/${taskId}/comments`),
+    enabled,
   })
 }
 
@@ -61,10 +62,11 @@ export function useDeleteComment(taskId: number) {
 
 // --- Attachments -------------------------------------------------------------------------------
 
-export function useAttachments(taskId: number) {
+export function useAttachments(taskId: number, { enabled = true } = {}) {
   return useQuery({
     queryKey: collaborationKeys.attachments(taskId),
     queryFn: () => api.get<TaskAttachment[]>(`/tasks/${taskId}/attachments`),
+    enabled,
   })
 }
 
@@ -100,10 +102,11 @@ export function useDeleteAttachment(taskId: number) {
 
 // --- Update requests ---------------------------------------------------------------------------
 
-export function useUpdateRequests(taskId: number) {
+export function useUpdateRequests(taskId: number, { enabled = true } = {}) {
   return useQuery({
     queryKey: collaborationKeys.updates(taskId),
     queryFn: () => api.get<UpdateRequest[]>(`/tasks/${taskId}/update-requests`),
+    enabled,
   })
 }
 

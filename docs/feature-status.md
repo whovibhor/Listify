@@ -1,6 +1,6 @@
 # Denote — Feature Status
 
-**Last updated:** 2026-10-31 · **Current work:** UI & journey rework, Batch 5 (task page) next · Phase 8 follows the rework
+**Last updated:** 2026-10-31 · **Current work:** UI & journey rework, Batch 6 (final pass) next · Phase 8 follows the rework
 
 This is the single list of what is **done** and what is **pending**, feature by feature. It is updated every time a feature is completed or changed. A feature is marked ✅ only after it works end-to-end (UI → API → MySQL) and its tests have been run and passed. Detailed plans live in [`implementation-roadmap.md`](implementation-roadmap.md).
 
@@ -20,7 +20,7 @@ Legend: ✅ done · 🟡 partly done · ⏳ pending · ⏸ deferred (later relea
 | Department work boards (team tasks) | ✅ Done |
 | Comments, update requests, attachments, inbox | ✅ Done |
 | Team & organization dashboards | ✅ Done |
-| UI & journey rework | 🟡 In progress: Batches 1 to 4 of 6 done |
+| UI & journey rework | 🟡 In progress: Batches 1 to 5 of 6 done |
 | Reminders, notifications, email | ⏳ Pending (Phase 8) |
 | Production readiness (deploy, backups, monitoring) | ⏳ Pending (Phase 9) |
 
@@ -55,7 +55,12 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 | **Upcoming** — 14-day strip, pick a day to add to it, agenda by day | reads `tasks` |
 | **Completed** list | reads `tasks` |
 | Filters (status, priority, tags, overdue, search), sorting, pagination — kept in the page URL | — (URL state) |
-| Quick add, task detail side panel | writes `tasks` |
+| Quick add | writes `tasks` |
+| Task page, for personal and organization tasks: a details rail, and Overview, Comments, Files, Update requests and Activity sections with their own links | reads `tasks`, `task_comments`, `task_attachments`, `task_update_requests`, `task_activity_logs` |
+| Status and Complete are one click. Everything else goes through Edit, which shows only the fields you may change and saves together | `tasks`, `task_collaborators` |
+| Archive, Restore, Delete and Copy link in the task page's More menu | `tasks` |
+| Subtasks have their own page with a link to the parent. Their people and visibility come from the parent | `tasks` |
+| Task cards and rows are real links, so they open in new tabs, and Back keeps your list's filters. Old `?task=` links still work | reads `tasks` |
 
 ### Analytics & home
 | Feature | Stored in |
@@ -148,7 +153,7 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 
 ### Quality (applies to everything above)
 - Responsive: all 24 pages, the member panel and the impact preview checked at phone (375px), tablet (768px) and desktop (1280px) for overflow; screenshots reviewed.
-- Accessibility: automated WCAG 2.2 AA scans (axe) on sign-in, task pages, the task panel, all organization pages, the member panel and its dialogs, the board in all three layouts, My Work, Team Tasks, the Inbox and the create dialog, plus dark-mode scans of the panels; dragging always has a menu alternative; keyboard and screen-reader labels.
+- Accessibility: automated WCAG 2.2 AA scans (axe) on sign-in, task pages, the task form, all organization pages, the member panel and its dialogs, the board in all three layouts, My Work, Team Tasks, the Inbox and the create dialog, plus dark-mode scans of the panels; dragging always has a menu alternative; keyboard and screen-reader labels.
 - Privacy: other users get "not found" for your tasks, tags and sessions. Outsiders, pending applicants and suspended or removed members get "not found" for everything in an organization. Organizations can never see personal tasks. All tested.
 - Permissions: every role tested against every permission-guarded endpoint on the real API, and each visibility level tested against eight kinds of viewer across reading, listing and search.
 
@@ -158,13 +163,6 @@ Every item below is saved in and loaded from MySQL (database `denote`). The "Sto
 
 ### UI & journey rework *(next)*
 The agreed plan, with the owner's decisions, is in [`implementation-roadmap.md`](implementation-roadmap.md). These existing features will change:
-
-**Batch 5: Task page**
-- ⏳ Full task page replaces the side panel everywhere, for personal and organization tasks
-- ⏳ Details rail plus tabs with their own links: Overview, Comments, Files, Update requests, Activity
-- ⏳ Status and Complete stay one click; everything else goes through an Edit button
-- ⏳ Subtasks get the same page, with a link to the parent
-- ⏳ Real links on cards and rows, Back keeps list filters, old `?task=` links redirect
 
 **Batch 6: Final pass**
 - ⏳ Full journey for each role, accessibility checks, docs, and a complete E2E run
@@ -212,6 +210,7 @@ The agreed plan, with the owner's decisions, is in [`implementation-roadmap.md`]
 ## Change log
 | Date | Change |
 |---|---|
+| 2026-10-31 | Task page replaces the side panel everywhere, with a details rail, sections with their own links, and an Edit form. Subtasks get their own page. |
 | 2026-10-31 | Boards and lists now open on current work: new column order, Blocked and Cancelled hidden until asked for, Completed limited to 30 days, and Show finished on task lists. Boards load about 45% faster for Members on very large organizations. |
 | 2026-10-31 | Department page added. The Members sidebar item is gone: Owners and Admins use the All members tab on Departments. Boards moved to `/org/:id/boards/:id`, and old links still work. |
 | 2026-10-31 | Inbox per workspace: each organization has its own inbox and counts, Personal keeps notices from organizations you can't open any more, and a dot shows when another workspace has something waiting. Clicking Inbox no longer jumps to Personal. |

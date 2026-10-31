@@ -24,7 +24,6 @@ import { TaskSection, type SectionTone } from '@/features/personal-tasks/compone
 import { WHEN_ORDER, groupByWhen, type WhenBucket } from '@/features/personal-tasks/grouping'
 import { useTasks } from '@/features/tasks/api'
 import { QuickAddTask } from '@/features/tasks/components/QuickAddTask'
-import { TaskDetailSheet } from '@/features/tasks/components/TaskDetailSheet'
 import { TaskFilters } from '@/features/tasks/components/TaskFilters'
 import { TaskList, TaskListSkeleton } from '@/features/tasks/components/TaskList'
 import { useTaskSearchParams } from '@/features/tasks/use-task-search-params'
@@ -116,7 +115,7 @@ function ActiveTasks() {
   const { data: user } = useMe()
   const timezone = user?.timezone ?? 'UTC'
   const search = useTaskSearchParams()
-  const { filters, openTaskId, openTask, update, activeFilterCount, clearFilters } = search
+  const { filters, update, activeFilterCount, clearFilters } = search
   const { data: dashboard } = usePersonalDashboard('7d')
   // Planner grouping needs the whole set; an explicit sort switches to a flat, paged list.
   const grouped = !filters.sort
@@ -136,7 +135,7 @@ function ActiveTasks() {
   const highPriority = dashboard
     ? dashboard.open_by_priority.urgent + dashboard.open_by_priority.high
     : null
-  const rowProps = { timezone, onOpen: openTask, selectedId: openTaskId }
+  const rowProps = { timezone }
   const empty =
     activeFilterCount > 0
       ? {
@@ -248,8 +247,6 @@ function ActiveTasks() {
           {...rowProps}
         />
       )}
-
-      <TaskDetailSheet taskId={openTaskId} timezone={timezone} onClose={() => openTask(null)} />
     </motion.div>
   )
 }

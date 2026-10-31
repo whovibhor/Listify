@@ -5,7 +5,6 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { useMe } from '@/features/auth/api'
 import { useTasks } from '@/features/tasks/api'
 import { QuickAddTask } from '@/features/tasks/components/QuickAddTask'
-import { TaskDetailSheet } from '@/features/tasks/components/TaskDetailSheet'
 import { TaskFilters } from '@/features/tasks/components/TaskFilters'
 import { TaskList, type TaskGroup } from '@/features/tasks/components/TaskList'
 import type { TaskStatus } from '@/features/tasks/task-meta'
@@ -35,7 +34,7 @@ export function TaskViewPage(config: TaskViewConfig) {
   const { data: user } = useMe()
   const timezone = user?.timezone ?? 'UTC'
   const search = useTaskSearchParams()
-  const { filters, openTaskId, openTask, update, activeFilterCount, clearFilters } = search
+  const { filters, update, activeFilterCount, clearFilters } = search
 
   const query = useTasks({
     view: config.view,
@@ -90,15 +89,12 @@ export function TaskViewPage(config: TaskViewConfig) {
       <TaskList
         query={query}
         timezone={timezone}
-        onOpen={openTask}
-        selectedId={openTaskId}
         empty={empty}
         groupBy={
           config.groupBy && !filters.sort ? (tasks) => config.groupBy!(tasks, timezone) : undefined
         }
         onPageChange={(page) => update({ page })}
       />
-      <TaskDetailSheet taskId={openTaskId} timezone={timezone} onClose={() => openTask(null)} />
     </motion.div>
   )
 }

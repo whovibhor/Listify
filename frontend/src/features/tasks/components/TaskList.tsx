@@ -24,8 +24,6 @@ interface TaskListProps {
     isPlaceholderData?: boolean
   }
   timezone: string
-  onOpen: (id: number) => void
-  selectedId: number | null
   empty: { icon: LucideIcon; title: string; description: ReactNode; action?: ReactNode }
   /** Optional grouping (Upcoming by day, My Day by overdue/today). */
   groupBy?: (tasks: Task[]) => TaskGroup[]
@@ -48,22 +46,12 @@ export function TaskRows({
   className,
   nested,
   ...props
-}: { tasks: Task[]; className?: string; nested?: boolean } & Pick<
-  TaskListProps,
-  'timezone' | 'onOpen' | 'selectedId'
->) {
+}: { tasks: Task[]; className?: string; nested?: boolean } & Pick<TaskListProps, 'timezone'>) {
   return (
     <ul className={className ?? 'space-y-2'}>
       <AnimatePresence initial={false} mode="popLayout">
         {tasks.map((task) => (
-          <TaskRow
-            key={task.id}
-            task={task}
-            timezone={props.timezone}
-            onOpen={props.onOpen}
-            selected={props.selectedId === task.id}
-            nested={nested}
-          />
+          <TaskRow key={task.id} task={task} timezone={props.timezone} nested={nested} />
         ))}
       </AnimatePresence>
     </ul>

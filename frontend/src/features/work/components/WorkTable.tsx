@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { DueChip } from '@/features/tasks/components/DueChip'
 import { TaskPriorityBadge, TaskStatusBadge } from '@/features/tasks/components/TaskBadges'
+import { TaskLink } from '@/features/tasks/components/TaskLink'
 import type { Page, Task, TaskSort } from '@/features/tasks/types'
 import { MemberAvatar } from '@/features/organizations/components/MemberAvatar'
 import { cn } from '@/lib/utils'
@@ -19,7 +20,6 @@ interface WorkTableProps {
   sort: TaskSort
   showDepartment?: boolean
   onSort: (sort: TaskSort) => void
-  onOpen: (id: number) => void
   onPageChange: (page: number) => void
 }
 
@@ -64,7 +64,6 @@ export function WorkTable({
   sort,
   showDepartment,
   onSort,
-  onOpen,
   onPageChange,
 }: WorkTableProps) {
   const pageCount = Math.max(1, Math.ceil(page.total / page.page_size))
@@ -120,13 +119,12 @@ export function WorkTable({
                 className="relative transition-colors duration-(--duration-fast) odd:bg-muted/40 hover:bg-accent/50"
               >
                 <td className="min-w-0 px-3 py-2.5">
-                  <button
-                    type="button"
-                    onClick={() => onOpen(task.id)}
+                  <TaskLink
+                    task={task}
                     className="block w-full truncate text-left font-medium outline-none after:absolute after:inset-0 focus-visible:after:ring-3 focus-visible:after:ring-ring/50"
                   >
                     {task.title}
-                  </button>
+                  </TaskLink>
                   {task.needs_reassignment ? (
                     <span className="mt-0.5 flex items-center gap-1 text-xs font-medium text-destructive">
                       <TriangleAlertIcon aria-hidden className="size-3.5 shrink-0" />

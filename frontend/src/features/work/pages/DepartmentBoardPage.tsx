@@ -21,7 +21,6 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { can } from '@/features/organizations/permissions'
 import { useOrg } from '@/features/organizations/use-current-org'
-import { TaskDetailSheet } from '@/features/tasks/components/TaskDetailSheet'
 import { STATUS_LABELS, type TaskStatus } from '@/features/tasks/task-meta'
 import { useTaskSearchParams } from '@/features/tasks/use-task-search-params'
 import { useBoard, useOrganizationTasks } from '@/features/work/api'
@@ -80,7 +79,7 @@ export function DepartmentBoardPage() {
   const org = useOrg()
   const departmentId = Number(useParams().departmentId)
   const search = useTaskSearchParams()
-  const { filters, update, openTaskId, openTask } = search
+  const { filters, update } = search
   const [params] = useSearchParams()
   const [creating, setCreating] = useState(false)
   const layout = (params.get('layout') as Layout | null) ?? 'board'
@@ -218,7 +217,6 @@ export function DepartmentBoardPage() {
           board={data!}
           params={boardParams}
           timezone={org.timezone}
-          onOpen={openTask}
           hidden={hidden}
           onShowColumn={showColumn}
           onShowOlder={() => update({ layout: 'list', status: ['completed'] })}
@@ -230,7 +228,6 @@ export function DepartmentBoardPage() {
           timezone={org.timezone}
           month={params.get('month')}
           onMonthChange={(month) => update({ month })}
-          onOpen={openTask}
         />
       ) : list.isPending ? (
         <Skeleton className="h-64 w-full rounded-2xl" />
@@ -248,19 +245,13 @@ export function DepartmentBoardPage() {
           timezone={org.timezone}
           sort={filters.sort ?? 'due'}
           onSort={(sort) => update({ sort: sort === 'due' ? null : sort })}
-          onOpen={openTask}
           onPageChange={(page) => update({ page })}
         />
       )}
 
       {creating ? (
-        <CreateTaskDialog
-          departmentId={departmentId}
-          onClose={() => setCreating(false)}
-          onCreated={openTask}
-        />
+        <CreateTaskDialog departmentId={departmentId} onClose={() => setCreating(false)} />
       ) : null}
-      <TaskDetailSheet taskId={openTaskId} timezone={org.timezone} onClose={() => openTask(null)} />
     </motion.div>
   )
 }

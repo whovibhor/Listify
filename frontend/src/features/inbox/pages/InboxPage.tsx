@@ -19,6 +19,7 @@ import {
   type InboxNotification,
   type InboxWorkspace,
 } from '@/features/inbox/types'
+import { taskPath } from '@/features/tasks/task-path'
 import { errorText } from '@/lib/api-client'
 import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
@@ -36,7 +37,7 @@ const NO_PAGE = new Set(['membership_rejected', 'membership_removed', 'membershi
 function link(item: InboxNotification, workspace: InboxWorkspace) {
   // Personal holds notices from organizations the person can't open any more.
   if (workspace === 'personal') return null
-  if (item.task) return `/org/${item.task.organization_id}/tasks?task=${item.task.id}`
+  if (item.task) return taskPath(item.task)
   if (item.organization_id && !NO_PAGE.has(item.type)) return `/org/${item.organization_id}`
   return null
 }

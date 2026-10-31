@@ -7,6 +7,7 @@ import { useToggleComplete } from '@/features/tasks/api'
 import { DueChip } from '@/features/tasks/components/DueChip'
 import { TagChip } from '@/features/tasks/components/TagChip'
 import { TaskCheckbox } from '@/features/tasks/components/TaskCheckbox'
+import { TaskLink } from '@/features/tasks/components/TaskLink'
 import { TaskPriorityBadge, TaskStatusBadge } from '@/features/tasks/components/TaskBadges'
 import type { Task } from '@/features/tasks/types'
 import { transitions } from '@/lib/motion'
@@ -15,14 +16,12 @@ import { cn } from '@/lib/utils'
 interface TaskRowProps {
   task: Task
   timezone: string
-  onOpen: (id: number) => void
-  selected?: boolean
   /** Inside another card: a tinted fill replaces the row's own card surface and shadow. */
   nested?: boolean
 }
 
 export const TaskRow = forwardRef<HTMLLIElement, TaskRowProps>(function TaskRow(
-  { task, timezone, onOpen, selected, nested },
+  { task, timezone, nested },
   ref,
 ) {
   const toggle = useToggleComplete()
@@ -54,10 +53,9 @@ export const TaskRow = forwardRef<HTMLLIElement, TaskRowProps>(function TaskRow(
       className={cn(
         'group relative flex items-start gap-3 rounded-lg px-3 py-2.5 transition-[background-color,box-shadow] duration-(--duration-fast)',
         nested ? 'bg-muted/60 hover:bg-accent/60' : 'bg-card shadow-card hover:shadow-raised',
-        selected && 'bg-accent!',
       )}
     >
-      {/* Above the row-wide click target of the title button. */}
+      {/* Above the row-wide click target of the title link. */}
       <div className="relative z-10 pt-0.5">
         <TaskCheckbox
           checked={done}
@@ -71,9 +69,8 @@ export const TaskRow = forwardRef<HTMLLIElement, TaskRowProps>(function TaskRow(
           label={done ? `Reopen “${task.title}”` : `Complete “${task.title}”`}
         />
       </div>
-      <button
-        type="button"
-        onClick={() => onOpen(task.id)}
+      <TaskLink
+        task={task}
         className="min-w-0 flex-1 text-left outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-3 focus-visible:after:ring-ring/50"
       >
         <span
@@ -99,7 +96,7 @@ export const TaskRow = forwardRef<HTMLLIElement, TaskRowProps>(function TaskRow(
             <TagChip key={tag.id} tag={tag} />
           ))}
         </span>
-      </button>
+      </TaskLink>
     </motion.li>
   )
 })

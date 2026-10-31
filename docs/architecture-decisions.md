@@ -314,3 +314,15 @@ The API returns these sentences in `definitions`, and the UI shows them beside e
 - **The board's List view follows Team Tasks,** which the plan didn't list, because it had the same problem of old completed tasks appearing first.
 - **Going back to the Board clears a status filter,** because the board has no control to clear it with.
 - **Accepted cost:** with `active=true`, Team Tasks for an Owner takes about 200 ms on 100,000 tasks, up from about 75 ms, since MySQL walks past finished tasks in the sort index. That's within the 500 ms target and level with what Members already get, so there's no new index for now. If it grows, an index that covers open tasks is the next step.
+
+## ADR-038 Task page
+
+- **Every task has an address,** `/org/:id/tasks/:taskId/:tab?` or `/personal/tasks/:taskId/:tab?`, with one page behind both. The side panel is gone. A link that names the wrong workspace is corrected once the task has loaded, and `?task=ID` links from before are redirected by the app shell.
+- **Cards and rows are real links,** through `TaskLink`, so opening in a new tab and copying a link work. The board keeps dragging: `draggable={false}` stops the browser's own link drag, and dnd-kit's activation distance still separates a click from a drag.
+- **Back is remembered in link state,** not worked out from the URL. A link records the list it came from, filters included, and section links pass that on. Opened from elsewhere, Back goes to the task's list, or to the parent for a subtask.
+- **Editing saves together, on Save.** The panel saved each field as it changed. The form sends one update with only what changed, then the collaborator changes, because those are separate endpoints. If a later call fails the earlier ones stay saved, and the form shows the error.
+- **Status and Complete stay one click,** because they're the most common actions. Assign to me stays on the page too, because someone who can only read a task may still claim unassigned work.
+- **Fields follow `actions`.** Each person sees only what they may change, and the server still checks every change.
+- **Subtasks keep the server's rules.** Comments, files and update requests belong to the top-level task, and people, department and visibility come from the parent, so a subtask page has Overview and Activity only, and its form has no people fields. Archive isn't offered either, because the server refuses it. Delete is, even in an organization, because the parent's history records it.
+- **Tab counts come from the lists themselves,** so opening a task costs three small extra requests and no server change. The Overview needs the comments anyway.
+- **After creating a task you stay on the list,** with Open task in the message, so several can be added in a row.

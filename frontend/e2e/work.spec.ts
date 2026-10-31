@@ -17,7 +17,7 @@ function localDate(offsetDays: number) {
 
 /** A real mouse drag, in steps, so the drag library sees the same events a person makes. */
 async function drag(page: Page, from: string, toColumn: string) {
-  const card = page.getByRole('button', { name: from, exact: true })
+  const card = page.getByRole('link', { name: from, exact: true })
   await card.scrollIntoViewIfNeeded()
   const start = await card.boundingBox()
   const target = await page.getByTestId(`column-${toColumn}`).boundingBox()
@@ -52,11 +52,11 @@ test('a team plans work on a board, and access follows the rules', async ({
   await dialog.getByRole('button', { name: 'Create task' }).click()
   await expect(dialog).toBeHidden()
 
-  // It opens in the panel, with the people on it labelled.
-  const panel = owner.getByRole('dialog')
-  await expect(panel.getByLabel('Assignee')).toHaveValue(/\d+/)
-  await expect(panel.getByText('Created by')).toBeVisible()
-  await owner.keyboard.press('Escape')
+  // You stay on the board, with a way to open it, and its page names the people on it.
+  await owner.getByRole('button', { name: 'Open task' }).click()
+  const details = owner.getByRole('region', { name: 'Task details' })
+  await expect(details.getByText('Amy Applicant')).toBeVisible()
+  await expect(details.getByText(/by Olivia Owner/)).toBeVisible()
 
   // A private task stays with its creator.
   await apiPost(owner, `/organizations/${orgId}/tasks`, {
@@ -67,10 +67,10 @@ test('a team plans work on a board, and access follows the rules', async ({
 
   // Amy sees her work, and what's shared with the department, but not the private task.
   await teammate.goto(`/org/${orgId}/my-work`)
-  await expect(teammate.getByRole('button', { name: /Fix the login page/ })).toBeVisible()
+  await expect(teammate.getByRole('link', { name: /Fix the login page/ })).toBeVisible()
   await teammate.goto(boardUrl)
   await expect(
-    teammate.getByRole('button', { name: 'Fix the login page', exact: true }),
+    teammate.getByRole('link', { name: 'Fix the login page', exact: true }),
   ).toBeVisible()
   await expect(teammate.getByText('Salary review')).toBeHidden()
   await teammate.goto(`/org/${orgId}/tasks`)
@@ -104,10 +104,10 @@ test('a team plans work on a board, and access follows the rules', async ({
   // The list and the calendar show the same task.
   await owner.getByRole('button', { name: 'List' }).click()
   const table = owner.getByRole('table')
-  await expect(table.getByRole('button', { name: 'Fix the login page' })).toBeVisible()
-  await expect(table.getByRole('button', { name: 'Salary review' })).toBeVisible()
+  await expect(table.getByRole('link', { name: 'Fix the login page' })).toBeVisible()
+  await expect(table.getByRole('link', { name: 'Salary review' })).toBeVisible()
   await owner.getByRole('button', { name: 'Calendar' }).click()
-  await expect(owner.getByRole('button', { name: /Fix the login page/ }).first()).toBeAttached()
+  await expect(owner.getByRole('link', { name: /Fix the login page/ }).first()).toBeAttached()
 
   // Suspending Amy flags her task, and nothing is lost.
   await owner.goto(`/org/${orgId}/members`)
@@ -120,13 +120,20 @@ test('a team plans work on a board, and access follows the rules', async ({
 
   await owner.goto(`/org/${orgId}/tasks`)
   await owner.getByRole('button', { name: 'Needs reassignment' }).click()
-  await owner.getByRole('table').getByRole('button', { name: 'Fix the login page' }).click()
-  const flagged = owner.getByRole('dialog')
+  await owner.getByRole('table').getByRole('link', { name: 'Fix the login page' }).click()
+  const flagged = owner.getByRole('main')
   await expect(flagged.getByText('Amy Applicant can no longer work on this task.')).toBeVisible()
-  await flagged.getByLabel('Assignee').selectOption('')
+  await flagged.getByRole('button', { name: 'Edit', exact: true }).click()
+  const form = owner.getByRole('dialog', { name: 'Edit task' })
+  await form.getByLabel('Assignee').selectOption('')
+  await form.getByRole('button', { name: 'Save changes' }).click()
   await expect(flagged.getByText(/can no longer work/)).toBeHidden()
 
   // History is complete.
+  await owner
+    .getByRole('navigation', { name: 'Task sections' })
+    .getByRole('link', { name: 'Activity' })
+    .click()
   await expect(flagged.getByText(/assigned this to Amy Applicant/)).toBeVisible()
   await expect(flagged.getByText(/unassigned this task/)).toBeVisible()
 })
@@ -180,8 +187,12 @@ test('work pages have no detectable accessibility violations', async ({ browser 
   await scan('create dialog')
 
   await owner.goto(`${board}?task=${task.id}`)
-  await expect(owner.getByRole('dialog').getByText('Created by')).toBeVisible()
-  await scan('task panel')
+  await expect(owner.getByRole('region', { name: 'Task details' })).toBeVisible()
+  await scan('task page')
+  await owner.getByRole('button', { name: 'Edit', exact: true }).click()
+  await expect(owner.getByRole('dialog', { name: 'Edit task' })).toBeVisible()
+  await scan('task form')
+  await owner.keyboard.press('Escape')
   await owner.emulateMedia({ colorScheme: 'dark' })
-  await scan('task panel in dark mode')
+  await scan('task page in dark mode')
 })

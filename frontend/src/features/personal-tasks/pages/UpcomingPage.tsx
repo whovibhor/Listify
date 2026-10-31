@@ -10,17 +10,14 @@ import { DayStrip } from '@/features/personal-tasks/components/DayStrip'
 import { upcomingDays } from '@/features/personal-tasks/grouping'
 import { useTasks } from '@/features/tasks/api'
 import { QuickAddTask } from '@/features/tasks/components/QuickAddTask'
-import { TaskDetailSheet } from '@/features/tasks/components/TaskDetailSheet'
 import { TaskListSkeleton, TaskRows } from '@/features/tasks/components/TaskList'
 import { relativeDayLabel } from '@/features/tasks/dates'
-import { useTaskSearchParams } from '@/features/tasks/use-task-search-params'
 import { pageEnter } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
 export function UpcomingPage() {
   const { data: user } = useMe()
   const timezone = user?.timezone ?? 'UTC'
-  const { openTaskId, openTask } = useTaskSearchParams()
   const reduceMotion = useReducedMotion()
   const query = useTasks({ view: 'upcoming', sort: 'due', page_size: 100 })
 
@@ -101,13 +98,7 @@ export function UpcomingPage() {
                   </span>
                 </span>
               </h2>
-              <TaskRows
-                nested
-                tasks={day.tasks}
-                timezone={timezone}
-                onOpen={openTask}
-                selectedId={openTaskId}
-              />
+              <TaskRows nested tasks={day.tasks} timezone={timezone} />
             </li>
           ))}
           {query.data.total > query.data.items.length ? (
@@ -117,8 +108,6 @@ export function UpcomingPage() {
           ) : null}
         </ol>
       )}
-
-      <TaskDetailSheet taskId={openTaskId} timezone={timezone} onClose={() => openTask(null)} />
     </motion.div>
   )
 }

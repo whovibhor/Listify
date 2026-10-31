@@ -18,6 +18,7 @@ import { isResumingWorkspace } from '@/features/organizations/use-current-org'
 import { useTasks } from '@/features/tasks/api'
 import { DueChip } from '@/features/tasks/components/DueChip'
 import { QuickAddTask } from '@/features/tasks/components/QuickAddTask'
+import { TaskLink } from '@/features/tasks/components/TaskLink'
 import { todayKey } from '@/features/tasks/dates'
 import { pageEnter } from '@/lib/motion'
 
@@ -44,12 +45,12 @@ function TodayPreview({ timezone }: { timezone: string }) {
         <ul className="divide-y">
           {data.items.map((task) => (
             <li key={task.id} className="flex items-center justify-between gap-3 py-2">
-              <Link
-                to={`/personal/my-day?task=${task.id}`}
+              <TaskLink
+                task={task}
                 className="min-w-0 truncate text-sm font-medium hover:underline"
               >
                 {task.title}
-              </Link>
+              </TaskLink>
               <DueChip task={task} timezone={timezone} />
             </li>
           ))}

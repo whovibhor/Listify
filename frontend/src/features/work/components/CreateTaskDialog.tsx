@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Loader2Icon, XIcon } from 'lucide-react'
+import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 
 import { FormField } from '@/components/shared/FormField'
@@ -22,6 +23,7 @@ import { useOrg } from '@/features/organizations/use-current-org'
 import { useCreateTask, useTags } from '@/features/tasks/api'
 import { TagPicker } from '@/features/tasks/components/TagPicker'
 import { PRIORITY_LABELS, TASK_PRIORITIES, type TaskPriority } from '@/features/tasks/task-meta'
+import { taskPath } from '@/features/tasks/task-path'
 import type { TaskVisibility } from '@/features/tasks/types'
 import { PeoplePicker } from '@/features/work/components/PeoplePicker'
 import { VISIBILITY_HINTS, VISIBILITY_LABELS } from '@/features/work/types'
@@ -35,11 +37,11 @@ interface CreateTaskDialogProps {
   /** Fixed when opened from a department's board. */
   departmentId?: number
   onClose: () => void
-  onCreated?: (taskId: number) => void
 }
 
-export function CreateTaskDialog({ departmentId, onClose, onCreated }: CreateTaskDialogProps) {
+export function CreateTaskDialog({ departmentId, onClose }: CreateTaskDialogProps) {
   const org = useOrg()
+  const navigate = useNavigate()
   const create = useCreateTask(org.id)
   const { data: departments = [] } = useDepartments(org.id)
   const { data: allTags = [] } = useTags(org.id)
@@ -102,8 +104,11 @@ export function CreateTaskDialog({ departmentId, onClose, onCreated }: CreateTas
       },
       {
         onSuccess: (task) => {
-          toast.success('Task created', { description: task.title })
-          onCreated?.(task.id)
+          // Stays on the list, so several tasks can be added in a row.
+          toast.success('Task created', {
+            description: task.title,
+            action: { label: 'Open task', onClick: () => void navigate(taskPath(task)) },
+          })
           onClose()
         },
         onError: (mutationError) => setError(errorText(mutationError)),

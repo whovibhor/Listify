@@ -18,7 +18,7 @@ Dependency-aware sequence derived from PRD §15–16 and the owner's build instr
 | 5 | Department Work Boards | ✅ Complete | 2026-10-30 |
 | 6 | Collaboration (comments, update requests, attachments, inbox) | ✅ Complete | 2026-10-30 |
 | 7 | Dashboards & reporting | ✅ Complete | 2026-10-30 |
-| UI | UI & journey rework (6 batches) | 🚧 In progress: Batches 1 to 4 done, Batch 5 next | — |
+| UI | UI & journey rework (6 batches) | 🚧 In progress: Batches 1 to 5 done, Batch 6 next | — |
 | 8 | Reminders & scheduled notifications | ⏳ After the rework | — |
 | Later | Agreed additions: time estimates, bulk actions, global search, recurring tasks and dependencies | ⏳ Planned | — |
 | 9 | Production readiness | ⏳ Planned | — |
@@ -134,15 +134,15 @@ Requested by the owner on 2026-10-31 after trying the app with sample data. Batc
 - [x] Hidden columns return totals only, so their cards aren't loaded until shown
 - [x] Team Tasks and My Work open on active work, with a filter to show finished tasks
 
-**Batch 5 — Task page**
-- [ ] Routes for `/org/:id/tasks/:taskId/:tab?` and `/personal/tasks/:taskId/:tab?`
-- [ ] Details rail plus tabs: Overview, Comments, Files, Update requests, Activity, with counts on the tabs
-- [ ] Status and Complete are one click; Edit opens a form with Save and Cancel, showing only fields that person may change
-- [ ] Archive and Delete in a "…" menu
-- [ ] Subtasks use the same page with a link to the parent; first confirm the server handles subtasks fully here
-- [ ] Cards and rows become real links; Back keeps list filters; `?task=` links redirect; notifications and reports link to the new page
-- [ ] After creating a task you stay on the list, with an Open task link
-- [ ] Side panel removed from every page
+**Batch 5 — Task page ✅**
+- [x] Routes for `/org/:id/tasks/:taskId/:tab?` and `/personal/tasks/:taskId/:tab?`
+- [x] Details rail plus tabs: Overview, Comments, Files, Update requests, Activity, with counts on the tabs
+- [x] Status and Complete are one click; Edit opens a form with Save and Cancel, showing only fields that person may change
+- [x] Archive and Delete in a "…" menu
+- [x] Subtasks use the same page with a link to the parent; the server keeps comments, files, requests and people on the top-level task, so subtask pages have Overview and Activity
+- [x] Cards and rows become real links; Back keeps list filters; `?task=` links redirect; notifications and reports link to the new page
+- [x] After creating a task you stay on the list, with an Open task link
+- [x] Side panel removed from every page
 
 **Batch 6 — Final pass**
 - [ ] Full journey for each role at phone, tablet and desktop widths

@@ -1,5 +1,42 @@
 # Denote — Development Log
 
+## 2026-10-31 — UI rework, Batch 5: task page
+
+### Requested by the owner
+Replace the side panel with a proper page for each task, showing everything in a well-structured way, with Edit as a button, and sub pages for the rest.
+
+### Changes
+- **Task page** at `/org/:id/tasks/:taskId/:tab?` and `/personal/tasks/:taskId/:tab?`: title and actions on top, a details rail, and Overview, Comments, Files, Update requests and Activity with their own links and counts. See ADR-038.
+- **Editing:** Status and Complete stay one click. Everything else goes through Edit, a form with Save and Cancel that shows only what that person may change. It replaces saving each field as it changed.
+- **More menu:** Copy link, Archive or Restore, and Delete.
+- **Subtasks** have their own page, with a link to the parent. The server keeps comments, files and update requests on the top-level task, and takes people, department and visibility from the parent, so a subtask page has Overview and Activity and its form has no people fields.
+- **Real links:** cards, rows, calendar entries, reports and notifications open the page, so new tabs and copied links work. Back returns to your list with its filters. Old `?task=` links redirect, and a link naming the wrong workspace is corrected.
+- **New tasks:** you stay on the list, with Open task in the message.
+- **Removed:** `TaskDetailSheet` and `TaskPeopleFields`. No server changes were needed.
+
+### Problems found while testing
+- The first version of a subtask page showed "Private", "No department" and Assign to me. The first two were misleading and the third would have failed, because the server refuses those on subtasks. A screenshot caught it, and the page now says they come from the parent.
+- Delete was offered on organization subtasks to people the server would refuse. Reading the server code for the docs caught it. Fixed, with a test.
+- Tab counts read "Comments1" to screen readers. Fixed.
+- Three browser tests failed for test reasons, now corrected: one looked for a comment on the Update requests section, one expected the old activity wording, and one dragged a "button" where cards are now links.
+
+### Checks (all actually run)
+| Check | Result |
+|---|---|
+| Frontend tests | 193 passed |
+| Backend tests | Not rerun: no server code changed in this batch. 666 passed on the last run |
+| ESLint, Prettier, TypeScript | Clean |
+| Full E2E, desktop and mobile | 33 passed, 2 skipped by design, 5 failed for the reasons above |
+| E2E rerun of those 3 spec files, desktop and mobile | 14 passed, including dragging cards and accessibility scans of the page and form |
+| Real app as Admin, Department Manager and Member at 320, 768 and 1280 px | Links, Back, sections, old links, missing tasks and personal tasks work. No sideways overflow, no errors, and no sample task changed |
+
+### Known limitations
+- The responsive spec, which covers the Edit form at every width, passed in the full run, before the final small fixes.
+- Comments, files and update requests aren't available on subtasks, by the server's rule. Changing that would be new work.
+- Editing is by form only: there's no inline editing on the page.
+- If Save succeeds on the task and then a collaborator change fails, the task change stays saved and the form shows the error.
+- Opening a task makes three extra small requests for the tab counts.
+
 ## 2026-10-31 — UI rework, Batch 4: boards and task lists
 
 ### Requested by the owner

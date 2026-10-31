@@ -379,7 +379,7 @@ describe('Department report', () => {
     expect(within(people).getByText('Unassigned')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Renew the contract/ })).toHaveAttribute(
       'href',
-      '/org/7/tasks?task=41',
+      '/org/7/tasks/41',
     )
   })
 

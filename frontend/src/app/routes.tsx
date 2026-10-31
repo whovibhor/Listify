@@ -38,6 +38,12 @@ const personalRoutes: RouteObject[] = [
     }),
   },
   {
+    path: '/personal/tasks/:taskId/:tab?',
+    lazy: async () => ({
+      Component: (await import('@/features/tasks/pages/TaskPage')).TaskPage,
+    }),
+  },
+  {
     path: '/personal/upcoming',
     lazy: async () => ({
       Component: (await import('@/features/personal-tasks/pages/UpcomingPage')).UpcomingPage,
@@ -138,6 +144,12 @@ const organizationRoutes: RouteObject[] = [
         path: 'tasks',
         lazy: async () => ({
           Component: (await import('@/features/work/pages/TeamTasksPage')).TeamTasksPage,
+        }),
+      },
+      {
+        path: 'tasks/:taskId/:tab?',
+        lazy: async () => ({
+          Component: (await import('@/features/tasks/pages/TaskPage')).TaskPage,
         }),
       },
       {

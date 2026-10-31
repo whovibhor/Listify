@@ -16,10 +16,8 @@ import { TaskSection } from '@/features/personal-tasks/components/TaskSection'
 import { groupMyDay } from '@/features/personal-tasks/grouping'
 import { useTasks } from '@/features/tasks/api'
 import { QuickAddTask } from '@/features/tasks/components/QuickAddTask'
-import { TaskDetailSheet } from '@/features/tasks/components/TaskDetailSheet'
 import { TaskListSkeleton } from '@/features/tasks/components/TaskList'
 import { nowIn, todayKey } from '@/features/tasks/dates'
-import { useTaskSearchParams } from '@/features/tasks/use-task-search-params'
 import { pageEnter } from '@/lib/motion'
 
 const SECTION_META = {
@@ -49,7 +47,6 @@ export function MyDayPage() {
   const { data: user } = useMe()
   const timezone = user?.timezone ?? 'UTC'
   const now = nowIn(timezone)
-  const { openTaskId, openTask } = useTaskSearchParams()
 
   const remaining = useTasks({ view: 'my_day', page_size: 100 })
   const done = useTasks({ view: 'done_today', page_size: 100 })
@@ -58,7 +55,7 @@ export function MyDayPage() {
   const doneTotal = done.data?.total ?? 0
   const groups = remaining.data ? groupMyDay(remaining.data.items, timezone) : []
   const overdueCount = groups.find((g) => g.key === 'overdue')?.tasks.length ?? 0
-  const rowProps = { timezone, onOpen: openTask, selectedId: openTaskId }
+  const rowProps = { timezone }
 
   return (
     <motion.div {...pageEnter} className="mx-auto max-w-4xl space-y-5">
@@ -161,8 +158,6 @@ export function MyDayPage() {
           {...rowProps}
         />
       ) : null}
-
-      <TaskDetailSheet taskId={openTaskId} timezone={timezone} onClose={() => openTask(null)} />
     </motion.div>
   )
 }
